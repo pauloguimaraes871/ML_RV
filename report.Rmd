@@ -1,0 +1,440 @@
+---
+title: "Results"
+author: "Paulo Guimarães"
+date: "2025-10-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+```
+
+## Descriptive Analysis
+
+In this first chunk, I present the results of summary statistics and respective plots for the target variable (monthly Realized Variance - RV) and the covariates.
+
+First we source helpers and classes functions and load datasets
+
+```{r load}
+
+  ## Helpers and classes
+  source(file.path(here::here(), "R", "helpers.R"))
+  source(file.path(here::here(), "R", "classes.R"))
+  
+  ## Load datasets
+    ### Covariates
+    covariates_1927_df <- readRDS(file.path(here::here(), 
+                                            "data", "covariates_1927.rds"))
+    covariates_1986_df <- readRDS(file.path(here::here(),
+                                            "data", "covariates_1986.rds"))
+    
+    ### Target
+    target             <- readRDS(file.path(here::here(),
+                                            "data", "crsp_monthly.rds"))
+  ## For plots
+  grDevices::windowsFonts(Helvetica = grDevices::windowsFont("Arial"))
+
+```
+
+First I present summary tables for covariates since 1927, then covariates since 1987, which contains all variables, including implied volatility. The list of covariates can be grouped follows:
+
+  - S&P 500 Past Volatility Terms: This cluster contains lagged HAR-like terms (last month, last day of last month and last week of last month) of lagged realized volatility, past realized quarticity, continuous part of past realized volatility, jump part of past realized volatility, and negative part of returns (leverage). For continous and jump parts, I used a bipower variation adaptation to decompose total RV into those two components. All of those variables have 1,176 observations, being available from 1927 through 2024. It is possible to notice that some of those have moderate estimated autocorrelation, such as the lagged 1-month RV (0.5589), which is a stylized fact from literature (returns heteroskedasticity), and, naturally, its continuous part (0.515).
+  - Macrofinancial Variables: This cluster contains aggregate yield variables (lagged dividend yield and lagged earnings yield, which are available from 1927 through 2024 and have high estimated autocorrelation), lagged Default Return Spreads from high-quality (Aaa) and moderate-quality (Baa) bonds over 10-Year Treasuries (Constant Maturity), Term Spread (10-Year Treasury minus Federal Funds Rate), and the T-bill Secondary Market Rate
+  - Macroeconomic Variables: This cluster contains different macroeconomic variables. Some of them are available since 1927, such as Producer Price Index (PPI, Non-Seasonally Adjusted in order to mitigate forward-looking bias from revisions), and Industrial Production (IP), while the Monetary Base is only available later, being included only in 1986 dataset. For those variables, I use the procedure of Schwert (1989), which first computes absolute residuals from an AR(12) model with monthly dummies, then fits a second AR(12) model on absolute residuals and uses this second model to predict 1-month ahead volatility proxy. This procedure helps in filtering the series from seasonality and autocorrelation.
+  - Sentiment Variables: This cluster contains the lagged 1-month difference of the logs of the University of Michigan Consumer Sentiment Index (MCSI), available only in the 1986 dataset, the lagged 1-month difference of the logs of the Economic Policy Uncertainty Index (EPU), and the lagged 1-month difference of the logs of Geoconomic Risk Index (GPR), both available since 1927. The recent GPR index uses 10 newspapers ans starts in 1985, thus I expanded its time series with the historical GPR index, which uses only 3 newspapers and is available since 1900. 
+  - Implied Volatility: This variable is represented by lagged VIX index (CBOE Volatility Index), a risk-neutral measure of expected volatility. It has an estimated autocorrelation of 0.688. The VIX is available only from 1990 onwards, thus I used the VXO Index, which is based on S&P 100 options, as a proxy for VIX from 1986 to 1989. This variable is only included in the 1986 dataset.
+  - Past Volatility Terms from Other Markets: This cluster contains HAR-like terms (last month, last day of last month and last week of last month) of lagged realized volatility from other markets. For now, I included only past-RV terms from West Texas Intermediate (WTI) Crude Oil market, which have estimated autocorrelation coefficients of around 0.5 and are available since 1986.
+  - Calendar Variables - This clusters consists of Squared Number of Days in Month and Month Dummy variables, implemented in order to capture potential seasonality effects. Naturally, they are available since 1927.
+
+```{r summary tables}
+
+    ## Apply!
+    summary_1927   <- make_var_summary(covariates_1927_df)
+    summary_1986   <- make_var_summary(covariates_1986_df)
+    summary_target <- make_var_summary(target)
+    
+    summary_1927
+    summary_1986
+    summary_target
+    
+```
+
+I also complement the analysis with time-series plots of the target variable and the covariates. I divide the plots by clusters and time periods.
+
+```{r plots}
+ 
+  ## Past RV terms
+  rv_vars        <- stringr::str_subset(names(covariates_1927_df), "^rv_")
+  rq_vars        <- stringr::str_subset(names(covariates_1927_df), "^rq_")
+  jump_vars      <- stringr::str_subset(names(covariates_1927_df), "^jump_")
+  cont_vars      <- stringr::str_subset(names(covariates_1927_df), "^cont_")
+  negret_vars    <- stringr::str_subset(names(covariates_1927_df), "^negret_")
+  past_rv_vars   <- c(rv_vars, rq_vars, jump_vars, cont_vars, negret_vars)
+  
+  plot_past_rv_1927 <- plot_ts_grid(
+      covariates_1927_df, past_rv_vars, ncol = 3,
+      title = "Past S&P 500 Realized Variance (RV) Measures: 1927-2024"
+  )
+  print(plot_past_rv_1927)
+    
+  ## Macro variables
+  macro_1927_vars     <- c("ppi_vol", "ip_vol")
+  plot_macro_1927 <- plot_ts_grid(
+        covariates_1927_df, macro_1927_vars, ncol = 3,
+        title = "Macroeconomic Volatility Variables: 1927-2024"
+      )
+  print(plot_macro_1927)  
+  
+  macro_1986_vars     <- c("ppi_vol", "ip_vol",  "mbas_vol")
+  plot_macro_1986 <- plot_ts_grid(
+        covariates_1986_df, macro_1986_vars, ncol = 3,
+        title = "Macroeconomic Volatility Variables: 1986-2024"
+      )
+  print(plot_macro_1986)
+  
+  ## Macrofinancial variables
+  macro_fin_1927_vars <- c("dy_lag1", "ey_lag1")
+  plot_macro_fin_1927 <- plot_ts_grid(
+    covariates_1927_df, macro_fin_1927_vars, ncol = 2,
+    title = "Macrofinancial Variables: 1927-2024"
+    )
+  print(plot_macro_fin_1927) 
+  
+  macro_fin_1986_vars <- c("dy_lag1", "ey_lag1", "dfr_lag1", "dfy_lag1",
+                           "tms_lag1", "tbill_lag1")
+  plot_macro_fin_1986 <- plot_ts_grid(
+        covariates_1986_df, macro_fin_1986_vars, ncol = 2,
+        title = "Macrofinancial Variables: 1986-2024"
+      )
+  print(plot_macro_fin_1986)
+  
+  ## Sentiment variables
+  sent_1927_vars      <- c("gpr_lag1")
+  plot_sent_1927 <- plot_ts_grid(
+        covariates_1927_df, sent_1927_vars, ncol = 1,
+        title = "Lagged Log Differences of Sentiment Variables: 1927-2024"
+      )
+  print(plot_sent_1927)
+  
+  sent_1986_vars      <- c("gpr_lag1", "log_cons_sent_diff_lag1",
+                           "log_epu_diff_lag1")
+  plot_sent_1986 <- plot_ts_grid(
+        covariates_1986_df, sent_1986_vars, ncol = 1,
+        title = "Lagged Log Differences of Sentiment Variables: 1986-2024"
+      )
+  print(plot_sent_1986)
+  
+  ## Implied volatility
+  implied_vol    <- c("vix_lag1")
+  plot_implied_vol_1986 <- plot_ts_grid(
+    covariates_1986_df, implied_vol, ncol = 1,
+    title = "Implied Volatility Measure (VIX Index): 1986-2024"
+    )
+  print(plot_implied_vol_1986)
+  
+  ## WTI Past RV terms
+  rv_vars_oil   <- c("oil_rv_month_lag1", "oil_rv_tw_lag1", "oil_rv_td_lag1")
+  plot_oil_rv_1986 <- plot_ts_grid(
+    covariates_1986_df, rv_vars_oil, ncol = 3,
+    title = "Past WTI Crude Oil Realized Variance (RV) Measures: 1986-2024"
+    )
+  print(plot_oil_rv_1986)
+  
+  
+  
+```
+
+By observing the series and, in special the decomposition in continuous and jump parts, we can notice some periods of spikes in RV, such as during the Great Depression (1929-1933), the second World War (1939-1945), the Dot-com Bubble burst (2000-2002), the Global Financial Crisis (2007-2009) and the COVID-19 pandemic (2020).
+
+In terms of macroeconomic variables, we can notice relevant spikes in IP Vol during the Great Depression, the second World War and the COVID-19 pandemic. However, it is noticeable that there has been a trend in reduction of volatility in IP since the 1960s, stabilizing at a much lower level after the 2000s, as we can see in the rolling average. As for the PPI, besides the before mentioned crisis periods, we can also notice spikes during the 1970s and early 1980s, which is related to the high-inflation period in the US during those years, in the context of the Oil Shocks, and also in the GFC. More recently, it is clear that there has been a downward trend in PPI vol after the GFC, which changed with the COVID-19 pandemic, when we can see a relevant spike in PPI vol. As for Monetary Base, there is a relative stable growth period from the beginning of the series until the GFC, when we can see a significant change in monetary policy by the Federal Reserve, with a relevant increase in money supply, a stance often called "Quantitative Easing". This also caused a significant increase in MB volatility. After that, we can see a downward trend in money stock until 2020, when there is another relevant spike in both growth rate and volatility, related to significant monetary expansion implemented by the Federal Reserve in response to the COVID-19 pandemic.  
+
+Looking at macrofinancial variables, we can notice that the S&P 500 valuation measures (Dividend Yield and Earnings Yield) have been clearly decreasing over time, with some occasional spikes, such as during the Dot-com Bubble burst and the GFC. Such trends illustrate that US stocks have become more expensive over time. As for the T-Bill, we can draw some parallels with PPI vol, with high rates being observed during the Oil Shocks period and the contrationary monetary policy of Volcker in the early 1980s, followed by a downward trend until the half the 1990s, an increase in level and subsequent stabilization period until the 2000s, followed by another downward trend until the GFC, when we can see a relevant spike again. After that, there is a  significant downward trend  that lasted until 2020, when we can see another spike related to the COVID-19 pandemic. The Term Spread and Default Spreads also show relevant spikes during crisis periods, such as the GFC and the COVID-19 pandemic.
+
+Regarding sentiment variables, we can notice relevant spikes in lagged log differences of GPR during the two world wards, the Cuban Missile Crisis and after the 9/11 attacks, this last also accompanied by increases in EPU. The lagged log differences of EPU also show relevant spikes during the GFC, accompanied by a significant negative shock in lagged log differences of Consumer Sentiment Index, and also more recently, with a significant increase in 2024.
+
+Looking at implied volatility (VIX Index), we can notice high levels at the second half of the 1980s, during the 1987 stock market crash, followed by a downward trend until the Dot-com Bubble burst, when we can see a relevant spike. After that, there is a downward trend until the GFC, when we can see another spike. After that, there is a downward trend until 2020, when we can see another spike related to the COVID-19 pandemic. And finally, for the past RV terms from WTI Crude Oil market, we can notice relevant spikes in the late 1980s and beginning of the 1990s, another one in the late 1990s, during the Asian Financial Crisis, another one during the GFC, and finally another very significant one during the COVID-19 pandemic.
+
+## Methodology
+
+Before fitting models, I preprocessed the series following a traditional MLOps pipeline applied to time-series context. First, I impute missing variables (existent only for the WTI Oil RV terms) using Last Observation Carried Forward (LOCF) method. Then I apply winsorization at 1% and 99% levels to mitigate the effects of outliers. Finally, I standardize all covariates to have zero mean and unit standard deviation, in order to make coefficients comparable in models, to help in convergence of algorithms, and also to help with non-stationarity issues. It is important to notice that all preprocessing methods utilize only point-in-time information, ie only the past data that would be available at each point in time is used in the transformations in a expanding window format, in order to avoid forward-looking bias. As for the target variable, I applied Box-Cox transformation, estimating the lambda parameter with maximum likelihood method on an expanding window approach, which, in fact, lead to a lambda very close to 0, thus boiling down to a log-transformation. This helps with stabilizing variance and mitigating non-stationarity issues.
+
+Training scheme involved splitting the series in three sets: training, validation and testing. Following a walk-forward approach, usual in financial time series, I used an initial training set of 10 years (120 months) and a validation set of 5 years (60 months), refitting the models and tuning hyperparameters once in a year in June, to help with scaling down usage of computational resources. At each step, I find the best hyperparameters with the help of Bayesian Optimization, which consists of a sequential model-based optimization method that uses a surrogate model to approximate the objective function and an acquisition function to guide the search for the optimal hyperparameters. Contrary to grid-search and random-search tuning methods, Bayesian Optimization uses information from previous evaluations to make informed decisions about where to sample next, thus being more efficient in finding optimal hyperparameters, especially when the objective function is expensive to evaluate, which tends to be the case for more complex algorithms. As for acquisition function, I used UCB (Upper Confidence Bound), which balances exploration and exploitation by considering both the predicted mean and uncertainty of the surrogate model. The hyperparameter search space for each algorithm is detailed in the next sections, but, in general terms, given the relative few number of observations due to the monthly frequency, I erred on the side of smaller search spaces in order to avoid overfitting during hyperparameter tuning.
+
+Therefore, the scheme involves using the training set to estimate parameters, fitting multiple models according to the BO procedure and using the validation sample to evaluate performance and select the best hyperparameters. In special, I used rmse (Root Mean Squared Error) as the evaluation metric, but also computed mae (Mean Absolute Error), mape (Mean Absolute Percentage Error), mphe (Mean Pseudo-Huber Error with a huber delta of 1), rss (Out-of-Sample R²), and   mpe (Mean Pinball Error with a tau of 0.5). The mphe behaves as a combination of quadratic and linear functions, with the transition guided by the delta parameter. This makes the metric treat small errors using quadratic loss, which is sensitive to outliers, while larger errors are treated with linear loss, which is more robust to outliers. Diferrently from the traditional huber error, the pseudo-huber has no kinks, being infinitely differentiable. As for mpe, it is calculated based on the pinball loss function, which is particularly useful for evaluating quantile forecasts. By calibrating the tau, one can encode assymetric costs to under-predicting and over-predicting, which can be specially useful in the task of predicting RV, as under-predicting it can be more costly to the investor than under-predicting. The metric is also robust to outliers. As mentioned, at this step, I used rmse for model selection, but this can be relaxed in other runs. As for objective function, some algorithms, such as XGBoost and Neural Networks, allow for implementation of Pseudo-Huber and Pinball losses, which inherently introduces the robust and assymetric aspects in traning, but, for the moment, I used traditional squared error losses.
+
+After finding best hyperparameters, the model is refit using both training and validation sets, and thus 1-month ahead predictions are computed for the test set. It is important to notice that there is no intersection at all between training, validation and test sets, in order to avoid data leakage. 
+
+As for the models, I fitted the following algorithms so far:
+
+  - HAR: This is the Heterogeneous Autoregressive model for Realized Volatility proposed by Corsi (2009), estimated with OLS. It serves as a benchmark model in the volatility literature. The model uses lagged realized volatility terms at different horizons (daily, weekly and monthly) to capture the heterogeneous nature of market participants and their impact on volatility dynamics. It assumes a linear relationship between the covariates and the target variable, being simple to implement and interpret, but may not capture complex relationships in the data.
+  
+  - Elastic Net Regression (ENet): This combines both L1 and L2 penalties in the loss function, allowing for a balance between Ridge and Lasso regressions. It is particularly useful when there are many features and they are significantly correlated, which can introduce multicollinearity issues in OLS regression. The Elastic Net can effectively handle such situations with L1 and L2 penalties that allow for regularization of coefficients and feature selection. The hyperparameters to be tuned are the regularization strength (lambda) and the mixing parameter (alpha), which controls the balance between L1 and L2 penalties. However, instead of fitting a single lambda for each model, I used a path of 100 lambdas generated by the glmnet package, and thus the hyperparameter to be tuned is actually the smallest value for lambda as a fraction of the maximum lambda (lambda_min_ratio), the data derived value that shrinks all coefficients to zero. Specifying a whole path of lambdas helps in improving model stability and performance. For the search space, I used: lambda_min_ratio: continuous [0.0001, 0.01], alpha: continuous [0, 1]. BO process was initialized with 5 random points, and then run for 10 iterations, sampling the function 2 times at each epoch. The process was run in parallel with the support of the glmnet package.
+  
+  - Random Forest (RF): This is an ensemble learning method that constructs multiple decision trees during training and outputs the average prediction of individual trees. It can capture non-linear relationships and interactions between features. The hyperparameters to be tuned include number of trees (num.trees), maximum depth of trees (max.depth), the proportion of features to consider at each split (mtry), and minimal terminal node size (min.bucket), such that no nodes smaller than this value can occur. A higher number of trees generally leads to better out-of-sample performance, as we rely less on the predictions on possibly overfit individual trees, thus reducing variance in predictions, but also increases computational costs. As for max.depth, num.trees and min.bucket, they control the complexity of the individual trees, with deeper trees and smaller terminal nodes being able to capture more complex patterns, but also being more prone to overfitting. The hyperparameter search space used was: num.trees: integer [300, 1500], max.depth: integer [3, 16], mtry: continuous [0.1, 0.9] x the number of features, min.bucket: integer [1, 6]. BO process was initialized with 10 random points, and then run for 25 iterations, sampling the function 20 times at each epoch. The process was run in parallel with the support of the ranger package.
+  
+  - Extreme Gradient Boosting (XGBoost): This is another ensemble learning method that builds decision trees sequentially, with each tree trying to correct errors made by previous trees, by effectively being fit on the residuals of prior trees. It gained a lot of popularity in recent years due to its strong performance in various machine learning competitions and practical applications. The hyperparameters to be tuned include number of trees (nrounds), learning rate (eta), maximum depth of trees (max_depth), minimum sum of instance weight needed in a child node (min_child_weight), subsample ratio of the training instances (subsample), column subsample ratio (colsample_bytree), alpha (L1 regularization term on weights), and gamma (minimum loss reduction required to make a further partition on a leaf onde of the tree). The learning rate controls how much each tree contributes to the final prediction, with lower values leading to more conservative models but requiring more trees.  Maximum depth controls the complexity of individual trees, with deeper trees being able to capture more complex patterns but also being more prone to overfitting. The min_child_weight parameter helps in controlling overfitting by specifying the minimum sum of instance weight needed in a child node, thus preventing the model from creating nodes that are too specific to the training data. The subsample and colsample_bytree parameters help in reducing overfitting by introducing randomness in the training process and reducing number of features used. The regularization term (alpha) help in controlling overfitting by penalizing large weights and, finally, the gamma parameter helps in controlling tree complexity by requiring a minimum loss reduction for further splits, thus controlling the number of partitions in the tree. An early stopping mechanism was also implemented, such that if the validation rmse does not improve after 30 rounds, the training is stopped early to prevent overfitting. The hyperparameter search space used was: nrounds: integer [150, 800], eta: continuous [0.05, 0.20], max_depth: integer [2, 5], subsample: continuous [0.60, 0.95], colsample_bytree: continuous [0.60, 0.95], alpha: continuous [0, 2], gamma: continuous [0, 5], min_child_weight: integer [2, 10]. BO process was initialized with 12 random points, and then run for 12 iterations, sampling the function 8 times at each epoch. The process was run in parallel with the support of the xgboost package. 
+  
+  - Neural Networks (NN): So far, I only implemented a neural network with an architecture consisting of a single hidden layer (also known as a single-layer feedforward neural network or a shallow neural network). The plan is to expand to deeper architectures in the future, going up to 3 hidden layers or even deeper, depending on computational resources and progress in model performance. The single hidden layer architecture is a good starting point, as it can capture non-linear relationships in the data while still being relatively cheap. Following the pyramid rule of thumb for defining the number of neurons in the hidden layer, I set the number of neurons to 32, and the other architectures will use a progressively smaller number of neurons per layer. I opted for the traditional Adam optimizer for training the neural network, which is an adaptive learning rate optimization algorithm that has been widely adopted due to its efficiency and effectiveness in training deep learning models. Adam combines the advantages of two other popular optimization algorithms, AdaGrad and RMSProp, by maintaining per-parameter learning rates that are adapted based on the first and second moments of the gradients. This allows Adam to perform well on a wide range of problems and datasets, making it a suitable choice for training neural networks in various applications. The traditional ReLu (Rectified Linear Unit) activation function was used in the hidden layer, which is defined as f(x) = max(0, x). ReLu has become the default choice for activation functions in many neural network architectures due to its simplicity and effectiveness in mitigating the vanishing gradient problem, allowing for faster training and improved performance in deep networks. For the output layer, a linear activation function was used, which is appropriate for regression tasks where the goal is to predict continuous values. Finally, the architecture also involved batch normalization after the hidden layer, which is a technique used to improve the training of deep neural networks by normalizing the inputs of each layer. Batch normalization helps in stabilizing and accelerating the training process by reducing internal covariate shift, allowing for higher learning rates and reducing the sensitivity to weight initialization. It also acts as a regularizer, potentially reducing the need for other forms of regularization such as dropout.
+As for hyperparameters, I considered dropout, which is a regularization technique that randomly sets a fraction of input units to zero during training, helping to prevent overfitting by encouraging the network to learn more robust features, learning rate (lr), which controls how much the weights are updated during training, L1 and L2 regularizers, which help prevent overfitting by penalizing large weights and encouraging the network to learn simpler patterns, number of epochs (epochs), which determines how many times the entire training dataset is passed through the network during training, with more epochs allowing for more learning but also increasing the risk of overfitting if set too high, and batch size (batch_size), which defines the number of samples that will be propagated through the network before updating the weights. When batch size is 1, it is known as stochastic gradient descent, while larger batch sizes lead to more stable gradient estimates but require more memory. An early stopping mechanism was also implemented, such that if the validation rmse does not improve after 20 epochs, the training is stopped early to prevent overfitting. The hyperparameter search space used was: droprate: continuous [0.0, 0.4], lr: continuous [0.0001, 0.03], regularizer_l1: continuous [0.0, 0.00001], regularizer_l2: continuous [0.000001, 0.005], epochs: integer [80, 300], batch_size: integer [8, 32]. BO process was initialized with 10 random points, and then run for 20 iterations, sampling the function 4 times at each epoch. The process was run with the support of the keras package. 
+
+As for interpretability, I implemented the global surrogate model approach. This consists of fitting an interpretable model, such as OLS, on the predictions of the more complex "black-box" model, using the same features as the complex model. This surrogate model can then be used to understand the relationships learned by the black-box model, providing insights into feature importance and interactions. Although this approach does not provide local interpretability (ie, explanations for individual predictions), it can still offer valuable insights into the overall behavior of the model and the relative importance of different features in predicting the target variable.
+  
+  
+## Preliminary results
+
+For the 1927-2024 subset, evaluation metrics on the test set are presented below. Resultes are encapsulated in a S4 class "wf_backtest_results", which contains evaluation metrics on both testing and validation samples, out-of-sample outputs, hyperparameters choices and iterations throughout the walk-forward procedure, the final model object, encapsulated in a S4 class "rv_model", a OLS global surrogate model fitted on the entire training+validation set for interpretability purposes, and, finally, some metadata, such as a backtest identifier and a list of the arguments and timestamps used in the backtest. Both the "wf_backtest_results" and the "rv_model" classes incorporate methods, such as printing, summary, plotting and predicting, this one only for the "rv_model" class, effectively providing an unique serving interface for all models.
+
+
+```{r load backtest results - 1927}
+ 
+ ## Load model results 
+ har_backtest_res    <- readRDS(file.path(here::here(),
+                                          "models",
+                                          "har_backtest_res.rds"))
+ glmnet_backtest_res <- readRDS(file.path(here::here(),
+                                          "models",
+                                          "glmnet_backtest_res.rds"))
+ rf_backtest_res     <- readRDS(file.path(here::here(),
+                                          "models",
+                                          "rf_backtest_res.rds"))
+ xgb_backtest_res    <- readRDS(file.path(here::here(),
+                                          "models",
+                                          "xgb_backtest_res.rds"))
+ nn1_backtest_res    <- readRDS(file.path(here::here(),
+                                          "models",
+                                          "nn1_backtest_res.rds"))
+ 
+
+```
+
+
+The out-of-sample consolidated evaluation metrics are as follows:
+
+
+```{r oos results}
+
+  ##Extract all results into a single table
+  eval_metrics <- c("rss", "rmse", "mae", "mphe", "mpe", "mape")
+  models <- list(
+    HAR    = har_backtest_res@eval_metrics,
+    GLMNET = glmnet_backtest_res@eval_metrics,
+    RF     = rf_backtest_res@eval_metrics,
+    XGB    = xgb_backtest_res@eval_metrics,
+    NN1    = nn1_backtest_res@eval_metrics
+  )
+    ### Prepare each table
+    tbls <- purrr::imap(
+      models,
+      ~ .x %>%
+        dplyr::filter(metric %in% eval_metrics) %>%
+        dplyr::select(metric, cons_oos) %>%
+        dplyr::mutate(cons_oos = round(cons_oos, 4)) %>%
+        dplyr::rename(!!.y := cons_oos)
+    )
+
+    ### Use purrr::reduce to iteratively join data frames
+    out <- purrr::reduce(tbls, ~ dplyr::full_join(.x, .y, by = "metric")) %>%
+      dplyr::mutate(metric = factor(metric, levels = eval_metrics)) %>%
+      dplyr::arrange(metric)
+    
+    print(out)
+```
+
+From the results, we can see that, under rmse, HAR benchmark underperformed all machine-learning models, having a higher rmse of 0.8972, while the best model was XGBoost, with a rmse of 0.7151, although closely followed by Random Forest, with a rmse of 0.7155. The NN1 underperformed the other models and even the HAR benchmark, so I will have to review the hyperparameter search spaces, as the model might be underfitting or overfitting.
+
+A similar pattern can be observed for other evaluation metrics, with RF and XGBoost competing for the best performance, and both outperforming HAR by a significant margin. Elastic Net regression also outperformed HAR under all metrics, but underperformed both RF and XGBoost by a relevant margin. This shows that non-linearities and interactions between features are important in modeling monthly realized volatility, which is expected given the complex nature of the data generating processes in financial markets. 
+
+Below I discuss the models in more detail:
+
+### Elastic Net
+
+```{r glmnet}
+
+  ## Covariates Themes
+   theme_map <- data.frame(
+         feat = c("rv_month_lag1", "rv_tw_lag1", "rv_td_lag1",
+                  "rq_month_lag1", "rq_tw_lag1", "rq_td_lag1",
+                  "cont_month_lag1", "cont_tw_lag1", "cont_td_lag1",
+                  "jump_month_lag1", "jump_tw_lag1", "jump_td_lag1",
+                  "negret_month_lag1", "negret_tw_lag1", "negret_td_lag1",
+                  "log_epu_diff_lag1", "gpr_lag1", 
+                  "ppi_vol", "ip_vol", 
+                  "dy_lag1", "ey_lag1",
+                  "month", "sqrt_days"),
+         theme = c(rep("Past S&P 500 RV Terms", 15),
+                   rep("Sentiment Variables", 2),
+                   rep("Macroeconomic Variables", 2),
+                   rep("Macrofinancial Variables", 2),
+                   rep("Calendar Variables", 2)
+         )
+       )
+
+  ## All Evaluation Metric Over Time 
+  invisible(plot(glmnet_backtest_res, plot_id = 3,
+                 metrics_to_plot = eval_metrics))
+  
+  ## Test vs Validation Chosen Evaluation Metrics Over Time
+  invisible(plot(glmnet_backtest_res, plot_id = 2))
+  cat("Validation metrics at Hyperparameters chosen\n")
+  summary(glmnet_backtest_res, summary_id = 3)
+  cat("Hyperparameters Chosen Over Time - Summary\n")
+  summary(glmnet_backtest_res, summary_id = 4)
+  
+  ## Feature Importance
+  cat("Consolidated Feature Importance\n")
+  summary(glmnet_backtest_res, summary_id = 6)
+  cat("Feature Importance Over Time\n")
+  summary(glmnet_backtest_res, summary_id = 5)
+  
+  ## Feature Importance by Theme
+  invisible(plot(glmnet_backtest_res, plot_id = 7, theme_map = theme_map))
+  glmnet_backtest_res@final_feat_imp %>%
+    dplyr::arrange(dplyr::desc(norm_imp)) %>%
+    print(n = 35)
+  glmnet_backtest_res@final_feat_imp %>% 
+    dplyr::left_join(theme_map, by = c("feat")) %>%
+    dplyr::group_by(theme) %>%
+    dplyr::summarize(
+      mean_imp = mean(norm_imp),
+      sd_imp = sd(norm_imp)
+    ) %>%
+    dplyr::arrange(dplyr::desc(mean_imp)) %>%
+    print()
+  
+  
+
+```
+
+As it is possible to notice, evaluation metrics improve over time, as more data points are incorporated into estimating the models and the metrics seem to stabilize around 1980s. As it is expected, validation rmse is usually lower than testing rmse, with some exceptions, which is due to validation sample being used to hyperparameter tuning, while the testing set is fully out-of-sample. Calendar variables seemed to be the most importance cluster of features, with sqrt_days displaying highest normalized importance (OLS coefficient cross-sectionally standardized) among all features, followed by month dummies. Macroeconomic and macrofinancial variables appear in second place, with dy_lag1 and ppi_vol displaying the highest importance. Finally, past S&P 500 RV terms and sentiment variables appear to be the least important themes. However, individually, 1-month lagged and last week of last month continuous and jump parts of RV displayed relevant importance, appearing among top-10 features.
+
+### Random Forest
+```{r rf}
+
+## All Evaluation Metric Over Time 
+  invisible(plot(rf_backtest_res, plot_id = 3,
+                 metrics_to_plot = eval_metrics))
+  
+  ## Test vs Validation Chosen Evaluation Metrics Over Time
+  invisible(plot(rf_backtest_res, plot_id = 2))
+  cat("Validation metrics at Hyperparameters chosen\n")
+  summary(rf_backtest_res, summary_id = 3)
+  cat("Hyperparameters Chosen Over Time - Summary\n")
+  summary(rf_backtest_res, summary_id = 4)
+  
+  ## Feature Importance
+  invisible(plot(rf_backtest_res, plot_id = 6))
+  cat("Consolidated Feature Importance\n")
+  summary(rf_backtest_res, summary_id = 6)
+  cat("Feature Importance Over Time\n")
+  summary(rf_backtest_res, summary_id = 5)
+  
+  ## Feature Importance by Theme
+  invisible(plot(rf_backtest_res, plot_id = 7, theme_map = theme_map))
+  rf_backtest_res@final_feat_imp %>%
+    dplyr::arrange(dplyr::desc(norm_imp)) %>%
+    print(n = 35)
+  rf_backtest_res@final_feat_imp %>% 
+    dplyr::left_join(theme_map, by = c("feat")) %>%
+    dplyr::group_by(theme) %>%
+    dplyr::summarize(
+      mean_imp = mean(norm_imp),
+      sd_imp = sd(norm_imp)
+    ) %>%
+    dplyr::arrange(dplyr::desc(mean_imp)) %>%
+    print()
+  
+```
+
+As for the Random Forest model, we can see a similar pattern of improvement in evaluation metrics over time. Feature importance analysis shows that calendar variables are again the most important theme, with sqrt_days and month dummies displaying highest importance. Macroeconomic and macrofinancial variables again appear in second place, with dy_lag1 and ppi_vol displaying highest importance. Past S&P 500 RV terms appear to be the third most important theme, with continuous and jump 1-month lagged RV terms displaying highest importance, fearuting amonth the five most important features.
+
+### XGBoost
+```{r xgb}
+
+## All Evaluation Metric Over Time 
+  invisible(plot(xgb_backtest_res, plot_id = 3,
+                 metrics_to_plot = eval_metrics))
+  
+  ## Test vs Validation Chosen Evaluation Metrics Over Time
+  invisible(plot(xgb_backtest_res, plot_id = 2))
+  cat("Validation metrics at Hyperparameters chosen\n")
+  summary(xgb_backtest_res, summary_id = 3)
+  cat("Hyperparameters Chosen Over Time - Summary\n")
+  summary(xgb_backtest_res, summary_id = 4)
+  
+  ## Feature Importance
+  invisible(plot(xgb_backtest_res, plot_id = 6))
+  cat("Consolidated Feature Importance\n")
+  summary(xgb_backtest_res, summary_id = 6)
+  cat("Feature Importance Over Time\n")
+  summary(xgb_backtest_res, summary_id = 5)
+  
+  ## Feature Importance by Theme
+  invisible(plot(xgb_backtest_res, plot_id = 7, theme_map = theme_map))
+  xgb_backtest_res@final_feat_imp %>%
+    dplyr::arrange(dplyr::desc(norm_imp)) %>%
+    print(n = 35)
+  xgb_backtest_res@final_feat_imp %>% 
+    dplyr::left_join(theme_map, by = c("feat")) %>%
+    dplyr::group_by(theme) %>%
+    dplyr::summarize(
+      mean_imp = mean(norm_imp),
+      sd_imp = sd(norm_imp)
+    ) %>%
+    dplyr::arrange(dplyr::desc(mean_imp)) %>%
+    print()
+
+
+
+```
+As for the XGBoost model, we can see a similar pattern of improvement in evaluation metrics over time. Feature importance analysis shows that calendar variables are again the most important theme, with sqrt_days and month dummies displaying highest importance. Macroeconomic and macrofinancial variables again appear in second place, with dy_lag1 and ppi_vol displaying highest importance. Past S&P 500 RV terms appear to be the third most important theme, with continuous and jump 1-month lagged RV terms displaying highest importance, featuring among the five most important features. Sentiment variables again appear to be the least important theme, specially log_epu_diff_lag1.
+
+### NN1
+```{r nn1}
+
+## All Evaluation Metric Over Time 
+  invisible(plot(nn1_backtest_res, plot_id = 3,
+                 metrics_to_plot = eval_metrics))
+  
+  ## Test vs Validation Chosen Evaluation Metrics Over Time
+  invisible(plot(nn1_backtest_res, plot_id = 2))
+  cat("Validation metrics at Hyperparameters chosen\n")
+  summary(nn1_backtest_res, summary_id = 3)
+  cat("Hyperparameters Chosen Over Time - Summary\n")
+  summary(nn1_backtest_res, summary_id = 4)
+  
+  ## Feature Importance
+  invisible(plot(nn1_backtest_res, plot_id = 6))
+  cat("Consolidated Feature Importance\n")
+  summary(nn1_backtest_res, summary_id = 6)
+  cat("Feature Importance Over Time\n")
+  summary(nn1_backtest_res, summary_id = 5)
+  
+  ## Feature Importance by Theme
+  invisible(plot(nn1_backtest_res, plot_id = 7, theme_map = theme_map))
+  nn1_backtest_res@final_feat_imp %>%
+    dplyr::arrange(dplyr::desc(norm_imp)) %>%
+    print(n = 35)
+  nn1_backtest_res@final_feat_imp %>% 
+    dplyr::left_join(theme_map, by = c("feat")) %>%
+    dplyr::group_by(theme) %>%
+    dplyr::summarize(
+      mean_imp = mean(norm_imp),
+      sd_imp = sd(norm_imp)
+    ) %>%
+    dplyr::arrange(dplyr::desc(mean_imp)) %>%
+    print()
+
+
+
+```
+
+
+The diagnostic plots and tables for the 1-layer NN model reveal interesting insights. As usual, evaluation metrics improve over time and take some time to stabilize. However, the model underperforms compared to other machine-learning models and even the HAR benchmark. In special, compared to the other models, for the NN1, the test rmse is consistently higher than the validation rmse, which might indicate overfitting on tuning (winner's curse). Feature importance once again shows that calendar variables are the most important theme, but, this time, the margin was very small. Macroeconomic variables show up in second place very closely, with both ip_vol and ppi_vol among top-5 most important features (ip_vol was much less important in other models). Macrofinancial covariates, especially dy_lag1, show up in third place and, in this model, even sentiment variables showed an average higher normalized importance, especially because of geopolitical risk. Among Past S&P 500 RV terms, jump 1-month and jump last week of last month RV terms seemed the most important, followed by continuous and RV last week of last month and RV 1-month lagged terms.  
+
+
+
+
+
+
+

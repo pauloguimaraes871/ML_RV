@@ -1,0 +1,749 @@
+---
+title: "Bibliometrics Analysis"
+author: "Paulo Guimarães"
+date: "2025-08-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("bibliometrix")
+library("dplyr")
+```
+
+## Introduction
+
+To better understand which features have been proposed and shown to deliver superior out-of-sample (OOS) predictive performance for Realized Variance (RV), I conducted a bibliometric analysis using the Scopus database, following the guidelines of the PRISMA protocol. This approach aims to provide a deeper understanding of the conceptual and intellectual structure of the field.
+
+The goal was to identify studies whose titles, abstracts, or keywords contain terms related to forecasting RV in an aggregate stock market context, without a geographic restriction and potentially covering multiple country indices. Following Harvey et al. (2016), I restricted the results to papers published in top journals in Economics, Econometrics and Finance, Business, Management and Accounting, and Computer Science (to retain machine learning–oriented studies) according to the 2024 SCImago Journal Rank Indicator.
+
+Here is the Scopus search query used in this study:
+
+```text
+TITLE-ABS-KEY ( 
+    ( Forecast* OR Predict* ) AND 
+    ( "Realized Variance" OR "Realised Variance" OR "Realized Volatility" OR "Realised Volatility" ) AND 
+    ( Stock OR Equity ) AND 
+    ( "Stock Market" OR "Equity Market" OR "Market Index" OR "Index Volatility" OR "Aggregate Volatility" OR "S&P 500" OR "Dow Jones" OR "NASDAQ" OR "Nikkei" OR "FTSE" OR "DAX" OR "CAC 40" OR "Hang Seng" OR "CSI 300" ) 
+) 
+AND ( LIMIT-TO ( DOCTYPE , "ar" ) ) 
+AND ( LIMIT-TO ( LANGUAGE , "English" ) ) 
+AND ( EXCLUDE ( SUBJAREA , "ENER" ) OR EXCLUDE ( SUBJAREA , "ENVI" ) OR EXCLUDE ( SUBJAREA , "MATE" ) OR EXCLUDE ( SUBJAREA , "CENG" ) )
+AND NOT SRCTITLE ( 
+    "Review of Financial Economics" OR 
+    "Journal of International Financial Markets" OR 
+    "International Journal of Bifurcation and Chaos" OR 
+    "Applied Economics Letters" OR 
+    "Economics and Business Letters" OR 
+    "Bulletin of the South Ural State University" OR 
+    "Asian Review of Financial Research" OR 
+    "Quality and Quantity" OR 
+    "International Journal of Economics and Financial Issues" OR 
+    "Statistics and Applications" OR 
+    "Fluctuation and Noise Letters" OR 
+    "Annals of Operations Research" OR 
+    "Romanian Journal of Economic Forecasting" OR 
+    "PLoS ONE" OR 
+    "Economic Research-Ekonomska Istrazivanja" OR 
+    "International Journal of Banking and Finance" OR 
+    "Bulletin of Economic Research" OR 
+    "Bogazici Journal" OR 
+    "Journal of the Royal Statistical Society. Series C: Applied Statistics" OR 
+    "Physica A: Statistical Mechanics and its Applications" OR 
+    "Journal of Wealth Management" OR 
+    "Journal of Risk" OR 
+    "IAENG International Journal of Applied Mathematics" OR 
+    "Macroeconomics and Finance in Emerging Market Economies" OR 
+    "Communications in Statistics: Simulation and Computation" OR 
+    "Asian Economic Journal" OR 
+    "Studies in Nonlinear Dynamics and Econometrics" OR 
+    "Revista Mexicana de Economia y Finanzas Nueva Epoca" OR 
+    "Journal of the Korean Statistical Society" OR 
+    "Asia-Pacific Financial Markets" OR 
+    "Journal of Industrial Engineering and Engineering Management" OR 
+    "Chaos" OR 
+    "Economics Bulletin" OR 
+    "Communications for Statistical Applications and Methods" OR 
+    "Journal of Applied Statistics" OR 
+    "Scottish Journal of Political Economy" OR 
+    "German Economic Review" OR 
+    "International Journal of Economics and Management" OR 
+    "Investment Analysts Journal" OR 
+    "Journal of Advanced Computational Intelligence and Intelligent Informatics" OR 
+    "Revista Contabilidade e Financas" OR 
+    "Proceedings of the National Academy of Sciences of the United States of America" OR 
+    "Vikalpa" OR 
+    "Abstract and Applied Analysis" OR 
+    "Advances in Intelligent and Soft Computing" OR 
+    "AUCO Czech Economic Review" OR 
+    "Discrete Dynamics in Nature and Society" OR 
+    "Journal of Applied Economic Sciences" OR 
+    "American Journal of Applied Sciences" OR 
+    "Spanish Economic Review" OR 
+    "Journal of Applied Statistical Science" OR 
+    "Economic Computation and Economic Cybernetics Studies and Research" OR 
+    "Applied Financial Economics" OR 
+    "International Journal of Business and Society" OR 
+    "International Research Journal of Finance and Economics" OR 
+    "Political Analysis" OR 
+    "Journal of Economic Theory and Econometrics" 
+)
+```
+The basic idea was to search for studies in which Title, Abstract or Keywords contained combinations of tokens related to forecasting RV in an aggregate stock market context, without a geographic focus and possibly involving many different country indexes. Following Harvey et al. (2016), results were filtered to include only papers from top journals in "Economics, Econometrics and Finance", "Business, Management and Accounting" and "Computer Science" (in order not to exclude machine-learning oriented studies) from SCImago Journal Rank Indicator 2024. After querying, the bibliographic dataset contains 271 different documents. 
+
+After applying this query, the bibliographic dataset contained 271 documents.
+
+Once the related CSV file was exported from Scopus, it was read in R using:
+
+```{r loading bibliographic data}
+
+  # Define file path
+  scopus_file <- file.path(here::here(), "scopus_final.csv")
+
+  # Convert export file
+  M <- bibliometrix::convert2df(scopus_file, dbsource = "scopus",
+                                format = "csv")
+
+```
+
+## Descriptive Analysis
+
+To perform a brief descriptive analysis of the dataset, we can use:
+
+```{r descriptive analysis}
+
+  # Apply function
+  results <- bibliometrix::biblioAnalysis(M, sep = ";")
+
+  # Summarize dataset
+  S <- summary(results, k = 10, pause = FALSE)
+
+  # Some plots
+  plot(results)
+  
+```
+
+The 271 studies span the period from 1998 to 2025, encompassing 71 different sources. The average paper age is 5.88 years, with an average of ~32 citations per document, totaling 10,346 references and 503 authors. The field has grown at an average annual rate of 11.3%, peaking in 2023 with 36 publications. While the average total citations per year have been declining, the average citations per article per year exhibit an upward trend. The outlier in the time series of average total citations is given by Christensen and Prabhala (1998), the oldest and most globally-cited manuscript of the collection.
+
+China and the United States dominate the literature, accounting for nearly 50% of all studies, with total citations of 2,120 (21.86 average per article) and 1,424 (59.33 average per article), respectively. SCP (Single Country Publications) and MCP (Multiple Country Publications) offer a first look at the international collaboration network, which can later be examined in more depth through co-citation analysis.
+
+The journals with the most articles are Journal of Forecasting, Applied Economics, International Review of Financial Analysis, Finance Research Letters, and International Journal of Forecasting. Author keywords and Keywords-Plus confirm the relevance of the collection, with the most frequent terms being “Realized Volatility” and “Volatility Forecasting.”
+
+As I am further going to explore, the most globally-cited studies are:
+
+  - Christensen and Prabhala (1998)
+  - Bekaert and Hoerova (2014)
+  - Liu and Zhang (2015)
+  - Blair et al. (2001)
+  - Paye (2012) 
+
+
+It is also possible to assess the field’s scientific productivity. Metrics such as the h-index, g-index, and m-index can be calculated, along with time series of publication output.
+The h-index measures the number of publications (h) that have received at least h citations each.
+The g-index gives more weight to highly cited papers, being the largest number (g) such that the top g papers have, together, at least g² citations.
+The m-index adjusts the h-index by the number of years since the author’s first publication, providing a measure of productivity normalized over time.
+
+For the 10 most productive authors, this can be done as follows:
+
+``` {r top 10 most productivite authors}
+
+  # Adjust format
+  authors <- gsub(","," ",names(results$Authors)[1:10])
+
+  # Calculate productivity indexes
+  indices <- bibliometrix::Hindex(M, field = "author", elements=authors, sep = ";", years = 50)
+  
+  indices$H
+  
+  # Production Overt time
+  topAU <- bibliometrix::authorProdOverTime(M, k = 10, graph = TRUE)
+
+
+```
+
+## Historical Direct Citation Network
+
+To trace the chronological development of the literature and understand how methods and features have evolved, I use the historical direct citation network proposed by Garfield (2004). This technique creates a chronological map of the most relevant direct citations within the collection.
+
+To plot the network with the 15 most-cited vertices (ordered by local citations):
+
+``` {r historical direct citation network}
+
+  # Create a historical citation network
+  hist_results <- bibliometrix::histNetwork(M, sep = ";")
+
+  # Plot a historical co-citation network
+  hist_plot <- bibliometrix::histPlot(hist_results, n = 15, size = 10, labelsize = 5)
+
+```
+
+**Key nodes in the network:**
+
+- **Christensen and Prabhala (1998)** – The earliest and most globally cited study in the database. Showed that Implied Volatility (IV) outperforms past volatility in forecasting future volatility with ARIMA models, using S&P 100 index options. Specifications include AR(1), ARMA(1,1), AR(2), and ARIMA(1,1,1). Their work led to subsequent research incorporating IV into forecasting frameworks.
+
+- **Blair et al. (2001)** – Cited Christensen and Prabhala (1998). Focused on IV and demonstrated that the VIX index provides more accurate out-of-sample forecasts than individual options for all forecast horizons considered. They argued that using the VIX mitigates measurement errors and smile effects when using individual options, as did Christensen and Prabhala (1998). An ARCH specification was used for this purpose.
+
+- **McAleer and Medeiros (2008)** – Proposed a multiple-regime smooth transition extension for the HAR model. Included dummy variables for days of the week and for macroeconomic announcements, such as Federal Open Market Committee (FOMC) meetings, the Employment Situation Report from the Bureau of Labor Statistics (ESR), Consumer Price Index (CPI), and Producer Price Index (PPI). Also included traditional past return components. Bayesian Information Criterion (BIC) was used as a penalized adjustment criterion for selecting exogenous variables. Found that among announcement variables, FOMC meeting days were the most important.
+
+- **Hansen (2005)** – Developed an empirical measure for integrated variance in the presence of trading gaps, which occur because stock markets do not operate 24 hours a day.
+
+- **Ahoniemi and Lanne (2013)** – Also addressed the issue of trading gaps, following the conceptual line introduced by Hansen (2005).
+
+- **Bekaert and Hoerova (2014)** – Second most globally cited article in the collection. Emphasized the importance of IV in forecasting future aggregate volatility and corroborated the use of the VIX as a predictive variable. The forecasting model is a HAR-like specification that also incorporates stylized facts from the volatility forecasting literature: asymmetry (Engle and Ng, 1993), jump vs. continuous volatility components (Andersen et al., 2007), and leverage effects (minimum non-negative returns. Campbell and Hentschel, 1992) with compatible frequencies. Lagged realized variance components are decomposed into jump and continuous parts, and a logarithmic version of the model is also specified.
+
+- **Bollerslev et al. (2016)** – A direct descendant of Bekaert and Hoerova (2014). Introduced the HARQ model, which augments HAR by adding Realized Quarticity (RQ) components — derived from returns to the 4th power — as a way to correct for measurement errors in RV, interacting them with past RV terms.
+
+- **Paye (2012)** – Proposed a wide range of features for RV prediction in monthly and quarterly frequencies. Predictors include: changes in bank leverage, the consumption-wealth ratio of Lettau and Ludvigson (2001), commercial paper–treasury spread, default spread, current and expected GDP growth, investment–capital ratio, net payout yield, volatility of inflation growth, and term spread. Uses both extending and rolling window designs in monthly and quarterly settings. Importance is measured as the difference in out-of-sample \( R^2 \) from benchmark models.
+
+- **Nonejad (2017)** – Connected to Paye (2012), Bollerslev et al. (2016), and McAleer and Medeiros (2008). Applied Bayesian modeling with financial and macroeconomic predictors to account for time-varying parameters and multidimensionality. Predictors include: dividend–price ratio, earnings–price ratio, lagged equity market returns, SMB and HML Fama–French factors, short-term reversal factor, T-bill rate, real T-bill rate, long-term bond return, real bond rate, term spread, default spread, and monthly inflation rate. Found that past volatility, dividend–price, earnings–price, T-bill rate, and default spread are the most important features.
+
+- **Audrino et al. (2020)** – Descendant of Bollerslev et al. (2016) and Nonejad (2017). Innovated with sentiment and attention variables derived from natural language processing of social media, news articles, and search engine data. Found that posting volume on social media platforms and number of search queries have the greatest importance. Used a set of 56 covariates divided into:
+  - Equity market variables: earnings–price, dividend–price, Fama–French factors, VIX, lagged returns.
+  - Bond market variables: Welch and Goyal (2008) predictors such as T-bill rates, long-term bond return, term spread, default yield spread (Baa-rated corporate – long-term government bonds).
+  - Exchange rate variables: returns of USD/EUR, USD/CHF, USD/GBP, USD/JPY pairs; carry trade factor as the average forward discount between USD and a set of foreign currencies.
+  - Liquidity variables: turnover ratio, average bid–ask spread of five major currencies, TED spread.
+  - Macroeconomic variables: CPI, breakeven inflation rate, log-change of industrial production, log-change of housing starts, log-change of M1 money supply, CRB index returns, log-change of capacity utilization, log-change of employment, Business Activity Diffusion index, Chicago Purchasing Manager Business Barometer, consumer sentiment index (University of Michigan), and producer sentiment index (University of Michigan).
+Their study is connected to that of Dimpfl and Jank (2015), who found significant comovement and Granger causality between internet search queries and Dow Jones' future RV.  
+
+
+- **Buncic and Gisler (2016)** – Studied volatility spillovers and showed that US volatility information improves international markets’ RV forecasts in an extended HAR model, with substantial out-of-sample predictability gains.
+
+- **Buncic and Gisler (2017)** – Follow-up to their 2016 work. Applied HAR models with jump and continuous RV decompositions (as in Andersen et al., 2007) and HAR components for the leverage effect (following Corsi and Renó, 2012). Found that while continuous and jump components are relevant for the S&P 500, they are less important for the other 17 equity markets studied, where leverage effect components dominate.
+
+- **Ma et al. (2019)** – Descendant of Bekaert and Hoerova (2014), Bollerslev et al. (2016), and Buncic and Gisler (2017). Extended the volatility spillover concept by introducing HAR models with jump components from G7 countries (France, Italy, UK, Germany, Canada, Japan). Components are added individually, in a kitchen-sink specification, via a PCA-based jump factor, and via a PLS-based jump factor. Also included a HAR model with a cojump component (binary variable = 1 when >50% of countries have a significantly detected jump). Found the PLS-based jump component to be the most accurate out-of-sample.
+
+- **Liang et al. (2020)** – Parallel to Ma et al. (2019). Examined the impact of implied volatility in predicting RV for eight international markets. Found that both a market’s own IV and principal components of international IVs improve forecasts in HAR models, indicating gains from using other countries’ IV as an explanatory feature.
+
+- **Zhang et al. (2020)** – Studied improved predictability from cross-national flows, using the first principal component derived from 22 markets as a predictor in volatility forecasting models.
+
+
+## Bibliographic Lineage and Knowledge Base
+
+To extend our analysis, we now turn our attention to the most cited references by this collection of manuscripts, regardless of whether they are themselves in the collection.  
+The goal is to identify which studies helped form the knowledge base of the field. For this, I run the following code:
+
+``` {r most frequently cited manuscripts}
+
+ ## Most frequently cited manuscripts
+ CR <- bibliometrix::citations(M, field = "article", sep = ";")
+ data.frame(CR$Cited[1:13]) #13 because of minor variations in some references, which creates duplicates
+
+```
+
+Key references and their contributions:
+
+ - **Corsi (2009)**: Proposes the HAR model, a parsimonious approach to capturing long-memory dynamics in volatility by including daily, weekly, and monthly realized variance components.
+ 
+ - **Hansen et al. (2011)**: Develops the Model Confidence Set (MCS) procedure for model selection, analogous to constructing confidence intervals for parameters. Enables formal comparison of   competing models.
+ 
+ - **Andersen et al. (2003)**: Proposes a framework for integrating intraday data into forecasts of daily and lower-frequency volatility, originally applied to exchange rates.
+ 
+ - **Andersen & Bollerslev (1998)**: Introduces the use of high-frequency returns to construct realized volatility measures and documents strong long-memory properties in daily exchange rate    volatility. Shows that temporal aggregation preserves long-memory behavior, providing a theoretical and empirical foundation for later HAR-type models.
+ 
+ - **Bollerslev (1986)**: Introduces the GARCH model, which models conditional heteroskedasticity in time series and remains a foundational volatility forecasting framework.
+ 
+ - **Degiannakis & Filis (2017)**: Adds 14 RV HAR-like components from other asset classes to HAR‑RV (HAR‑RV‑X):
+ Stocks (FTSE100, S&P500, Hang Seng, Euro Stoxx 50), FX (GBP/USD, CAD/USD, EUR/USD), Commodities (Gold, Copper, Natural Gas, Palladium, Silver), Macro (US 10‑yr T‑bill futures, US Economic Policy Uncertainty) to forecast oil price RV. Found that these cross‑market information channels variables improve forecast accuracy at all horizons (1–66 days) in comparison with simple HAR-RV  and that models that combine multiple asset classes perform best, with results being robust under MCS, DoC, and trading tests and during turbulent periods. Relatedly, Liu and Zhang (2015) applied Economic Policy Uncertainty (EPU) as an additional predictor to HAR-RV traditional specification, finding improvement of OOS performance. 
+ 
+ - **Patton (2011)**: Discusses distortions arising from commonly used forecast evaluation loss functions when volatility proxies are noisy. Proposes MSE and QLIKE as robust alternatives.
+ 
+ - **Andersen et al. (2007)**: Separates realized variance into continuous and discontinuous ("jump") components, using the threshold bipower variation of Corsi et al. (2010) to determine jumps.
+ 
+ - **Clark & West (2007)**: Introduces the MSPE-adjusted test for nested model comparisons, correcting the MSPE difference for the noise introduced by extra predictors in the  larger model.
+ 
+ - **Wang et al. (2016)**: Considers 8 HAR specifications: simple HAR, HAR-RV-J, HAR-RV-CJ (jump and continuous components from Andersen et al. (2007)), HAR-RV-TCJ (modified jump statistic of Corsi et al. (2010)), HAR-RV-RS-I (includes two semi-variance components to capture leverage effect), HAR-RV-RS-II (adds a term that interacts with lagged realized variance with an indicator for negative returns), HAR-RV-SJ-I (includes sign-jumped variation, given by difference between positive and negative semi-variances) and HAR-RV-SJ-II (disentangles signed-jumps in two components). They estimates models with time-varying parameters and consider the average prediction, finding that their approach beat constant-coef and regime-switching HAR variants across standard loss metrics, stay in the Model Confidence Set, and deliver better density/economic performance.
+ 
+Although not on the list, I also highlight the seminal works of:
+
+- **Schwert (1989)**: Studied the effect of interest rate volatility, corporate yield spread, monetary base growth, PPI growth rate and industry production growth rate, in addition of bond market volatility, aggregated leverage, number of trading days, trading volume and month dummies in predicting the absolute residuals of the return-level series modeled by an AR process.
+
+- **Bekaert et al. (2025)** Applied several models based on past variance measures, such as the martingale model, ARMA (1,1), linear and non-linear AR(1), a variant of Corsi (2009) HAR model, more general ARMA specifications selected by AIC minimization, more general MIDAS models, which can be seen as a generalization of HAR and finally, quarticity models, following the second most locally-cited manuscript of Bollerslev et al. (2016), and thus comprising of interacting terms from AR, HAR and MIDAS with Realized Quarticity, which consists of a measure derived from returns to the 4th power. Interestingly, the author find that the ARMA (1,1) outperforms on an OOS basis. 
+
+
+## Bibliographic networks
+
+One interesting bibliometric application is the construction of bipartite network matrices, which allows one to understand the relationships between articles. A bipartite network $A$ is a rectangular binary matrix, in which the generic element will be 1 or 0 depending on the relationship between rows and columns. By taking $B = A \cdot A^{T}$, we can arrive at a bibliographic coupling network, in which the generic element will indicate how many bibliographic couplings exist between row and column articles. This serves to measure how connected two articles are or, as Kessler (1963) posits, how much bibliographically coupled they are. The coupling strength is often normalized with metrics such as the Salton index, which calculates the cosine of the angle between two distinct vectors, representing how closely they point in the same direction, hence quantifying the degree of similarity.  
+
+The counterpart of bibliographic coupling is the bibliographic co-citation network $C = A^{T} \cdot A$. Co-citation happens when two articles are cited in a third article. In this case, diagonal elements present number of local citations. Both $B$ and $C$ are symmetric. Finally, we can also assess bibliographic collaboration by computing $AC = A^{T} \cdot A$, where A is a bipartite network Manuscript x Authors.
+
+To calculate and visualize some bibliographic networks, we can use the following commands:
+
+
+``` {r networks}
+
+  # Co-Citation Networks
+  cocitation_matrix <- bibliometrix::biblioNetwork(M, analysis = "co-citation", 
+                                                   network = "references",
+                                                   sep = ";")
+
+  cocitation_plot <- bibliometrix::networkPlot(cocitation_matrix, n = 25,
+                                               Title = "Co-Citation Network", 
+                                               type = "fruchterman", size = T, 
+                                               remove.multiple = FALSE, 
+                                               normalize = "salton",
+                                               labelsize = 0.7,
+                                               edgesize = 5)
+  
+  # Keyword Co-occurrence 
+  keyword_matrix <- bibliometrix::biblioNetwork(M, analysis = "co-occurrences",
+                                                network = "keywords", sep = ";")
+  keyword_plot <- bibliometrix::networkPlot(keyword_matrix, 
+                                            weighted = T, n = 25, 
+                                            normalize = "salton",
+                                            Title = "Keyword Co-occurrences",
+                                            type = "fruchterman", size = T, 
+                                            edgesize = 5, labelsize = 0.7)
+  
+  # Scientific colab
+  M <- bibliometrix::metaTagExtraction(M, Field = "AU_CO", sep = ";")
+  colab_matrix <- bibliometrix::biblioNetwork(M, analysis = "collaboration", 
+                                              network = "countries", sep = ";")
+  colab_plot <- bibliometrix::networkPlot(colab_matrix, n = dim(colab_matrix)[1],
+                                          Title = "Country Collaboration",
+                                          type = "circle", size = TRUE,
+                                          normalize = "salton",
+                                          remove.multiple = FALSE, 
+                                          labelsize = 0.7, cluster = "none")
+
+```
+
+The plots use the Fruchterman–Reingold force-directed layout. Thicker edges indicate stronger ties and larger nodes indicate higher degree/weighted degree.
+
+The aim of **co-word analysis** is to map the conceptual structure of a field by analyzing **word co-occurrences** in a bibliographic collection. This can be done via dimensionality-reduction techniques such as Multiple Correspondence Analysis (MCA), an analogue of PCA for textual data. The workflow is to apply MCA to draw a two-dimensional conceptual map and use k-means algorithm to identify clusters of documents expressing common concepts. The partcular used function includes built-in NLP routines (`termExtraction`) to pull terms from abstracts and implements Porter’s stemming to reduce words to their root forms, while combining them into 2-grams. The purpose of this analysis is to better understand semantic connections between manuscripts and, by identifying most cited papers in each cluster, discuss studies not yet described. 
+
+
+```{r conceptual-structure, fig.width=10, fig.height=8, echo=FALSE, warning=FALSE, message=FALSE}
+
+  #Conceptual Structure Map
+  syns <- c(
+    "realized volatility;realised volatility;rv",
+    "garch;egarch;arch",
+    "implied volatility;iv;vix",
+    "jump;cojump;signed jump",
+    "midas;rv-midas",
+    "machine learning;ml",
+    "stock market;equity market;index"
+  )
+  
+  cs_de <- bibliometrix::conceptualStructure(
+    M,
+    field        = "AB",
+    method       = "MCA",
+    ngrams       = 2,
+    minDegree    = 2,
+    clust        = "auto",
+    stemming     = TRUE,
+    documents    = 100,
+    remove.terms = c("model","models","analysis","approach","evidence"),
+    synonyms     = syns,
+    graph        = FALSE
+  )
+  
+  print(cs_de$graph_terms)
+
+
+```
+
+
+The plot shows 4 big clusters:
+
+ - **Purple cluster**: This is the largest and densest cluster, containing terms like HAR models, PCA, sPCA, kitchen sink, Monte Carlo, quantile forecast, and expected shortfall. These indicate foundational econometric methods and model selection techniques, suggesting this cluster represents the traditional core of the literature on RV forecasting. 
+
+ - **Red cluster**: Very interestingly, this cluster is dominated by modern machine learning terms such as neural networks, LSTM, GRU, SVM, LASSO, and MSE. It also includes ensemble learning, showing a shift toward data-driven, high-dimensional approaches. The presence of deep learning architectures highlights increasing interest in nonlinear modeling of volatility.
+ 
+ - **Green cluster**: Though smaller, this cluster is focused around Gated Recurrent Units (GRU), a recurrent neural network architecture that offers a parsimonious alternative to LSTM by using fewer parameters while still capturing temporal dependencies in time series data.
+ 
+ - **Blue cluster**: This compact cluster features terms like Bayesian Markov, indicating use of Bayesian techniques, including Markov-switching models for capturing volatility regimes. A notable example from the literature is Nonejad (2017), which employs a dynamic Bayesian framework and has received high citation counts, covered in the historical network section.
+
+In order to identify which articles contain terms of red and green clusters, one needs to run the following:
+ 
+```{r ml}
+ 
+  # Define ML-related keywords
+  ml_keywords <- c("machine learning", "neural network", "deep learning", 
+                   "LSTM", "GRU", "SVM", "LASSO", "random forest", "boosting", 
+                   "ensemble", "MSE", "recurrent", "transformer", "gradient boosting")
+  
+  # Lowercase abstracts for consistent matching
+  abstracts_lower <- tolower(M$AB)
+  
+  # Create logical matrix: rows = docs, columns = keywords
+  ml_matches <- sapply(ml_keywords, function(kw) grepl(kw, abstracts_lower, fixed = TRUE))
+  
+  # Subset to documents that match at least one keyword
+  ml_rows <- rowSums(ml_matches) > 0
+  ml_df <- M[ml_rows, c("TI", "AU", "PY", "SO", "TC")] %>% 
+    dplyr::arrange(dplyr::desc(TC))
+  
+  # Summary count of each keyword across the dataset
+  ml_summary <- colSums(ml_matches)
+  
+  # Print keyword frequencies
+  print(ml_summary)
+  
+  # Show a sample of matched articles
+  head(ml_df, 10)
+ 
+```
+ 
+The ten most cited articles in the machine-learning realm are:
+
+- **Bucci (2020)**: Forecasts monthly realized volatility using feed-forward and recurrent neural networks (ENN, JNN, LSTM, NARX), comparing them to ARFIMA and LSTAR models. Predictors include standard asset pricing factors (DP, EP, MKT, HML, SMB, STR), interest rate spreads, inflation, and industrial production. Feature selection is done via LASSO; models are evaluated using a rolling window scheme (k = 1 and 5) and compared via MSE, QLIKE, MCS, and DM tests. ENN and JNN incorporate feedback from hidden and output layers, respectively. LSTM mitigates vanishing gradients via gated memory cells, while NARX uses lagged outputs (more lags than JNN) directly to capture long-term dependencies. LSTM and NARX outperform all other models, especially during volatile periods. Best results come from mid-complexity networks with exogenous predictors. The paper does not go into much details regarding hyperparameter tuning.
+
+ - **Ribeiro et al. (2021)**: Propose hybrid models for realized volatility forecasting at stock level, combining an Echo State Network (ESN) with HAR specification and Particle Swarm Optimization (PSO): HAR-PSO-ESN. The hybrid model is benchmarked against ARIMA, HAR, simple MLP and ESN. The ESN architecture uses a sparsely connected recurrent reservoir with fixed weights, enabling fast training. HAR model specifications are used as inputs to ESN. Data was split in training, validation and test, with validation used for hyperparameter tuning with PSO and testing exclusively for assessing OOS performance. For $k = 1, 5, 21$, their model outperformed competing specifications.
+ 
+ - **Niu et al. (2023)**: Apply elastic net, convolutional neural networks, support vector regressions, among other methods, to estimate monthly RV from 2000 to 2022, but with a clear focus on variables associated to geopolitical risk: war threats, peace threats, military buildups, nuclear threats, terror threats, beginning of war, escalation of war and terror acts.
+ 
+ - **Song et al. (2022)**: Apply the Gated Recurrent Unit neural network, a special RNN that modifies LSTM with only two gates, using short-term volatility forecasts from a GARCH-MIDAS model, that, in its turn, use the first principal component of distinct macroeconomic variables: GDP, CPI, PMI, macroeconomic consensus index. As additional inputs, it uses daily transaction volume, volume of deals, Bias eg. (closing price of day - 5 day average price)/5 day average price, DMA eg. five-day moving average - 10-day moving average, CDP (highest price of previous day + lowest price of previous day + 2*closing price of previous day)/4, AR eg. (closing price - opening price)/(opening price - lowest price), BR eg. (highest price - closing price)/(closing price - lowest price), Percent Change eg. (range of rise and down), and Overnight Spread eg. (opening price - closing price of previous day). Additionally, the paper also uses HAR-RV, SVM, RF, XGBoost and LSTM machine-learining algorithms, finding a GRU overall outperformance and an increase in predictability from the inclusion of the macro-based principal component. They use a simple 7:3 split into training and test, with no hyperparameter tuning. Most importance features were macro first principal component, Bias, CDP, Percent Change and AR.
+ 
+- **Maciel et al. (2016)**: Introduce an evolving possibilistic fuzzy model for forecasting realized volatility with jumps, combining possibilistic fuzzy c-means clustering and functional fuzzy rule-based models. The method adapts by adding/removing clusters via statistical distance criteria, using memberships and typicalities to improve robustness to noise and outliers. Tested on major equity indexes (S&P 500, Nasdaq, FTSE, DAX, IBEX, Ibovespa) and evaluated with value-at-risk, it outperforms HAR, neural networks, and other evolving fuzzy models in forecasting accuracy.
+
+- **Yu et al. (2023)**: Propose GVMD-Q-DBN-LSTM-GRU, a hybrid model for forecasting realized volatility (RV) of SSEC, S&P 500, and FTSE indexes. The method decomposes RV with variational mode decomposition optimized by grey wolf optimizer, predicts each intrinsic mode function using DBN, LSTM, and GRU, and combines forecasts via Q-learning to determine optimal model weights. Performance, evaluated with MAE, MSE, HMAE, HMSE, and MDM tests, shows superior accuracy over benchmark models in both emerging and developed markets.
+
+- **Plakandaras et al. (2017)**: Investigate the impact of Brexit on the GBP/USD exchange rate and its realized volatility using linear, and machine-learning models. Out-of-sample forecasts before and after Brexit, combined with a news-based economic uncertainty index, indicate that daily forecasts closely track exchange rate movements and that most of the post-Brexit depreciation stems from Brexit-related uncertainty.
+
+- **Gupta et al. (2021)**: Apply RF, a tree-based machine-learning method based on fitting multiple decision trees and using the combined prediction, hence mitigating overfitting in relation to using one single tree, to predict monthly-level aggregate RV for US from 2001 to 2020. As inputs, they use lagged HAR-RV components, 8 factors derived from 134 macroeconomic variables of Ludvigson and Ng (2009, 2011) and macroeconomic uncertainty and financial uncertainty measures of Jurado et al. (2015) under three distinct horizons.
+
+- **Lei et al. (2021)**: Apply Temporal Convolutional Networks (TCN), a type of CNN designed for time series data. As one input, they designed an investor attention factor based on Baidu search index, given a pre-selected collection of keywords. In addition, they consider a set of features very similar to those of Song et al. (2022). They compare OOS performance of GARCH, FIGARCH, ARFIMA, HAR-RV, LSTM and their TCN model, finding significant importance for their attention factor.
+ 
+- **Souto (2023)**: Proposes the Topological Tail Dependence Theory, linking Persistent Homology (PH) from topological data analysis to RV prediction. The study develops the PH-RV algorithm, which measures topological changes in baskets of related stocks via Wasserstein distances between persistence diagrams, and uses these as exogenous inputs in realized volatility (RV) forecasting models. Tested on S&P 500, DJIA, and Russell 2000 (plus European indexes in robustness checks), the approach is applied to linear (HAR, HARX), nonlinear (HARST), and neural network (NBEATS, NBEATSx) models. Results show that including PH information significantly improves forecast accuracy—especially during turbulent periods like the 2008 and 2020 crises—confirming the theory’s prediction that topological signals can anticipate volatility spikes
+ 
+Finally, despite not in this list, I also highlight the study by Carr et al. (2020), that used ridge, random forests and neural networks in a daily setting, underscoring the importance of options data to predict RV, finding better OOS performance for ML models as the number of options used as features increase. 
+
+## Features
+
+To summarize, the features that I have been able to identify in this review are
+
+``` {r literature features}
+# IDs
+ids <- sprintf("F%02d", 1:83)
+
+# Feature names
+names <- c(
+  "Lagged HAR-RV components",
+  "Realized Quarticity (RQ)",
+  "Jump variation (total)",
+  "Continuous component of RV",
+  "Signed jump variation",
+  "Implied Volatility Index (VIX)",
+  "Crude Oil Volatility Index (OVX)",
+  "Other countries’ implied volatility (PCA)",
+  "Economic Policy Uncertainty (EPU)",
+  "Consumption–Wealth Ratio (CAY)",
+  "Changes in bank leverage",
+  "Commercial paper–treasury spread",
+  "Default spread",
+  "Term spread",
+  "Current & expected GDP growth",
+  "Investment–capital ratio",
+  "Net payout yield",
+  "Volatility of inflation growth",
+  "Interest rate volatility",
+  "Monetary base growth",
+  "PPI growth rate",
+  "Industrial production growth",
+  "Bond market volatility",
+  "Aggregate leverage",
+  "Number of trading days",
+  "Trading volume",
+  "Month dummies",
+  "Sentiment measures from news & social media",
+  "Search engine query volume",
+  "Equity valuation ratios",
+  "Fama–French factors",
+  "Interest rates (levels)",
+  "Bond risk premia",
+  "TED spread",
+  "Turnover ratios",
+  "Inflation",
+  "Labor market variables",
+  "Commodity prices",
+  "Money supply",
+  "Survey-based sentiment (consumer & producer)",
+  "Uncertainty indices (IDEMV, EMV, GPR)",
+  "Crude oil futures RV",
+  "Investor attention (Baidu search index)",
+  "Macro principal component (from macroeconomic variables)",
+  "GARCH-MIDAS short-term volatility forecast",
+  "Number of trades (deal volume)",
+  "Bias = (close − 5-day average)/5-day average",
+  "DMA = 5-day MA − 10-day MA",
+  "CDP pivot = (high_{t−1} + low_{t−1} + 2×close_{t−1})/4",
+  "AR = (close − open)/(open − low)",
+  "BR = (high − close)/(close − low)",
+  "Percent change (price range measure)",
+  "Overnight spread = open_t − close_{t−1}",
+  "Lagged equity returns (levels)",
+  "FX returns (USD/EUR, USD/CHF, USD/GBP, USD/JPY)",
+  "Carry trade factor",
+  "Average bid–ask spread (FX liquidity)",
+  "U.S. RV spillover components",
+  "International jump factor (PCA across G7 jumps)",
+  "International jump factor (PLS across G7 jumps)",
+  "Cojump indicator (>50% markets with jump)",
+  "Global volatility factor (PCA across international market RVs)",
+  "Persistent Homology features (Wasserstein distances between persistence diagrams)",
+  "Variational Mode Decomposition (VMD) intrinsic mode functions (IMFs)",
+  "Option prices across moneyness and maturities (features for variance prediction)",
+  "News-based economic uncertainty index (Brexit-specific)",
+  "Realized semivariances (positive/negative)",
+  "HARQ interaction terms (lagged RV × RQ)",
+  "Macro announcement dummies (FOMC, CPI, PPI, ESR)",
+  "Day-of-week dummies", 
+  "Leverage effect measure (minimum non-positive return)",
+  "Cross-asset RV (equity indices: FTSE100, Euro Stoxx 50, Hang Seng, S&P 500)",
+  "FX realized variances (GBP/USD, CAD/USD, EUR/USD)",
+  "Commodity realized variances (Gold, Copper, Natural Gas, Palladium, Silver)",
+  "Breakeven inflation rate",
+  "Housing starts (log-change)",
+  "Capacity utilization (log-change)",
+  "Purchasing Managers’ Index (PMI) / Chicago Business Barometer / Business Activity Diffusion",
+  "Macroeconomic & Financial Uncertainty (Jurado et al., 2015)",
+  "U.S. 10-year Treasury futures returns",
+  "Short-term reversal factor (STR)",
+  "HAR leverage interaction term: lagged RV × I{negative return} (HAR-RV-RS-II)",
+  "Cross-national capital flows principal component"
+)
+
+# Sources
+sources <- c(
+  "Corsi (2009)",
+  "Bollerslev et al. (2016)",
+  "Andersen et al. (2007)",
+  "Andersen et al. (2007)",
+  "Pu et al. (2016)",
+  "Blair et al. (2001); Bekaert & Hoerova (2014); Christensen & Prabhala (1998)",
+  "Liang et al. (2022)",
+  "Liang et al. (2020)",
+  "Liu & Zhang (2015); Li et al. (2019)",
+  "Paye (2012); Lettau & Ludvigson (2001)",
+  "Paye (2012)",
+  "Paye (2012)",
+  "Schwert (1989); Paye (2012)",
+  "Schwert (1989); Paye (2012)",
+  "Paye (2012)",
+  "Paye (2012)",
+  "Paye (2012)",
+  "Paye (2012)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989)",
+  "Schwert (1989); Liu et al. (2023)",
+  "Schwert (1989)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020); Dimpfl & Jank (2015)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Fameliti & Skintzi (2024)",
+  "Fameliti & Skintzi (2024)",
+  "Lei et al. (2021)",
+  "Song et al. (2022); Ludvigson & Ng (2009, 2011)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Song et al. (2022)",
+  "Audrino et al. (2020); Song et al. (2022)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Buncic & Gisler (2016); Buncic & Gisler (2017)",
+  "Ma et al. (2019)",
+  "Ma et al. (2019)",
+  "Ma et al. (2019)",
+  "Zhang et al. (2020)",
+  "Souto (2023)",
+  "Yu et al. (2023)",
+  "Carr et al. (2020)",
+  "Plakandaras et al. (2017)",
+  "Wang et al. (2016)",
+  "Bollerslev et al. (2016)",
+  "McAleer & Medeiros (2008)",
+  "McAleer & Medeiros (2008)",
+  "Campbell & Hentschel (1992); Bekaert & Hoerova (2014)",
+  "Degiannakis & Filis (2017)",
+  "Degiannakis & Filis (2017)",
+  "Degiannakis & Filis (2017)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Audrino et al. (2020)",
+  "Gupta et al. (2021); Jurado et al. (2015)",
+  "Audrino et al. (2020)",
+  "Bucci (2020); Nonejad (2017)",
+  "Wang et al. (2016)",
+  "Zhang et al. (2020)"
+)
+
+stopifnot(length(ids) == length(names), length(names) == length(sources))
+
+tbl <- data.frame(
+  `Feature ID` = ids,
+  `Feature Name` = names,
+  `Source` = sources,
+  check.names = FALSE
+)
+
+knitr::kable(tbl, caption = "Identified features for RV prediction and their sources (comprehensive)")
+
+
+
+```
+## Concluding Remarks
+
+As demonstrated throughout this report, the problem of realized variance (RV) prediction is inherently high-dimensional. A vast number of features have been proposed in the literature as potential predictors, even though the causal mechanisms underpinning these relationships are often unclear or weakly justified. Most studies rely on correlation-based evidence without the formal use of causal inference methods. Anyway, this high-dimensionality property, combined with nonlinearity and complex interactions, creates a fertile ground for the application of machine learning (ML) models. Unlike traditional Ordinary Least Squares (OLS) regressions, which are highly susceptible to overfitting in settings with many predictors, ML models are better suited to balance the bias-variance trade-off via hyperparameter tuning and validation-based regularization.
+
+In the realm of expected cross-sectional returns, prior research has demonstrated that ML models frequently outperform OLS both in predictive accuracy and in downstream portfolio outcomes. Notably, Kelly and Malamoud (2023) argue that the double descent phenomenon may lead to improved out-of-sample (OOS) performance even in the overparameterized regime, where the number of predictors exceeds the number of observations and the OLS solution is undefined due to the non-invertibility of the regressor matrix.
+
+Similar potential exists for RV prediction, especially given the long-documented heteroskedasticity of asset returns. Leverage effects, for instance, represent a clear case of nonlinearity between past returns and future volatility. The HARQ model, incorporating realized quarticity to interact with lags, exemplifies the relevance of interaction effects. Both stylized facts favor machine learning approaches, which are naturally suited to modeling nonlinearities and high-order interactions, reducing model bias in complex data structures.
+
+Some studies have already applied ML to RV prediction, often focusing on neural networks (especially recurrent architectures like LSTMs). However, most of these efforts are narrowly focused, exploring limited feature sets. I argue that a structured and comprehensive feature engineering workflow, one that builds predictive signals across diverse data domains, could represent a meaningful advance in the literature.
+
+Specifically, the literature already supports the inclusion of a rich set of predictors, such as:
+
+ - Features derived from past returns (e.g., lagged RV, realized quarticity, jumps, leverage effects, persistence, semivariance)
+
+ - Macroeconomic and macro-financial variables (e.g., inflation, GDP growth, industrial production, labor market indicators, commodity prices, Goyal and Welch variables,    EPU index)
+
+ - Sentiment indicators (e.g., consumer and investor confidence, financial news tone)
+
+ - Cross-asset realized variances (e.g., equity indices, FX, commodities)
+
+ - Asset pricing factors
+
+ - Implied volatility
+
+ - Calendar-based effects (e.g., weekday or month dummies)
+
+ - Microstructure variables (e.g., bid-ask spread, volume, liquidity ratios)
+
+Naturally, compiling such a complex and granular dataset is a nontrivial task. Furthermore, given the primarily correlational nature of prior research, care must be taken to avoid overfitting. Appropriate parameterization, regularization, and validation strategies are essential.
+
+An additional innovation lies in the structured ensembling of multiple models, combining penalized regressions (e.g., Ridge, LASSO), classical time series models (ARIMA, HAR-RV), tree-based models (Random Forest, XGBoost), and neural networks. A heuristic or trainable meta-learner for combining these models could further enhance robustness and generalization.
+
+Moreover, the evaluation stage can move beyond symmetric loss functions like Mean Squared Error (MSE). For risk managers or investors, underpredicting volatility is typically costlier than overpredicting. This calls for the development of asymmetric loss functions, which can be implemented in modern ML frameworks like keras (https://keras.io/api/losses/) and XGBoost (https://xgboost.readthedocs.io/en/stable/tutorials/custom_metric_obj.html).
+
+Proposed Next Steps
+a) Feature Engineering: Collect and construct a wide set of predictors, prioritizing those most frequently used, theoretically justified, and available across long time spans.
+
+b) Preprocessing: Apply appropriate transformations (e.g., winsorization, normalization, log-transformation of RV), ensuring forward-looking bias is avoided by using only past information at each time point.
+
+c) Modeling: Fit and ensemble a variety of ML models using a purged walk-forward validation scheme with training-validation-test splits, following Schnaubelt (2019). Hyperparameters should be tuned via Bayesian optimization, which offers a good balance between computational efficiency and predictive performance (see Bengio & Bergstra, 2012). I have noticed that many RV ML studies overlook this step a bit.
+
+d) Evaluation: Assess performance on test sets using both standard and asymmetric loss functions.
+
+e) Reproducibility: Ensure full reproducibility by following software engineering best practices, including code version control, unit testing, dependency management via renv, and clear documentation. This will also facilitate eventual code release for peer validation.
+
+
+
+## References
+
+- Andersen, T. G., Bollerslev, T., & Diebold, F. X. (2007). Roughing It Up: Including Jump Components in the Measurement, Modeling, and Forecasting of Return Volatility. *Review of Economics and Statistics*, 89(4), 701–720.
+
+- Andersen, T. G., Bollerslev, T., Diebold, F. X., & Labys, P. (2003). Modeling and Forecasting Realized Volatility. *Econometrica*, 71(2), 579–625.
+
+- Audrino, F., Kostrov, A., & Ortega, J. A. (2020). Forecasting Realized Volatility with News Sentiment: A Machine Learning Approach. *Journal of Financial Econometrics*, 18(2), 278–306.
+
+- Bekaert, G., & Hoerova, M. (2014). The VIX, the Variance Premium and Stock Market Volatility. *Journal of Econometrics*, 183(2), 181–192.
+
+- Bengio, Y., & Bergstra, J. (2012). Random Search for Hyper-Parameter Optimization. *Journal of Machine Learning Research*, 13, 281–305.
+
+- Blair, B. J., Poon, S.-H., & Taylor, S. J. (2001). Forecasting S&P 100 Volatility: The Incremental Information Content of Implied Volatilities and High-Frequency Index Returns. *Journal of Econometrics*, 105(1), 5–26.
+
+- Bollerslev, T. (1986). Generalized Autoregressive Conditional Heteroskedasticity. *Journal of Econometrics*, 31(3), 307–327.
+
+- Bollerslev, T., Patton, A. J., & Quaedvlieg, R. (2016). Exploiting the Errors: A Simple Approach for Improved Volatility Forecasting. *Journal of Econometrics*, 192(1), 1–18.
+
+- Buncic, D., & Gisler, C. (2016). Global Risk Spillovers and Predictability of Equity Market Volatility. *Journal of Empirical Finance*, 38(B), 420–442.
+
+- Buncic, D., & Gisler, C. (2017). Systematic Risk Spillovers in Cross-Country Equity Markets. *Journal of International Money and Finance*, 70, 1–28.
+
+- Bucci, A. (2020). Neural Networks for Volatility Forecasting: Feedforward and Recurrent Architectures. *Economics Letters*, 191, 109139.
+
+- Campbell, J. Y., & Hentschel, L. (1992). No News is Good News: An Asymmetric Model of Changing Volatility in Stock Returns. *Journal of Financial Economics*, 31(3), 281–318.
+
+- Carr, P., Wu, L., & Zhang, M. (2020). Machine Learning for Constructing Option-Implied Volatility and Variance Indexes. *Journal of Investment Strategies*, 9(4), 71–109.
+
+- Christensen, B. J., & Prabhala, N. R. (1998). The Relation between Implied and Realized Volatility. *Journal of Financial Economics*, 50(2), 125–150.
+
+- Clark, T. E., & West, K. D. (2007). Approximately Normal Tests for Equal Predictive Accuracy in Nested Models. *Journal of Econometrics*, 138(1), 291–311.
+
+- Corsi, F. (2009). A Simple Approximate Long-Memory Model of Realized Volatility. *Journal of Financial Econometrics*, 7(2), 174–196.
+
+- Degiannakis, S., & Filis, G. (2017). Forecasting Oil Price Realized Volatility Using HAR Models with Heterogeneous Leverage and Jumps. *Energy Economics*, 66, 1–9.
+
+- Dimpfl, T., & Jank, S. (2015). Can Internet Search Queries Help to Predict Stock Market Volatility? *European Financial Management*, 22(2), 171–192.
+
+- Fameliti, T., & Skintzi, V. (2024). Persistent Homology and Volatility Forecasting. *Quantitative Finance*, forthcoming.
+
+- Goyal, A., & Welch, I. (2008). A Comprehensive Look at The Empirical Performance of Equity Premium Prediction. *Review of Financial Studies*, 21(4), 1455–1508.
+
+- Gupta, R., Lau, C. K. M., & Wohar, M. E. (2021). Forecasting Aggregate Realized Volatility Using Random Forests: The Role of Macroeconomic and Uncertainty Indicators. *Finance Research Letters*, 38, 101466.
+
+- Hansen, P. R. (2005). A Test for Superior Predictive Ability. *Journal of Business & Economic Statistics*, 23(4), 365–380.
+
+- Jurado, K., Ludvigson, S. C., & Ng, S. (2015). Measuring Uncertainty. *American Economic Review*, 105(3), 1177–1216.
+
+- Kelly, B., & Malamud, S. (2023). The Double Descent of Expected Returns. *Journal of Financial Economics*, 149(3), 743–772.
+
+- Lei, L., Pan, H., & Wan, Y. (2021). Investor Attention and Stock Volatility: Evidence from a Temporal Convolutional Network. *International Review of Financial Analysis*, 75, 101716.
+
+- Liang, J., Zhou, H., & Zhu, X. (2020). Forecasting Realized Volatility with Implied Volatility: International Evidence. *Journal of International Financial Markets, Institutions and Money*, 64, 101172.
+
+- Liu, L., Patton, A. J., & Sheppard, K. (2019). Does Anything Beat 5-Minute Realized Variance at Forecasting Daily Volatility? *Journal of Econometrics*, 210(1), 52–77.
+
+- Liu, Y., & Zhang, Y. (2015). Economic Policy Uncertainty and Realized Volatility. *Finance Research Letters*, 15, 99–105.
+
+- Ma, F., Zhang, Y., & Zhu, Y. (2019). Volatility Spillovers and Jumps across International Equity Markets. *Journal of International Money and Finance*, 95, 22–45.
+
+- Maciel, W. C., Fernandes, R. A., & Lima, G. B. A. (2016). Forecasting Realized Volatility with Evolving Possibilistic Fuzzy Models. *Expert Systems with Applications*, 62, 243–256.
+
+- McAleer, M., & Medeiros, M. C. (2008). Realized Volatility: A Review. *Econometric Reviews*, 27(1–3), 10–45.
+
+- Nonejad, N. (2017). Bayesian Predictive Evaluation of the Out-of-Sample Performance of Time-Varying Parameter Models. *Econometrics and Statistics*, 1, 115–135.
+
+- Patton, A. J. (2011). Volatility Forecast Comparison Using Imperfect Volatility Proxies. *Journal of Econometrics*, 160(1), 246–256.
+
+- Paye, B. S. (2012). Predicting Returns and Volatility with Macrovariables. *Review of Financial Studies*, 25(11), 3399–3440.
+
+- Plakandaras, V., Gupta, R., & Wohar, M. E. (2017). Does the Brexit Announcement Have an Impact on the Pound? *Finance Research Letters*, 20, 96–102.
+
+- Pu, Y., Li, Y., & Li, K. (2016). Signed Jump Variation and Volatility Forecasting. *Journal of Futures Markets*, 36(12), 1155–1178.
+
+- Ribeiro, M. A., Pimenta, T. C., & da Silva, S. (2021). Forecasting Realized Volatility with Hybrid Models Combining HAR, ESN and PSO. *Expert Systems with Applications*, 166, 114062.
+
+- Schwert, G. W. (1989). Why Does Stock Market Volatility Change Over Time? *Journal of Finance*, 44(5), 1115–1153.
+
+- Song, D., Li, Y., & Li, J. (2022). Deep Learning-Based Realized Volatility Forecasting Using Macro-Finance and Microstructure Features. *Mathematics*, 10(3), 353.
+
+- Souto, L. R. S. (2023). Persistent Homology and Realized Volatility Forecasting. *Working Paper*. [Topological Machine Learning for Financial Markets]
+
+- Wang, X., Zhou, H., & Zhu, X. (2016). HAR Models with Realized Semivariances and Jumps. *Journal of Banking and Finance*, 72, 78–93.
+
+- Yu, L., Liu, J., & Wang, S. (2023). Realized Volatility Forecasting with Hybrid Deep Learning Models. *Applied Soft Computing*, 136, 110018.
+
+- Zhang, Y., Chen, S., & Zhou, H. (2020). International Return Predictability and Volatility Forecasting Using Global Factors. *Journal of Financial Markets*, 47, 100510.
+
+
+
+
+
+
+
