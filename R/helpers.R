@@ -2575,8 +2575,7 @@ grid_search_tune <- function(
     results_list <- doFuture::withDoRNG(
       foreach::foreach(
         i = 1:n_combinations,
-        .combine = 'rbind',
-        .packages = c('dplyr', 'glmnet', 'ranger', 'xgboost', 'keras', 'tensorflow')
+        .combine = 'rbind'
       ) %dopar% {
         params <- as.list(hyper_grid[i, , drop = FALSE])
         result <- do.call(eval_function, params)
