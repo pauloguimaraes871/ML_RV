@@ -59,6 +59,7 @@ glmnet_grid_search_res <- run_walk_forward_validation(
 )
 
 # Save results
+dir.create("models", showWarnings = FALSE, recursive = TRUE)
 saveRDS(glmnet_grid_search_res, "models/glmnet_grid_search_res.rds")
 
 cat("\n")
@@ -109,6 +110,7 @@ rf_grid_search_res <- run_walk_forward_validation(
 )
 
 # Save results
+dir.create("models", showWarnings = FALSE, recursive = TRUE)
 saveRDS(rf_grid_search_res, "models/rf_grid_search_res.rds")
 
 cat("\n")

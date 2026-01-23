@@ -249,7 +249,7 @@ test_parameter_validation <- function() {
     list(
       name = "Invalid bounds (min > max)",
       bounds = c(1, 0),
-      should_pass = TRUE  # Note: This should be caught in production
+      should_pass = FALSE  # Note: Should validate min <= max in production
     )
   )
   
