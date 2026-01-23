@@ -2494,7 +2494,216 @@ fit_lstm_model <- function(
 
 
 
-## Hyper tuning
+## Grid Search tuning
+grid_search_tune <- function(
+    model, full_data_train_clean, covariates_val, target_val, #Data
+    eval_fun, obj_fun_trans, #Eval Function and custom obj
+    eval_metric_trans, early_stop, #Early Stop
+    eval_metric, huber_delta, quantile_tau,  #Chosen eval metric
+    hyper_grid_domain_list, n_grid_points = 5L, #Hyperparameter grid
+    keras_architecture_pars, #Keras Parameters
+    parallel, #Parallelization (default is true with future backend)
+    verbose){ #Verbose
+  
+  ### Hyperparameter tuning following Grid Search!
+  
+  # Create grid of hyperparameters
+  # For each parameter, create a sequence between min and max
+  hyper_grid_list <- lapply(hyper_grid_domain_list, function(bounds) {
+    if (length(bounds) != 2) {
+      stop("Each hyperparameter bounds must be a vector of length 2: c(min, max)")
+    }
+    min_val <- bounds[1]
+    max_val <- bounds[2]
+    
+    # Validate min <= max
+    if (min_val > max_val) {
+      stop("Invalid bounds: minimum value must be <= maximum value")
+    }
+    
+    # Check if bounds are integers (only if explicitly specified with L suffix)
+    # Use is.integer() instead of checking equality with floor
+    if (is.integer(bounds)) {
+      # Integer sequence - use seq.int to ensure integer values
+      range_size <- as.integer(max_val - min_val + 1)
+      actual_points <- min(n_grid_points, range_size)
+      if (actual_points == range_size) {
+        # Generate all integers in range
+        seq.int(from = as.integer(min_val), to = as.integer(max_val), by = 1L)
+      } else {
+        # Sample evenly spaced integers
+        indices <- seq(1, range_size, length.out = actual_points)
+        as.integer(min_val) + as.integer(round(indices - 1))
+      }
+    } else {
+      # Continuous sequence (default for most parameters)
+      seq(min_val, max_val, length.out = n_grid_points)
+    }
+  })
+  
+  # Create full grid using expand.grid
+  hyper_grid <- expand.grid(hyper_grid_list, stringsAsFactors = FALSE)
+  n_combinations <- nrow(hyper_grid)
+  
+  if (isTRUE(verbose)) {
+    cat(paste0("Grid Search: Testing ", n_combinations, " hyperparameter combinations\n"))
+  }
+  
+  # Get the evaluation function
+  eval_function <- eval_fun(
+    #Data
+    full_data_train_clean = full_data_train_clean,
+    covariates_val = covariates_val,
+    target_val = target_val,
+    
+    #General Parameters
+    model = model,
+    
+    #Eval Function Parameters
+    eval_metric = eval_metric,
+    eval_metric_trans = eval_metric_trans,
+    huber_delta = huber_delta,
+    quantile_tau = quantile_tau,
+    
+    #Early Stop
+    early_stop = early_stop,
+    
+    #Custom Loss
+    obj_fun_trans = obj_fun_trans,
+    
+    #Keras Network Parameters
+    keras_architecture_pars = keras_architecture_pars,
+    
+    verbose = FALSE
+  )
+  
+  # Evaluate all combinations
+  if (parallel && !model %in% c("nn", "lstm")) {
+    
+    #### Check if doRNG is available (required by doFuture::withDoRNG)
+    if (!requireNamespace("doRNG", quietly = TRUE)) {
+      stop("The 'doRNG' package is required. Please install it.")
+    }
+    
+    # Parallel evaluation
+    results_list <- doFuture::withDoRNG(
+      foreach::foreach(
+        i = 1:n_combinations,
+        .combine = 'rbind'
+      ) %dopar% {
+        params <- as.list(hyper_grid[i, , drop = FALSE])
+        result <- do.call(eval_function, params)
+        data.frame(
+          iteration = i,
+          Score = result$Score,
+          rss = result$rss,
+          cp = result$cp,
+          rmse = result$rmse,
+          mae = result$mae,
+          mphe = result$mphe,
+          mpe = result$mpe,
+          mape = result$mape,
+          hr = result$hr,
+          mb = result$mb,
+          best_lam = if (!is.null(result$best_lam)) result$best_lam else NA,
+          best_iter = if (!is.null(result$best_iter)) result$best_iter else NA
+        )
+      }
+    )
+  } else {
+    # Sequential evaluation
+    results_list <- list()
+    for (i in 1:n_combinations) {
+      if (isTRUE(verbose) && i %% max(1, floor(n_combinations / 10)) == 0) {
+        cat(paste0("Progress: ", round(100 * i / n_combinations), "%\n"))
+      }
+      
+      params <- as.list(hyper_grid[i, , drop = FALSE])
+      result <- do.call(eval_function, params)
+      
+      results_list[[i]] <- data.frame(
+        iteration = i,
+        Score = result$Score,
+        rss = result$rss,
+        cp = result$cp,
+        rmse = result$rmse,
+        mae = result$mae,
+        mphe = result$mphe,
+        mpe = result$mpe,
+        mape = result$mape,
+        hr = result$hr,
+        mb = result$mb,
+        best_lam = if (!is.null(result$best_lam)) result$best_lam else NA,
+        best_iter = if (!is.null(result$best_iter)) result$best_iter else NA
+      )
+    }
+    results_list <- do.call(rbind, results_list)
+  }
+  
+  # Combine results with hyperparameters
+  score_df <- cbind(hyper_grid, results_list)
+  
+  # Find best combination (maximize Score)
+  best_idx <- which.max(score_df$Score)
+  
+  # Get optimal hyperparameters
+  keep_cols <- intersect(
+    colnames(score_df),
+    c(names(hyper_grid_domain_list), "best_lam", "best_iter")
+  )
+  
+  # Create data frame to store combinations of hyperparameters tried
+  eval_metric_val_current_date <- score_df[, keep_cols, drop = FALSE]
+  
+  # Add chosen eval metric
+  eval_metric_val_current_date$eval_metric <- as.numeric(score_df[[eval_metric]])
+  
+  # Get optimal values
+  optimal_hyper <- as.numeric(score_df[best_idx, names(hyper_grid_domain_list)])
+  names(optimal_hyper) <- names(hyper_grid_domain_list)
+  
+  # Add best_lam if present
+  if ("best_lam" %in% colnames(score_df) && !is.na(score_df$best_lam[best_idx])) {
+    optimal_hyper <- c(optimal_hyper, best_lam = score_df$best_lam[best_idx])
+  }
+  
+  # Add best_iter if present
+  if ("best_iter" %in% colnames(score_df) && !is.na(score_df$best_iter[best_idx])) {
+    optimal_hyper <- c(optimal_hyper, best_iter = score_df$best_iter[best_idx])
+  }
+  
+  # Get validation eval metrics for optimal choice
+  val_eval_metrics_hyper_choice_current_date <- score_df[
+    best_idx,
+    c("Score", "rss", "cp", "rmse", "mae", "mphe", "mpe", "mape", "hr", "mb")
+  ]
+  
+  # Print results
+  if (verbose) {
+    cat(paste0("Chosen hyperparameters were: "))
+    if (model != "glmnet") {
+      cat(paste0(names(hyper_grid_domain_list), ":",
+                 round(optimal_hyper[names(hyper_grid_domain_list)], 4), sep = " "))
+    } else {
+      cat(paste0(c(names(hyper_grid_domain_list), "best_lam"), ":",
+                 round(optimal_hyper, 4), sep = " "))
+    }
+    cat("\n")
+    cat(paste0("Validation eval_metrics for hyperparameters chosen were: "))
+    cat(paste0(names(val_eval_metrics_hyper_choice_current_date), ":",
+               round(val_eval_metrics_hyper_choice_current_date, 4), sep = " "))
+    cat("\n")
+  }
+  
+  return(list(
+    eval_metric_val_current_date = eval_metric_val_current_date,
+    optimal_hyper = optimal_hyper,
+    val_eval_metrics_hyper_choice_current_date = val_eval_metrics_hyper_choice_current_date
+  ))
+  
+}
+
+## Hyper tuning (Bayesian Optimization)
 hyper_tune <- function(
     model, full_data_train_clean, covariates_val, target_val, #Data
     eval_fun, obj_fun_trans, #Eval Function and custom obj
@@ -2829,8 +3038,10 @@ run_walk_forward_validation <- function(
     gsm_algo = "ols",
     upper_quant_wins = 0.95,
     lower_quant_wins = 0.05,
+    tuning_method = "bayesian", # "bayesian" or "grid_search"
     n_iter = 10L, init_points = 5L,
     k_iter = 2L, acq = "ucb",
+    n_grid_points = 5L, # Number of points per dimension for grid search
     keras_architecture_pars = NULL,
     parallel = TRUE,
     verbose = TRUE,
@@ -3053,29 +3264,53 @@ run_walk_forward_validation <- function(
         
         ##### Run hyperparameter tuning
         if (isTRUE(verbose)){
-          cat(crayon::blue(paste0("Hyper tuning at: ",
-                                  current_date, "...")))
+          tuning_method_display <- ifelse(tuning_method == "bayesian", 
+                                          "Bayesian Optimization", 
+                                          "Grid Search")
+          cat(crayon::blue(paste0("Hyper tuning (", tuning_method_display, 
+                                  ") at: ", current_date, "...")))
           cat("\n")
         }
         
-        hyper_tune_res <- hyper_tune(
-          model = model, # Model
-          full_data_train_clean = full_data_train_clean, # Data
-          covariates_val = covariates_val, # Data
-          target_val = target_val, # Data
-          eval_fun = eval_fun, obj_fun_trans = obj_fun_trans,
-          eval_metric_trans = eval_metric_trans, # Eval and Obj
-          early_stop = early_stop, # Early Stop
-          eval_metric = eval_metric, huber_delta = huber_delta,
-          quantile_tau = quantile_tau,  # Eval metric
-          hyper_grid_domain_list = hyper_grid_domain_list,
-          n_iter = n_iter, #Hyperparameter grid
-          init_points = init_points, k_iter = k_iter,
-          acq = acq, #Bayesian Optimization
-          keras_architecture_pars = keras_architecture_pars, #Keras Pars
-          parallel = parallel, #Parallelization (default is future backend)
-          verbose = TRUE
-        )
+        # Choose tuning method
+        if (tuning_method == "grid_search") {
+          hyper_tune_res <- grid_search_tune(
+            model = model, # Model
+            full_data_train_clean = full_data_train_clean, # Data
+            covariates_val = covariates_val, # Data
+            target_val = target_val, # Data
+            eval_fun = eval_fun, obj_fun_trans = obj_fun_trans,
+            eval_metric_trans = eval_metric_trans, # Eval and Obj
+            early_stop = early_stop, # Early Stop
+            eval_metric = eval_metric, huber_delta = huber_delta,
+            quantile_tau = quantile_tau,  # Eval metric
+            hyper_grid_domain_list = hyper_grid_domain_list,
+            n_grid_points = n_grid_points, # Grid search parameter
+            keras_architecture_pars = keras_architecture_pars, #Keras Pars
+            parallel = parallel, #Parallelization (default is future backend)
+            verbose = TRUE
+          )
+        } else {
+          # Default to Bayesian Optimization
+          hyper_tune_res <- hyper_tune(
+            model = model, # Model
+            full_data_train_clean = full_data_train_clean, # Data
+            covariates_val = covariates_val, # Data
+            target_val = target_val, # Data
+            eval_fun = eval_fun, obj_fun_trans = obj_fun_trans,
+            eval_metric_trans = eval_metric_trans, # Eval and Obj
+            early_stop = early_stop, # Early Stop
+            eval_metric = eval_metric, huber_delta = huber_delta,
+            quantile_tau = quantile_tau,  # Eval metric
+            hyper_grid_domain_list = hyper_grid_domain_list,
+            n_iter = n_iter, #Hyperparameter grid
+            init_points = init_points, k_iter = k_iter,
+            acq = acq, #Bayesian Optimization
+            keras_architecture_pars = keras_architecture_pars, #Keras Pars
+            parallel = parallel, #Parallelization (default is future backend)
+            verbose = TRUE
+          )
+        }
         
         ##### Store results
         
