@@ -17,9 +17,9 @@ covariates_1927_df_gold <- covariates_1927_df %>%
   dplyr::filter(month_id >= "1962-01-31")
 
 # Example 1: GLMNET with Grid Search -----------------------------------------
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("Example 1: GLMNET with Grid Search\n")
-cat("=" * 80, "\n\n")
+cat(strrep("=", 80), "\n\n")
 
 # Setup parallel processing
 future::plan("multisession")
@@ -66,9 +66,9 @@ cat("GLMNET Grid Search completed!\n")
 cat("Results saved to: models/glmnet_grid_search_res.rds\n\n")
 
 # Example 2: Random Forest with Grid Search ----------------------------------
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("Example 2: Random Forest with Grid Search\n")
-cat("=" * 80, "\n\n")
+cat(strrep("=", 80), "\n\n")
 
 # Setup parallel processing
 future::plan("multisession")
@@ -116,9 +116,9 @@ cat("Random Forest Grid Search completed!\n")
 cat("Results saved to: models/rf_grid_search_res.rds\n\n")
 
 # Example 3: Comparison with Bayesian Optimization ---------------------------
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("Example 3: Comparing Grid Search vs Bayesian Optimization\n")
-cat("=" * 80, "\n\n")
+cat(strrep("=", 80), "\n\n")
 
 # Run with Bayesian Optimization for comparison
 cat("Running with Bayesian Optimization...\n")
@@ -151,9 +151,9 @@ glmnet_bayesian_res <- run_walk_forward_validation(
 
 # Compare results
 cat("\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("Comparison Results\n")
-cat("=" * 80, "\n\n")
+cat(strrep("=", 80), "\n\n")
 
 cat("Grid Search Performance:\n")
 print(summary(glmnet_grid_search_res$test_eval_metrics))

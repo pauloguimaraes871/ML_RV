@@ -3,7 +3,7 @@
 
 # Test 1: Grid Generation Logic -----------------------------------------------
 cat("Test 1: Grid Generation Logic\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 
 # Test function to simulate grid generation
 test_grid_generation <- function() {
@@ -20,7 +20,7 @@ test_grid_generation <- function() {
     min_val <- bounds[1]
     max_val <- bounds[2]
     
-    if (all(bounds == floor(bounds))) {
+    if (is.integer(bounds)) {
       seq(as.integer(min_val), as.integer(max_val), 
           length.out = min(n_grid_points, as.integer(max_val - min_val + 1)))
     } else {
@@ -47,7 +47,7 @@ test_grid_generation <- function() {
     min_val <- bounds[1]
     max_val <- bounds[2]
     
-    if (all(bounds == floor(bounds))) {
+    if (is.integer(bounds)) {
       seq(as.integer(min_val), as.integer(max_val), 
           length.out = min(n_grid_points, as.integer(max_val - min_val + 1)))
     } else {
@@ -75,7 +75,7 @@ test_grid_generation <- function() {
     min_val <- bounds[1]
     max_val <- bounds[2]
     
-    if (all(bounds == floor(bounds))) {
+    if (is.integer(bounds)) {
       seq(as.integer(min_val), as.integer(max_val), 
           length.out = min(n_grid_points, as.integer(max_val - min_val + 1)))
     } else {
@@ -102,7 +102,7 @@ test_grid_generation <- function() {
     min_val <- bounds[1]
     max_val <- bounds[2]
     
-    if (all(bounds == floor(bounds))) {
+    if (is.integer(bounds)) {
       seq(as.integer(min_val), as.integer(max_val), 
           length.out = min(n_grid_points_large, as.integer(max_val - min_val + 1)))
     } else {
@@ -156,7 +156,7 @@ cat("\n\n")
 
 # Test 2: Result Structure Logic ----------------------------------------------
 cat("Test 2: Result Structure Logic\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 
 test_result_structure <- function() {
   # Simulate result processing
@@ -224,7 +224,7 @@ cat("\n\n")
 
 # Test 3: Parameter Validation ------------------------------------------------
 cat("Test 3: Parameter Validation\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 
 test_parameter_validation <- function() {
   cat("Testing parameter validation logic...\n\n")
@@ -295,7 +295,7 @@ cat("\n\n")
 
 # Test 4: Edge Cases ----------------------------------------------------------
 cat("Test 4: Edge Cases\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 
 test_edge_cases <- function() {
   cat("Testing edge cases...\n\n")
@@ -347,9 +347,9 @@ test_edge_cases()
 cat("\n\n")
 
 # Summary ---------------------------------------------------------------------
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("VALIDATION SUMMARY\n")
-cat("=" * 80, "\n")
+cat(strrep("=", 80), "\n")
 cat("\n")
 cat("The grid search implementation has been validated for:\n")
 cat("  ✓ Grid generation with continuous parameters\n")
