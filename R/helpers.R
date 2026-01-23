@@ -2516,13 +2516,14 @@ grid_search_tune <- function(
     min_val <- bounds[1]
     max_val <- bounds[2]
     
-    # Check if bounds are integers
-    if (all(bounds == floor(bounds))) {
+    # Check if bounds are integers (only if explicitly specified with L suffix)
+    # Use is.integer() instead of checking equality with floor
+    if (is.integer(bounds)) {
       # Integer sequence
       seq(as.integer(min_val), as.integer(max_val), 
           length.out = min(n_grid_points, as.integer(max_val - min_val + 1)))
     } else {
-      # Continuous sequence
+      # Continuous sequence (default for most parameters)
       seq(min_val, max_val, length.out = n_grid_points)
     }
   })

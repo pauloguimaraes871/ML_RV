@@ -177,9 +177,11 @@ All other parameters work exactly the same way:
 ### Grid Generation
 
 The grid is generated using the following logic:
-- For continuous parameters: `seq(min, max, length.out = n_grid_points)`
-- For integer parameters: Integer sequence respecting bounds
+- For continuous parameters (default): `seq(min, max, length.out = n_grid_points)`
+- For integer parameters (marked with `L` suffix, e.g., `c(1L, 10L)`): Integer sequence respecting bounds and avoiding redundant points
 - Full grid created using `expand.grid()`
+
+**Important**: To specify integer parameters, use the `L` suffix in R (e.g., `c(300L, 1500L)`). Parameters without the `L` suffix are treated as continuous, even if the bounds are whole numbers (e.g., `c(0, 1)` will generate points like 0, 0.25, 0.5, 0.75, 1 with `n_grid_points = 5`).
 
 ### Evaluation
 
