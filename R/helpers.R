@@ -488,8 +488,7 @@ winsorize_expanding <- function(x, p_lo = 0.01, p_hi = 0.99,
   )
 }
 ## Scale
-scale_expanding     <- function(x, min_n = 36L,
-                                eps = sqrt(.Machine$double.eps)) {
+scale_expanding     <- function(x, min_n = 36L,  mad_floor = 1e-2) {
   ### Exclude current obs
   x_lag <- dplyr::lag(x)
   
@@ -511,11 +510,41 @@ scale_expanding     <- function(x, min_n = 36L,
     .before = Inf
   )
   
+  ### Use floor when MAD is too small
+  denom  <- pmax(mad, mad_floor)  # mad_floor is a fixed hyperparameter
+  
   ### Scale
-  scaled <- (x - med) / pmax(mad, eps)
+  scaled <- (x - med) / denom
   
   ### Return
   dplyr::if_else(is.na(med) | is.na(mad), x, scaled)
+}
+
+## Expanding min-max normalization to [-1, 1]
+rescale_expanding_to_unit <- function(x, min_n = 36L) {
+  out <- rep(NA_real_, length(x))
+  
+  for (i in seq_along(x)) {
+    
+    # Not enough history → return raw value (like scale_expanding)
+    if (i <= min_n || sum(!is.na(x[1:(i-1)])) < min_n) {
+      out[i] <- x[i]
+      next
+    }
+    
+    window <- x[1:(i-1)]  # exclude current observation (consistent with z-score)
+    
+    mn <- suppressWarnings(min(window, na.rm = TRUE))
+    mx <- suppressWarnings(max(window, na.rm = TRUE))
+    
+    # Constant window: neutral value
+    if (!is.finite(mn) || !is.finite(mx) || mx == mn) {
+      out[i] <- 0  # fallback for constant window
+    } else {
+      out[i] <- 2*((x[i] - mn)/(mx - mn)) - 1
+    }
+  }
+  out
 }
 
 ## Box-Cox
@@ -793,27 +822,14 @@ validator <- function(target, covariates, model,
   
   #LSTM
   if(model == "lstm" && 
-     !all(names(hyper_grid_domain_list) == c("regularizer_l1", "regularizer_l2",
+     !all(names(hyper_grid_domain_list) == c("regularizer_l2",
                                              "droprate","rec_droprate",
                                               "lr", "size_of_batch",
                                              "number_of_epochs"))){
     stop("hyperparameters do not match model choice")
   }
   if (model == "lstm") {
-    #regularizer_l1
-    ##########
-    #bayesian opt or grid search
-    hyper_domain <- hyper_grid_domain_list$regularizer_l1
-    
-    #Check domain
-    if(!is.numeric(hyper_domain)){
-      stop("regularizer_l1 should be numeric")
-    }
-    if(!all(hyper_domain >= 0)){
-      stop("regularizer_l1 should be non-negative")
-    }
-    ##########
-    
+
     #regularizer_l2
     ##########
     #bayesian opt or grid search
@@ -957,9 +973,9 @@ validator <- function(target, covariates, model,
     ##keras_architecture_pars (LSTM)
     if (is.data.frame(keras_architecture_pars) ||
         !is.list(keras_architecture_pars) ||
-        !all(c("units", "lookback", "nn_optimizer") %in% names(keras_architecture_pars))) {
+        !all(c("units", "sequence_length", "nn_optimizer", "padding") %in% names(keras_architecture_pars))) {
       stop("For model = 'lstm', keras_architecture_pars must be a list with elements: ",
-           "units, lookback, nn_optimizer.")
+           "units, sequence_length, nn_optimizer, padding.")
     }
     
     if (!is.numeric(keras_architecture_pars$units) || length(keras_architecture_pars$units) != 1L ||
@@ -967,21 +983,25 @@ validator <- function(target, covariates, model,
       stop("keras_architecture_pars$units must be a single positive number.")
     }
     
-    if (!is.numeric(keras_architecture_pars$lookback) || length(keras_architecture_pars$lookback) != 1L ||
-        keras_architecture_pars$lookback < 1) {
-      stop("keras_architecture_pars$lookback must be a single integer >= 1.")
+    if (!is.numeric(keras_architecture_pars$sequence_length) || length(keras_architecture_pars$sequence_length) != 1L ||
+        keras_architecture_pars$sequence_length < 1) {
+      stop("keras_architecture_pars$sequence_length must be a single integer >= 1.")
     }
     
     if (!keras_architecture_pars$nn_optimizer %in% c("Adam", "RMSProp")) {
       stop("keras_architecture_pars$nn_optimizer must be 'Adam' or 'RMSProp'.")
     }
     
-    ## ensure lookback fits in train/val windows
-    if (train_n <= as.integer(keras_architecture_pars$lookback)) {
-      stop("train_n must be > lookback for LSTM.")
+    if (!is.logical(keras_architecture_pars$padding)){
+      stop("keras_architecture_pars$padding must be either TRUE or FALSE.")
     }
-    if (val_n <= as.integer(keras_architecture_pars$lookback)) {
-      stop("val_n must be > lookback for LSTM.")
+    
+    ## ensure sequence_length fits in train/val windows
+    if (train_n <= as.integer(keras_architecture_pars$sequence_length)) {
+      stop("train_n must be > sequence_length for LSTM.")
+    }
+    if (val_n <= as.integer(keras_architecture_pars$sequence_length)) {
+      stop("val_n must be > sequence_length for LSTM.")
     }
     
     if (!is.null(keras_architecture_pars$timesteps)) {
@@ -1879,53 +1899,41 @@ set_eval_function <- function(model){ #General Parameters
              
              ########################
             
-             ## Small helper: build (n, T, p) sequences and aligned y
-             build_sequences <- function(X_df, y_vec = NULL, T){
-               X    <- base::as.matrix(X_df[, setdiff(colnames(X_df), "month_id"), drop = FALSE])
-               
-               n <- base::nrow(X)
-               p <- base::ncol(X)
-               if (n < T) stop("LSTM: not enough rows to build sequences with sequence_length = ", T)
-               
-               n_seq <- n - T + 1L
-               X_seq <- base::array(NA_real_, dim = c(n_seq, T, p))
-               for (i in base::seq_len(n_seq)) {
-                 X_seq[i, , ] <- X[i:(i + T - 1L), , drop = FALSE]
-               }
-               
-               if (is.null(y_vec)) {
-                 return(list(X = X_seq, y = NULL))
-               } else {
-                 y_seq <- y_vec[T:n]
-                 return(list(X = X_seq, y = y_seq))
-               }
-             }
-             
              ##Deliver LSTM function
              fit <- function(droprate, rec_droprate, lr,
                              number_of_epochs, size_of_batch,
                              regularizer_l2){
                
                # Train split -> build sequences from full_data_train_clean
+               padding_flag <- isTRUE(keras_architecture_pars$padding)
+               Tseq         <- base::as.integer(keras_architecture_pars$sequence_length)
+               
                cov_train <- full_data_train_clean %>%
                  dplyr::select(-dplyr::all_of(target_name))
                y_train <- full_data_train_clean %>%
                  dplyr::pull(target_name)
+               covariates_val_clean <- covariates_val %>%
+                 dplyr::select(-month_id)
                
-               train_seq <- build_sequences(
-                 X_df  = cov_train,
-                 y_vec = y_train,
-                 T     = as.integer(keras_architecture_pars$sequence_length)
+               train_seq <- build_lstm_sequences(
+                 X_df     = cov_train,
+                 y_vec    = y_train,
+                 T        = Tseq,
+                 padding  = padding_flag,
+                 pad_value = -999
                )
                
                # Validation split -> build sequences from covariates_val / target_val
-               val_seq <- build_sequences(
-                 X_df  = covariates_val,
-                 y_vec = target_val,
-                 T     = as.integer(keras_architecture_pars$sequence_length)
+               val_seq <- build_lstm_sequences(
+                 X_df     = covariates_val_clean,
+                 y_vec    = target_val,
+                 T        = Tseq,
+                 padding  = padding_flag,
+                 pad_value = -999
                )
                
-               # Fit LSTM using your helper
+               
+               # Fit LSTM using helper
                # Batch must not exceed number of sequences
                n_seq_train <- dim(train_seq$X)[1]
                bs <- as.integer(size_of_batch)
@@ -1945,11 +1953,14 @@ set_eval_function <- function(model){ #General Parameters
                  covariates_seq_train = train_seq$X,
                  target_seq_train     = train_seq$y,
                  covariates_seq_val   = val_seq$X,
-                 target_seq_val       = val_seq$y
-               )
+                 target_seq_val       = val_seq$y,
+                 padding              = padding_flag,     
+                 pad_value            = -999      
+                 )
                
+           
                # Predict on validation sequences
-               pred <- stats::predict(lstm_fit$model, val_seq$X)
+               pred <- predict(lstm_fit$model, val_seq$X)
                pred <- base::as.numeric(pred)
                
                # Compute metrics against the aligned target (val_seq$y)
@@ -2397,6 +2408,75 @@ fit_keras_model <- function(
   
 }
 
+
+build_lstm_sequences <- function(
+    X_df,
+    y_vec      = NULL,
+    T,
+    padding    = TRUE,
+    pad_value  = -999
+){
+  
+  # Sort and drop with month_id  
+  if ("month_id" %in% colnames(X_df)) {
+    X_df <- X_df[order(X_df$month_id), , drop = FALSE]
+    X_df <- X_df[, setdiff(colnames(X_df), "month_id"), drop = FALSE]
+  }
+  # guard: all remaining columns must be numeric
+  non_num <- colnames(X_df)[!vapply(X_df, is.numeric, logical(1L))]
+  if (length(non_num) > 0L) {
+    stop(
+      "build_lstm_sequences: all features must be numeric. ",
+      "Non-numeric columns: ", paste(non_num, collapse = ", ")
+    )
+  }
+  
+  #Convert as needed
+  X <- base::as.matrix(X_df)
+  n <- base::nrow(X); p <- base::ncol(X)
+  
+  if (n < 1L || p < 1L) {
+    base::stop("build_lstm_sequences: empty X_df.")
+  }
+  if (!is.null(y_vec) && length(y_vec) != n) {
+    base::stop("build_lstm_sequences: y_vec must have length nrow(X_df).")
+  }
+  
+  
+  if (isTRUE(padding)) {
+    ## --- PADDING VERSION (build_sequences_pad) -------------------------
+    X_seq <- base::array(pad_value, dim = c(n, T, p))
+    
+    for (t in base::seq_len(n)) {
+      start <- base::max(1L, t - T + 1L)
+      k     <- t - start + 1L
+      X_seq[t, (T - k + 1L):T, ] <- X[start:t, , drop = FALSE]
+    }
+    
+    y_out <- if (is.null(y_vec)) NULL else y_vec  # same length n
+    
+  } else {
+    ## --- NO PADDING VERSION (.build_sequences_refit) -------------------
+    if (n < T) {
+      base::stop(
+        "build_lstm_sequences (no padding): need at least sequence_length rows (",
+        T, "), got ", n, "."
+      )
+    }
+    n_seq <- n - T + 1L
+    X_seq <- base::array(NA_real_, dim = c(n_seq, T, p))
+    
+    for (i in base::seq_len(n_seq)) {
+      X_seq[i, , ] <- X[i:(i + T - 1L), , drop = FALSE]
+    }
+    
+    y_out <- if (is.null(y_vec)) NULL else y_vec[T:n]
+  }
+  
+  list(X = X_seq, y = y_out)
+}
+
+
 ## LSTM helper
 fit_lstm_model <- function(
   units, droprate, rec_droprate, lr, number_of_epochs, size_of_batch, 
@@ -2405,7 +2485,8 @@ fit_lstm_model <- function(
   eval_metric_trans,
   obj_fun_trans,
   covariates_seq_train, target_seq_train,  # X: (n, T, p); y: (n,)
-  covariates_seq_val = NULL, target_seq_val = NULL
+  covariates_seq_val = NULL, target_seq_val = NULL,
+  padding = TRUE, pad_value = -999
 ){
   
   ### Clear the session after each model training
@@ -2429,18 +2510,41 @@ fit_lstm_model <- function(
   
   ### Build
   model <- keras::keras_model_sequential()
-  model %>%
-    keras::layer_lstm(
-      units              = as.integer(units),
-      input_shape        = c(dim(covariates_seq_train)[2], dim(covariates_seq_train)[3]),
-      dropout            = droprate,
-      recurrent_dropout  = rec_droprate,
-      kernel_regularizer = keras::regularizer_l2(regularizer_l2),
-      return_sequences   = FALSE
-    ) %>%
+  if (isTRUE(padding)) {
+    # With padding: add masking so the LSTM ignores pad_value timesteps
+    model <- model %>%
+      keras::layer_masking(mask_value = pad_value) %>%
+      keras::layer_lstm(
+        units              = as.integer(units),
+        input_shape        = c(
+          base::dim(covariates_seq_train)[2],
+          base::dim(covariates_seq_train)[3]
+        ),
+        dropout            = droprate,
+        recurrent_dropout  = rec_droprate,
+        kernel_regularizer = keras::regularizer_l2(regularizer_l2),
+        return_sequences   = FALSE
+      )
+  } else {
+    # No padding: no masking layer
+    model <- model %>%
+      keras::layer_lstm(
+        units              = as.integer(units),
+        input_shape        = c(
+          base::dim(covariates_seq_train)[2],
+          base::dim(covariates_seq_train)[3]
+        ),
+        dropout            = droprate,
+        recurrent_dropout  = rec_droprate,
+        kernel_regularizer = keras::regularizer_l2(regularizer_l2),
+        return_sequences   = FALSE
+      )
+  }
+  
+  model <- model %>%
     keras::layer_dense(units = 1)
   
-  ### Compile (loss can be huber or mse; metric must match your monitor)
+  ### Compile (loss can be huber or mse; metric must match monitor)
   model %>% keras::compile(
     loss      = obj_fun_trans,  # e.g., "mean_squared_error" or huber
     optimizer = keras::optimizer_adam(learning_rate = lr, clipnorm = 1.0),
@@ -2798,7 +2902,61 @@ fit_rv_model <- function(
                   droprate = optimal_hyper["droprate"],
                   
                   verbose = verbose
-                )$model_nn
+                )$model_nn,
+                lstm = {
+                  
+                  ##### Guards
+                  if (is.null(keras_architecture_pars) ||
+                      is.null(keras_architecture_pars$sequence_length) ||
+                      is.null(keras_architecture_pars$units)) {
+                    stop("lstm: keras_architecture_pars must include sequence_length and units.")
+                  }
+                  padding_flag <- isTRUE(keras_architecture_pars$padding)
+                  Tseq         <- base::as.integer(keras_architecture_pars$sequence_length)
+                  units <- base::as.integer(keras_architecture_pars$units)
+                  
+                  ##### Build sequences from refit data
+                  cov_refit_mat <- covariates_refit[, -1, drop = FALSE]  # remove id col
+                  train_seq <- build_lstm_sequences(
+                    X_df     = cov_refit_mat,   # covariates_refit[ , -1, drop = FALSE]
+                    y_vec    = target_refit,
+                    T        = Tseq,
+                    padding  = padding_flag,
+                    pad_value = -999
+                  )
+                  
+                  ##### batch must not exceed number of sequences
+                  n_seq_train <- base::dim(train_seq$X)[1]
+                  bs <- base::as.integer(optimal_hyper["size_of_batch"])
+                  if (bs > n_seq_train) bs <- n_seq_train
+                  
+                  ##### choose epochs (respect early_stop best_iter if present)
+                  n_epochs <- if (is.null(early_stop)) {
+                    base::as.integer(optimal_hyper["number_of_epochs"])
+                  } else {
+                    # during refit, run exactly best_iter (picked in tuning)
+                    base::as.integer(optimal_hyper["best_iter"])
+                  }
+                  
+                  ##### fit final LSTM
+                  lstm_res <- fit_lstm_model(
+                    units                = units,
+                    droprate             = as.numeric(optimal_hyper["droprate"]),
+                    rec_droprate         = as.numeric(optimal_hyper["rec_droprate"]),
+                    lr                   = as.numeric(optimal_hyper["lr"]),
+                    number_of_epochs     = n_epochs,
+                    size_of_batch        = bs,
+                    regularizer_l2       = as.numeric(optimal_hyper["regularizer_l2"]),
+                    early_stop           = NULL,                        # no ES at refit
+                    eval_metric_trans    = eval_metric_trans,
+                    obj_fun_trans        = obj_fun_trans,
+                    covariates_seq_train = train_seq$X,
+                    target_seq_train     = train_seq$y
+                    # no validation at refit
+                  )
+                  
+                  lstm_res$model  # <- returned as `fit`
+                }
   )
   
   ### Create S4 RV Model Object
@@ -2985,10 +3143,10 @@ run_walk_forward_validation <- function(
               length() == 0
           )
         }
-        #### LSTM lookback feasibility on the split (cheap runtime guard)
+        #### LSTM sequence_length feasibility on the split (cheap runtime guard)
         if (model == "lstm") {
-          lb <- as.integer(keras_architecture_pars$lookback)
-          # ensure each split has at least lookback+1 rows (sequence + target)
+          lb <- as.integer(keras_architecture_pars$sequence_length)
+          # ensure each split has at least sequence_length+1 rows (sequence + target)
           stopifnot(
             base::nrow(ts_splits$covariates_train)  > lb,
             base::nrow(ts_splits$covariates_refit)  > lb
@@ -3038,7 +3196,16 @@ run_walk_forward_validation <- function(
         
         ##### Set seed based on model
         if (model %in% c("nn", "lstm")){
-          tensorflow::set_random_seed(.test_seed)
+          if (is.na(.test_seed)){
+            seed_current <- as.integer(
+              as.numeric(as.Date(current_date)) %% .Machine$integer.max
+            )
+            tensorflow::set_random_seed(seed_current)
+            
+          } else {
+            tensorflow::set_random_seed(.test_seed)
+          }
+          
         }  else {
           set.seed(.test_seed)
         }
@@ -3238,16 +3405,44 @@ run_walk_forward_validation <- function(
     
      #### Test reference
      test_ref <- d - train_n - val_n + 1
-     
+
      #### Get covariates and target for current date
-     covariates_test <- covariates %>% 
-       dplyr::filter(month_id == current_date)
      target_test     <- target %>% 
        dplyr::filter(month_id == current_date) %>%
        dplyr::pull(rv_month)
      
+     if (model != "lstm"){
+       covariates_test <- covariates %>% 
+         dplyr::filter(month_id == current_date)
+     } else {
+       kap   <- rv_model_fit@keras_architecture_pars
+       Tseq  <- kap$sequence_length
+       
+       #### Build the T-length test window ending at current_date
+       covariates_test <- covariates %>%
+         dplyr::filter(month_id <= current_date) %>%
+         dplyr::arrange(month_id) %>%
+         dplyr::slice_tail(n = Tseq)
+       
+       # Defensive check
+       if (nrow(covariates_test) < Tseq) {
+         stop(
+           "Not enough observations to build an LSTM test window at date ",
+           current_date, ". Needed ", Tseq, " rows, found ", nrow(covariates_test), "."
+         )
+       }
+     }
+     
      #### Make predictions
-     pred <- predict(rv_model_fit, new_covariates = covariates_test)
+     pred_out <- predict(rv_model_fit, new_covariates = covariates_test)
+     
+       ##### For LSTM + no padding: use the last element (the one for current_date)
+       if (model == "lstm" && !isTRUE(rv_model_fit@keras_architecture_pars$padding)) {
+         pred <- tail(pred_out, 1L)
+       } else {
+         pred <- pred_out
+       }
+
      oos_pred[test_ref] <- as.numeric(pred)
      oos_y[test_ref]    <- target_test 
        

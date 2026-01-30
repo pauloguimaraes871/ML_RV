@@ -4,6 +4,7 @@
   renv::install("gt")
   renv::install("slider")
   renv::install("xts")
+  library("dplyr")
 
   ## Helpers and classes
   source(file.path(here::here(), "R", "helpers.R"))
@@ -165,7 +166,13 @@
 
   ## Covariates
         ### Helper  
-        prep_covariates <- function(df) {
+        prep_covariates <- function(df,
+                                    scaling = c("zscore", "range"),
+                                    winsorize_range = c(0.01, 0.99),
+                                    min_n = 36L) {
+          
+          scaling <- match.arg(scaling)
+          
           df %>%
           ### Use LOCF to fill NAs
           impute_locf() %>%
@@ -181,7 +188,10 @@
             dplyr::across(
               dplyr::where(is.numeric) & 
                 !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
-              ~ winsorize_expanding(.x, p_lo = 0.01, p_hi = 0.99, min_n = 36L)
+              ~ winsorize_expanding(.x, 
+                                    p_lo = min(winsorize_range),
+                                    p_hi = max(winsorize_range),
+                                    min_n = min_n)
               )
             ) %>%
           ### Scale
@@ -189,15 +199,29 @@
             dplyr::across(
               dplyr::where(is.numeric) &
                 !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
-              ~ scale_expanding(.x, min_n = 36L, eps = sqrt(.Machine$double.eps))
-              )
+              ~ if (scaling == "zscore") {
+                scale_expanding(.x, min_n = min_n)
+              } else {
+                rescale_expanding_to_unit(.x, min_n = min_n)
+              }
+            )
           )
       }
   
         ### Apply    
-        covariates_1927_df_gold <- prep_covariates(covariates_1927_df)
-        covariates_1962_df_gold <- prep_covariates(covariates_1962_df)
-        covariates_1986_df_gold <- prep_covariates(covariates_1986_df)
+        covariates_1927_df_gold <- prep_covariates(covariates_1927_df, scaling = "zscore")
+        covariates_1962_df_gold <- prep_covariates(covariates_1962_df, scaling = "zscore")
+        covariates_1986_df_gold <- prep_covariates(covariates_1986_df, scaling = "zscore")
+        
+        covariates_1927_df_gold2 <- prep_covariates(
+          covariates_1927_df, scaling = "range", winsorize_range = c(0.025,0.975)
+          )
+        covariates_1962_df_gold2 <- prep_covariates(
+          covariates_1962_df, scaling = "range", winsorize_range = c(0.025,0.975)
+        )
+        covariates_1986_df_gold2 <- prep_covariates(
+          covariates_1986_df, scaling = "range", winsorize_range = c(0.025,0.975)
+        )
         
   ## Target     
   target_gold <- target %>% 
@@ -222,17 +246,21 @@
     covariates_1927_df_gold <- covariates_1927_df_gold %>%
       dplyr::filter(month_id %in% shared_dates) %>%
       dplyr::arrange(month_id)
+    
+    covariates_1927_df_gold2 <- covariates_1927_df_gold2 %>%
+      dplyr::filter(month_id %in% shared_dates) %>%
+      dplyr::arrange(month_id)
   
     ### HAR
     har_backtest_res <- run_walk_forward_validation(
       target = target_gold, 
-      covariates = covariates_1927_df_gold %>%
+      covariates = covariates_1927_df_gold2 %>%
         dplyr::select(month_id, dplyr::contains("rv_")),
       model = "har",
       hyper_grid_domain_list = list(),
       obj_fun = "squared_error", eval_metric = "rmse",
       huber_delta = 1, quantile_tau = 0.5,
-      train_n = 180L, val_n = 0L,
+      train_n = 210L, val_n = 0L,
       rebal_months = c(6),
       early_stop = NULL,
       gsm_algo = "ols",
@@ -244,6 +272,7 @@
       parallel = TRUE,
       verbose = TRUE
     )
+    har_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
     
       #### Save RDS
       saveRDS(har_backtest_res,    "har_backtest_res.rds")
@@ -254,7 +283,7 @@
     
     glmnet_backtest_res <- run_walk_forward_validation(
       target = target_gold, 
-      covariates = covariates_1927_df_gold,
+      covariates = covariates_1927_df_gold2,
       model = "glmnet",
       hyper_grid_domain_list = list(
         alpha = c(0, 1),
@@ -262,7 +291,7 @@
       ),
       obj_fun = "squared_error", eval_metric = "rmse",
       huber_delta = 1, quantile_tau = 0.5,
-      train_n = 120L, val_n = 60L,
+      train_n = 120L, val_n = 90L,
       rebal_months = c(6),
       early_stop = NULL,
       gsm_algo = "ols",
@@ -275,6 +304,8 @@
       verbose = TRUE,
       .test_seed = 123
     )
+    glmnet_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+    
     
       #### Save RDS
       saveRDS(glmnet_backtest_res, "glmnet_backtest_res.rds")
@@ -285,7 +316,7 @@
       
       rf_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "rf",
         hyper_grid_domain_list = list(
           mtry = c(0.1, 0.9),
@@ -295,7 +326,7 @@
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
@@ -308,6 +339,7 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      rf_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
       saveRDS(rf_backtest_res, "rf_backtest_res.rds")
@@ -319,7 +351,7 @@
       
       xgb_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "xgb",
         hyper_grid_domain_list = list(
           min_child_weight = c(2L, 10L),      
@@ -333,7 +365,7 @@
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 30L,
         gsm_algo = "ols",
@@ -346,17 +378,29 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      xgb_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      
       
       #### Save RDS
-      saveRDS(xgb_backtest_res, "xgb_backtest_res.rds")
+      saveRDS(xgb_backtest_res, "xgb_backtest_res_rescaled.rds")
     
+      ##NN
+      nn_hyper_grid <- list(
+        regularizer_l1   = c(1e-5, 5e-2),
+        regularizer_l2   = c(1e-5, 5e-2),
+        droprate         = c(0.25, 0.75),
+        lr               = c(1e-4, 1e-2),
+        size_of_batch    = c(8L, 32L),
+        number_of_epochs = c(50L, 150L)
+      )
+      
     
       ### NN1
       future::plan("sequential")
       
       nn1_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = 32,
@@ -365,17 +409,10 @@
           nn_optimizer      = "Adam",
           batch_norm_option = TRUE
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
@@ -387,16 +424,18 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      nn1_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      
       
       #### Save RDS
-      saveRDS(nn1_backtest_res, "nn1_backtest_res_3.rds")
+      saveRDS(nn1_backtest_res, "nn1_backtest_res_rescaled.rds")
       
       ### NN2
       future::plan("sequential")
       
       nn2_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16),
@@ -405,17 +444,10 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,2)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
@@ -427,9 +459,10 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      nn2_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_res, "nn2_backtest_res.rds") 
+      saveRDS(nn2_backtest_res, "nn2_backtest_res_rescaled.rds") 
     
       
       ### NN3
@@ -437,7 +470,7 @@
       
       nn3_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8),
@@ -446,17 +479,10 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,3)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
@@ -468,16 +494,17 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      nn3_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn3_backtest_res, "nn3_backtest_res.rds") 
+      saveRDS(nn3_backtest_res, "nn3_backtest_res_rescaled.rds") 
       
       ### NN4
       future::plan("sequential")
       
       nn4_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4),
@@ -486,17 +513,10 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,4)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
@@ -508,16 +528,17 @@
         verbose = TRUE,
         .test_seed = 123
       )
+      nn4_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn4_backtest_res, "nn4_backtest_res.rds") 
+      saveRDS(nn4_backtest_res, "nn4_backtest_res_rescaled.rds") 
       
       ### NN5
       future::plan("sequential")
       
       nn5_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1927_df_gold,
+        covariates = covariates_1927_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4, 2),
@@ -526,17 +547,10 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,5)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
@@ -554,11 +568,11 @@
       
       #Join tables
       
-      har_backtest_res <- readRDS(file.path(here::here(), "models", "har_backtest_res.rds"))
-      glmnet_backtest_res <- readRDS(file.path(here::here(), "models", "glmnet_backtest_res.rds"))
-      rf_backtest_res    <- readRDS(file.path(here::here(), "models", "rf_backtest_res.rds"))
-      xgb_backtest_res   <- readRDS(file.path(here::here(), "models", "xgb_backtest_res.rds"))
-      nn1_backtest_res <- readRDS(file.path(here::here(), "models", "nn1_backtest_res.rds"))
+      har_backtest_res <- readRDS(file.path(here::here(), "models", "har_backtest_res_rescaled.rds"))
+      glmnet_backtest_res <- readRDS(file.path(here::here(), "models", "glmnet_backtest_res_rescaled.rds"))
+      rf_backtest_res    <- readRDS(file.path(here::here(), "models", "rf_backtest_res_rescaled.rds"))
+      xgb_backtest_res   <- readRDS(file.path(here::here(), "models", "xgb_backtest_res_rescaled.rds"))
+      nn1_backtest_res <- readRDS(file.path(here::here(), "models", "nn1_backtest_res_rescaled.rds.rds"))
       nn1_backtest_res_2 <- readRDS(file.path(here::here(), "models", "nn1_backtest_res_2.rds"))
       nn1_backtest_res_3 <- readRDS(file.path(here::here(), "models", "nn1_backtest_res_3.rds"))
       nn2_backtest_res <- readRDS(file.path(here::here(), "models", "nn2_backtest_res.rds"))
@@ -617,16 +631,21 @@
         dplyr::filter(month_id %in% shared_dates) %>%
         dplyr::arrange(month_id)
       
+      covariates_1986_df_gold2 <- covariates_1986_df_gold2 %>%
+        dplyr::filter(month_id %in% shared_dates) %>%
+        dplyr::arrange(month_id)
+      
+      
       ### HAR
       har_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold %>%
+        covariates = covariates_1986_df_gold2 %>%
           dplyr::select(month_id, dplyr::contains("rv_")),
         model = "har",
         hyper_grid_domain_list = list(),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 180L, val_n = 0L,
+        train_n = 210L, val_n = 0L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
@@ -639,8 +658,11 @@
         verbose = TRUE
       )
       
+      har_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
+      
       #### Save RDS
-      saveRDS(har_backtest_res_1986,    "har_backtest_res_1986.rds")
+      saveRDS(har_backtest_res_1986, "har_backtest_res_1986_rescaled.rds")
       
       ### GLMNET
       future::plan("multisession")
@@ -648,30 +670,32 @@
       
       glmnet_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "glmnet",
         hyper_grid_domain_list = list(
           alpha = c(0, 1),
-          lambda.min.ratio = c(1e-4, 1e-2)
+          lambda.min.ratio = c(1e-4, 0.01)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 150L, val_n = 60L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 10L, init_points = 5L,
-        k_iter = 2L, acq = "ucb",
+        n_iter = 15L, init_points = 20L,
+        k_iter = 4L, acq = "ucb",
         keras_architecture_pars = NULL,
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
       
+      glmnet_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
       #### Save RDS
-      saveRDS(glmnet_backtest_res_1986, "glmnet_backtest_res_1986.rds")
+      saveRDS(glmnet_backtest_res_1986, "glmnet_backtest_res_1986_rescaled.rds")
       
       ### RF
       future::plan("multisession")
@@ -679,7 +703,7 @@
       
       rf_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "rf",
         hyper_grid_domain_list = list(
           mtry = c(0.1, 0.9),
@@ -689,7 +713,7 @@
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
@@ -703,8 +727,10 @@
         .test_seed = 123
       )
       
+      rf_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
       #### Save RDS
-      saveRDS(rf_backtest_res_1986, "rf_backtest_res_1986.rds")
+      saveRDS(rf_backtest_res_1986, "rf_backtest_res_1986_rescaled.rds")
       
       
       ### XGB
@@ -713,7 +739,7 @@
       
       xgb_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "xgb",
         hyper_grid_domain_list = list(
           min_child_weight = c(2L, 10L),      
@@ -727,7 +753,7 @@
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 30L,
         gsm_algo = "ols",
@@ -741,56 +767,61 @@
         .test_seed = 123
       )
       
-      #### Save RDS
-      saveRDS(xgb_backtest_res_1986, "xgb_backtest_res_1986.rds")
+      xgb_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
+      #### Save RDS
+      saveRDS(xgb_backtest_res_1986, "xgb_backtest_res_1986_rescaled.rds")
+      
+      ##NN
+      nn_hyper_grid <- list(
+        regularizer_l1   = c(1e-5, 5e-2),
+        regularizer_l2   = c(1e-5, 5e-2),
+        droprate         = c(0.25, 0.75),
+        lr               = c(1e-4, 1e-2),
+        size_of_batch    = c(8L, 32L),
+        number_of_epochs = c(50L, 150L)
+      )
       
       ### NN1
       future::plan("sequential")
       
       nn1_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = 32,
           n_layers          = 1,
           activation        = "relu",
           nn_optimizer      = "Adam",
-          batch_norm_option = FALSE
+          batch_norm_option = TRUE
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-5),      
-          regularizer_l2   = c(1e-3, 5e-2),  
-          droprate         = c(0.20, 0.50),
-          lr               = c(5e-4, 2e-3),
-          size_of_batch    = c(32L, 64L),
-          number_of_epochs = c(40L, 120L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
+        n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
+      nn1_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn1_backtest_res_1986, "nn1_backtest_res_1986_2.rds")
+      saveRDS(nn1_backtest_res_1986, "nn1_backtest_res_1986_data_rescaled_4.rds")
       
       ### NN2
       future::plan("sequential")
       
       nn2_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16),
@@ -799,31 +830,25 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,2)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
+        n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
+      nn2_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_res_1986, "nn2_backtest_res_1986_2.rds") 
+      saveRDS(nn2_backtest_res_1986, "nn2_backtest_res_1986_rescaled_4.rds") 
       
       
       ### NN3
@@ -831,7 +856,7 @@
       
       nn3_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8),
@@ -840,38 +865,33 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,3)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
+        n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
+      nn3_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
       
       #### Save RDS
-      saveRDS(nn3_backtest_res_1986, "nn3_backtest_res_1986_2.rds") 
+      saveRDS(nn3_backtest_res_1986, "nn3_backtest_res_1986_rescaled_4.rds") 
       
       ### NN4
       future::plan("sequential")
       
       nn4_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4),
@@ -880,38 +900,33 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,4)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
+        n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
+      nn4_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
       
       #### Save RDS
-      saveRDS(nn4_backtest_res_1986, "nn4_backtest_res_1986_2.rds") 
+      saveRDS(nn4_backtest_res_1986, "nn4_backtest_res_1986_rescaled_4.rds") 
       
       ### NN5
       future::plan("sequential")
       
       nn5_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold,
+        covariates = covariates_1986_df_gold2,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4, 2),
@@ -920,43 +935,131 @@
           nn_optimizer      = "Adam",
           batch_norm_option = rep(TRUE,5)
         ),
-        hyper_grid_domain_list = list(
-          regularizer_l1   = c(0, 1e-6),      
-          regularizer_l2   = c(2e-4, 2e-3),  
-          droprate         = c(0.10, 0.25),
-          lr               = c(8e-4, 2e-3),
-          size_of_batch    = c(32L, 32L),
-          number_of_epochs = c(50L, 150L)  
-        ),
+        hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
+        n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
+      nn5_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn5_backtest_res_1986, "nn5_backtest_res_1986_2.rds") 
+      saveRDS(nn5_backtest_res_1986, "nn5_backtest_res_1986_rescaled_4.rds") 
+      
+      ##LSTM
+      lstm_backtest_res_1986 <- run_walk_forward_validation(
+        target     = target_gold,
+        covariates = covariates_1986_df_gold2,
+        model      = "lstm",
+        
+        # LSTM architecture: things that do NOT change during BO
+        keras_architecture_pars = list(
+          sequence_length = 12L,  # T: how many past months the LSTM "sees"
+          units           = 32L,   # number of LSTM units (hidden size)
+          nn_optimizer    = "Adam",
+          padding         = FALSE
+        ),
+        
+        # Hyperparameters to be tuned by ParBayesianOptimization
+        hyper_grid_domain_list = list(
+          regularizer_l2   = c(1e-3, 1e-1),      # L2 penalty
+          droprate         = c(0.25, 0.75),     # dropout on inputs
+          rec_droprate     = c(0.25, 0.75),     # recurrent dropout
+          lr               = c(1e-4, 1e-3),     # learning rate
+          size_of_batch    = c(8L, 32L),       # batch size
+          number_of_epochs = c(40L, 120L)      # max epochs (ES will stop earlier)
+          
+        ),
+        
+        obj_fun      = "squared_error",
+        eval_metric  = "rmse",
+        huber_delta  = 1,
+        quantile_tau = 0.5,
+        
+        train_n      = 120L,
+        val_n        = 90L,
+        rebal_months = c(6),
+        early_stop   = 20L,
+        
+        gsm_algo          = "ols",
+        upper_quant_wins  = 0.95,
+        lower_quant_wins  = 0.05,
+        
+        n_iter      = 16L,
+        init_points = 12L,
+        k_iter      = 2L,
+        acq         = "ucb",
+        
+        parallel = FALSE,  
+        verbose  = TRUE,
+        .test_seed = 123
+      )
+      
+      lstm_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
+      #### Save RDS
+      saveRDS(lstm_backtest_res_1986, "lstm_backtest_res_1986_rescaled_5.rds") 
+      
+      
       
       #Join tables
-      har_backtest_res    <- readRDS(file.path(here::here(), "models", "har_backtest_res_1986.rds"))
-      glmnet_backtest_res <- readRDS(file.path(here::here(), "models", "glmnet_backtest_res_1986.rds"))
-      rf_backtest_res     <- readRDS(file.path(here::here(), "models", "rf_backtest_res_1986.rds"))
-      xgb_backtest_res    <- readRDS(file.path(here::here(), "models", "xgb_backtest_res_1986.rds"))
-      nn1_backtest_res    <- readRDS(file.path(here::here(), "models", "nn1_backtest_res_1986.rds"))
-      nn1_backtest_res    <- readRDS(file.path(here::here(), "models", "nn1_backtest_res_1986.rds"))
-      nn2_backtest_res    <- readRDS(file.path(here::here(), "models", "nn2_backtest_res_1986.rds"))
-      nn3_backtest_res    <- readRDS(file.path(here::here(), "models", "nn3_backtest_res_1986.rds"))
-      nn4_backtest_res    <- readRDS(file.path(here::here(), "models", "nn4_backtest_res_1986.rds"))
-      nn5_backtest_res    <- readRDS(file.path(here::here(), "models", "nn5_backtest_res_1986.rds"))
+      har_backtest         <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986.rds"))
+      har_backtest_resc    <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986_rescaled.rds"))
+      
+      glmnet_backtest      <- readRDS(file.path(here::here(), "models", "1986", "glmnet_backtest_res_1986.rds"))
+      glmnet_backtest_resc <- readRDS(file.path(here::here(), "models", "1986", "glmnet_backtest_res_1986_rescaled.rds"))
+      
+      rf_backtest          <- readRDS(file.path(here::here(), "models", "1986", "rf_backtest_res_1986.rds"))
+      rf_backtest_resc     <- readRDS(file.path(here::here(), "models", "1986", "rf_backtest_res_1986_rescaled.rds"))
+      
+      xgb_backtest         <- readRDS(file.path(here::here(), "models", "1986", "xgb_backtest_res_1986.rds"))
+      xgb_backtest_resc    <- readRDS(file.path(here::here(), "models", "1986", "xgb_backtest_res_1986_rescaled.rds"))
+      
+      nn1_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986.rds"))
+      nn1_backtest_2      <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_2.rds"))
+      
+      nn1_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled.rds"))
+      nn1_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_2.rds"))
+      nn1_backtest_resc3  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_3.rds"))
+      nn1_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_4.rds"))
+      nn1_backtest_resc5  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_5.rds"))
+      nn1_backtest_resc6  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_6.rds"))
+      
+      nn2_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986.rds"))
+      nn2_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled.rds"))
+      nn2_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_2.rds"))
+      nn2_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_4.rds"))
+      
+      nn3_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986.rds"))
+      nn3_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled.rds"))
+      nn3_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_2.rds"))
+      nn3_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_4.rds"))
+      
+      nn4_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986.rds"))
+      nn4_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled.rds"))
+      nn4_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_2.rds"))
+      nn4_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_4.rds"))
+      
+      nn5_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986.rds"))
+      nn5_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled.rds"))
+      nn5_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_2.rds"))
+      nn5_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_4.rds"))
+      
+      lstm_backtest_res   <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986.rds"))
+      lstm_backtest_resc4 <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_4.rds"))
+      lstm_backtest_resc4_pad <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_4_padding.rds"))
+      lstm_backtest_resc5 <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_5.rds"))
+      
+      
       
       #Join all with purrr::reduce
       theme_map <- data.frame(
@@ -986,12 +1089,62 @@
         )
       )
       
-      list_backtest_res <- list(har_backtest_res, glmnet_backtest_res, rf_backtest_res,
-                                xgb_backtest_res, nn1_backtest_res, nn2_backtest_res,
-                                nn3_backtest_res, nn4_backtest_res, nn5_backtest_res)
-      names(list_backtest_res) <- c("har", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3", "nn4", "nn5")
+      list_backtest_res <- list(
+        ## Baselines
+        har                  = har_backtest,
+        har_resc             = har_backtest_resc,
+        
+        glmnet               = glmnet_backtest,
+        glmnet_resc          = glmnet_backtest_resc,
+        
+        rf                   = rf_backtest,
+        rf_resc              = rf_backtest_resc,
+        
+        xgb                  = xgb_backtest,
+        xgb_resc             = xgb_backtest_resc,
+        
+        ## Neural nets – NN1
+        nn1                  = nn1_backtest,
+        #nn1_v2               = nn1_backtest_2, #This had a bug
+        nn1_resc_1           = nn1_backtest_resc,
+        nn1_resc_2           = nn1_backtest_resc2,
+        nn1_resc_3           = nn1_backtest_resc3,
+        nn1_resc_4           = nn1_backtest_resc4,
+        nn1_resc_5           = nn1_backtest_resc5,
+        nn1_resc_6           = nn1_backtest_resc6,
+        
+        ## Neural nets – NN2
+        nn2                  = nn2_backtest,
+        nn2_resc_1           = nn2_backtest_resc,
+        nn2_resc_2           = nn2_backtest_resc2,
+        nn2_resc_4           = nn2_backtest_resc4,
+        
+        ## Neural nets – NN3
+        nn3                  = nn3_backtest,
+        nn3_resc_1           = nn3_backtest_resc,
+        nn3_resc_2           = nn3_backtest_resc2,
+        nn3_resc_4           = nn3_backtest_resc4,
+        
+        ## Neural nets – NN4
+        nn4                  = nn4_backtest,
+        nn4_resc_1           = nn4_backtest_resc,
+        nn4_resc_2           = nn4_backtest_resc2,
+        nn4_resc_4           = nn4_backtest_resc4,
+        
+        ## Neural nets – NN5
+        nn5                  = nn5_backtest,
+        nn5_resc_1           = nn5_backtest_resc,
+        nn5_resc_2           = nn5_backtest_resc2,
+        nn5_resc_4           = nn5_backtest_resc4,
+        
+        ## LSTM
+        lstm                 = lstm_backtest_res,
+        lstm_resc_4          = lstm_backtest_resc4,
+        lstm_resc5           = lstm_backtest_resc5
+      )
       
-      purrr::map(seq_along(list_backtest_res), function(table){
+      
+      results_summary <- purrr::map(seq_along(list_backtest_res), function(table){
         
         list_backtest_res[[table]]@eval_metrics %>%
           dplyr::select(metric, cons_oos) %>%
@@ -1000,7 +1153,54 @@
           dplyr::filter(metric %in% c("rss", "rmse", "mae", "mphe", "mpe", "mape"))
         
       }) %>% 
-        purrr::reduce(dplyr::left_join, by = "metric") 
+        purrr::reduce(dplyr::left_join, by = "metric") %>%
+        tidyr::pivot_longer(
+          cols = -metric,
+          names_to = "model",
+          values_to = "value"
+        )
+      
+      ### Add hyperparameters
+      results_summary_complete <- purrr::map(seq_along(list_backtest_res), function(table){
+        
+        hyperparams <- list_backtest_res[[table]]@backtest_meta$hyper_grid_domain_list %>%
+          as.data.frame() %>%
+          ##Collapse columns to character string with paste0
+          dplyr::mutate_all( function(x) paste0(x, collapse = ", ")) %>%
+          ##Onl first row needed
+          dplyr::slice(1) 
+        
+        hyperparams <- c(hyperparams,
+                         early_stop = list_backtest_res[[table]]@backtest_meta$early_stop,
+                         val_n = list_backtest_res[[table]]@backtest_meta$val_n,
+                         train_n = list_backtest_res[[table]]@backtest_meta$train_n
+                         ) %>% 
+          as.data.frame()
+        
+        ##Add
+        results_summary %>%
+          dplyr::filter(model == names(list_backtest_res)[table]) %>%
+          dplyr::cross_join(hyperparams)
+        
+      }) %>%
+        purrr::reduce(dplyr::bind_rows) %>%
+        dplyr::mutate(
+          preprocessing = dplyr::case_when(
+            grepl("resc", model) ~ "minmax_scaling",
+            TRUE                 ~ "zscore_standardization"
+          ),
+          .after = model
+        ) %>%
+        dplyr::mutate(
+          model = stringr::str_remove(model, "_resc.*$")
+        ) 
+
+
+      results_summary_complete %>% write.csv("results_summary_1986.csv", row.names = FALSE)
+        
+      
+      
+      
       
       plot(glmnet_backtest_res, theme_map = theme_map, plot_id = 7)
       plot(rf_backtest_res,  theme_map = theme_map, plot_id = 7)

@@ -62,7 +62,7 @@ setMethod("predict",
                 new_covariates %>% 
                   dplyr::select(dplyr::all_of(object@covariates))
               }
-              
+        
               ## Get parameters
               model         <- object@model
               optimal_hyper <- object@best_hyperparameters
@@ -94,7 +94,59 @@ setMethod("predict",
                   ), 
                 nn     = as.numeric(
                   predict(fit_obj, x = as.matrix(new_data))
+                  ),
+                lstm = {
+                  kap <- object@keras_architecture_pars
+                  if (is.null(kap) || is.null(kap$sequence_length)) {
+                    stop("rv_model (LSTM): missing keras_architecture_pars$sequence_length.")
+                  }
+                  padding_flag <- kap$padding
+                  Tseq <- base::as.integer(kap$sequence_length)
+                  
+                  ## Use the same helper as training, but without y
+                  seq_res <- build_lstm_sequences(
+                    X_df     = new_data,
+                    y_vec    = NULL,
+                    T        = Tseq,
+                    padding  = padding_flag,
+                    pad_value = -999
                   )
+                  
+                  ## Raw LSTM predictions
+                  pred_raw <- base::as.numeric(
+                    predict(object@fit_obj, seq_res$X, verbose = 0)
+                  )
+                  
+                  n <- base::nrow(new_data)
+                  
+                  if (isTRUE(padding_flag)) {
+                    # padding == TRUE:
+                    # build_lstm_sequences gives one sequence per row => length(pred_raw) == n
+                    pred_out <- pred_raw
+                  } else {
+                    # padding == FALSE:
+                    # build_lstm_sequences gives n - Tseq + 1 sequences
+                    # Align to rows: fill first (Tseq-1) with NA to keep length n
+                    if (n < Tseq) {
+                      base::stop(
+                        "LSTM predict (no padding): need at least sequence_length rows (",
+                        Tseq, "), got ", n, "."
+                      )
+                    }
+                    n_seq <- n - Tseq + 1L
+                    if (length(pred_raw) != n_seq) {
+                      base::stop("LSTM predict: internal length mismatch between X and pred_raw.")
+                    }
+                    pred_out <- c(
+                      rep(NA_real_, Tseq - 1L),  # no prediction for first (T-1) rows
+                      pred_raw                   # aligned to rows T..n
+                    )
+                  }
+                  
+                  pred_out
+                }
+                
+                
               )
             ################
             
