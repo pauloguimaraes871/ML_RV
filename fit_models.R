@@ -418,6 +418,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 16L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -453,6 +454,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 16L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -462,7 +464,7 @@
       nn2_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_res, "nn2_backtest_res_rescaled.rds") 
+      saveRDS(nn2_backtest_res, "nn2_backtest_res_rescaled_ens5.rds") 
     
       
       ### NN3
@@ -486,6 +488,7 @@
         rebal_months = c(6),
         early_stop = 20L,
         gsm_algo = "ols",
+        n_ensembles = 5,
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
         n_iter = 16L, init_points = 12L,
@@ -521,6 +524,7 @@
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
+        n_ensembles = 5,
         lower_quant_wins = 0.05,
         n_iter = 16L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
@@ -557,6 +561,7 @@
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
         n_iter = 16L, init_points = 12L,
+        n_ensembles = 5,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
         verbose = TRUE,
@@ -805,6 +810,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -814,7 +820,7 @@
       nn1_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn1_backtest_res_1986, "nn1_backtest_res_1986_data_rescaled_4.rds")
+      saveRDS(nn1_backtest_res_1986, "nn1_backtest_res_1986_data_rescaled_ens5.rds")
       
       ### NN2
       future::plan("sequential")
@@ -839,6 +845,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -848,7 +855,7 @@
       nn2_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_res_1986, "nn2_backtest_res_1986_rescaled_4.rds") 
+      saveRDS(nn2_backtest_res_1986, "nn2_backtest_res_1986_rescaled_4_ens5.rds") 
       
       
       ### NN3
@@ -874,6 +881,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -884,7 +892,7 @@
       
       
       #### Save RDS
-      saveRDS(nn3_backtest_res_1986, "nn3_backtest_res_1986_rescaled_4.rds") 
+      saveRDS(nn3_backtest_res_1986, "nn3_backtest_res_1986_rescaled_4_ens5.rds") 
       
       ### NN4
       future::plan("sequential")
@@ -909,6 +917,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -919,7 +928,7 @@
       
       
       #### Save RDS
-      saveRDS(nn4_backtest_res_1986, "nn4_backtest_res_1986_rescaled_4.rds") 
+      saveRDS(nn4_backtest_res_1986, "nn4_backtest_res_1986_rescaled_4_ens5.rds") 
       
       ### NN5
       future::plan("sequential")
@@ -944,6 +953,7 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        n_ensembles = 5,
         n_iter = 24L, init_points = 12L,
         k_iter = 2L, acq = "ucb",
         parallel = FALSE,
@@ -953,7 +963,7 @@
       nn5_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       #### Save RDS
-      saveRDS(nn5_backtest_res_1986, "nn5_backtest_res_1986_rescaled_4.rds") 
+      saveRDS(nn5_backtest_res_1986, "nn5_backtest_res_1986_rescaled_4_ens5.rds") 
       
       ##LSTM
       lstm_backtest_res_1986 <- run_walk_forward_validation(

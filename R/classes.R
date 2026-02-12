@@ -92,9 +92,30 @@ setMethod("predict",
                 xgb    = as.numeric(
                   predict(fit_obj, newdata = as.matrix(new_data))
                   ), 
-                nn     = as.numeric(
-                  predict(fit_obj, x = as.matrix(new_data))
-                  ),
+                nn = {
+                  Xv <- data.matrix(new_data)
+                  
+                  pred_one <- function(m) {
+                    # Prefer stats::predict if it dispatches; otherwise use the python method.
+                    out <- base::tryCatch(
+                      base::as.numeric(stats::predict(m, Xv)),
+                      error = function(e) base::as.numeric(m$predict(x = Xv, verbose = 0))
+                    )
+                    out
+                  }
+                  
+                  # Treat as ensemble if fit_obj is tagged or is simply a list of keras models
+                  is_ens <- base::inherits(fit_obj, "keras_ensemble") || base::is.list(fit_obj)
+                  
+                  if (is_ens) {
+                    pred_list <- purrr::map(fit_obj, pred_one)
+                    pred_mat  <- base::do.call(cbind, pred_list)
+                    base::rowMeans(pred_mat)
+                  } else {
+                    pred_one(fit_obj)
+                  }
+                  
+                },
                 lstm = {
                   kap <- object@keras_architecture_pars
                   if (is.null(kap) || is.null(kap$sequence_length)) {

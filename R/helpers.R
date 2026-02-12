@@ -595,6 +595,7 @@ validator <- function(target, covariates, model,
                       train_n, val_n, rebal_months,
                       early_stop, gsm_algo,
                       keras_architecture_pars,
+                      n_ensembles,
                       parallel
 ){
   
@@ -778,6 +779,15 @@ validator <- function(target, covariates, model,
     stop("hyperparameters do not match model choice")
   }
   if(model == "nn"){
+    
+    if (!is.numeric(n_ensembles) || length(n_ensembles) != 1L || is.na(n_ensembles)) {
+      stop("`n_ensembles` must be a single non-missing numeric/integer value.", call. = FALSE)
+    }
+    n_ensembles <- as.integer(n_ensembles)
+    if (n_ensembles < 1L) {
+      stop("`n_ensembles` must be >= 1.", call. = FALSE)
+    }
+    
     #droprate
     ##########
     #bayesian opt or grid search
@@ -913,6 +923,14 @@ validator <- function(target, covariates, model,
       stop("size_of_batch should be positive")
     }
     ##########
+    
+    if (!is.numeric(n_ensembles) || length(n_ensembles) != 1L || is.na(n_ensembles)) {
+      stop("`n_ensembles` must be a single non-missing numeric/integer value.", call. = FALSE)
+    }
+    n_ensembles <- as.integer(n_ensembles)
+    if (n_ensembles < 1L) {
+      stop("`n_ensembles` must be >= 1.", call. = FALSE)
+    }
   }
   
   
@@ -1764,7 +1782,7 @@ set_eval_function <- function(model){ #General Parameters
              quantile_tau      <- args$quantile_tau #Quantile tau
              
              ### Early Stop
-             early_stop <- args$early_stop #Eartly Stop
+             early_stop  <- args$early_stop #Eartly Stop
              
              ### Custom Loss
              obj_fun_trans <- args$obj_fun_trans
@@ -1798,6 +1816,7 @@ set_eval_function <- function(model){ #General Parameters
                  
                  #### Architecture choices
                  keras_architecture_pars = keras_architecture_pars,
+                 n_ensembles = 1L,
                  
                  #### Early Stop
                  early_stop = early_stop,
@@ -1814,28 +1833,50 @@ set_eval_function <- function(model){ #General Parameters
                  target_val = target_val #Data Part II
                )
                
-               model_nn <- keras_results$model_nn #Neural network models
-               fit_nn <- keras_results$fit_nn #Training history
+               model_obj  <- keras_results$model_nn #Neural network models
+               hist_obj   <- keras_results$fit_nn #Training history
+               Xv <- as.matrix(covariates_val_clean) #Features val
                
-               ### Predict
-               pred <- stats::predict(
-                 model_nn, #NN model
-                 as.matrix(covariates_val_clean) #Features val
-               )
-               
+               # ---- Predict: handle single vs ensemble ----
+               if (is.list(model_obj)) {
+                 # matrix: [n_obs x n_ensembles]
+                 pred_list <- purrr::map(
+                   model_obj, #NN model
+                   ~ base::as.numeric(stats::predict(.x, Xv))
+                 )
+                   ## Defensive check: all predictions must have same length
+                   pred_len <- base::vapply(pred_list, length, integer(1L))
+                   if (any(pred_len != pred_len[1L])) {
+                     stop("Ensemble members returned predictions with different lengths.", call. = FALSE)
+                   }
+                   
+                 pred_mat <- base::do.call(cbind, pred_list)   # n_obs x n_ensembles
+                 pred     <- base::rowMeans(pred_mat)
+                 
+                 # best_iter: median of per-model best epochs (if histories exist)
+                 best_iter_vec <- purrr::map_int(
+                   hist_obj,
+                   ~ base::which.min(.x$metrics[[eval_metric_trans$name]])
+                 )
+                 best_iter_agg <- base::as.integer(stats::median(best_iter_vec))
+               } else {
+                 pred <- base::as.numeric(stats::predict(model_obj, Xv))
+                 best_iter_agg <- base::which.min(hist_obj$metrics[[eval_metric_trans$name]])
+               }
+            
                #Calculate eval metrics
                df_eval_metrics <- calc_eval_metrics(
                  pred = pred, target = target_val,
                  huber_delta = huber_delta, quantile_tau = quantile_tau,
                  eval_metric = eval_metric,
                  early_stop = early_stop,
-                 best_iter = which.min(fit_nn$metrics[[eval_metric_trans$name]])
+                 best_iter = best_iter_agg
                )
                
                #Improve memory usage
                rm(covariates_matrix_train_clean, target_vector_train,
                   covariates_val_clean,
-                  model_nn, fit_nn)
+                  model_obj, hist_obj)
                gc()
                
                
@@ -2020,6 +2061,7 @@ fit_keras_model <- function(
     early_stop = NULL, #Training
     obj_fun_trans, huber_delta, #Loss Function Parameters
     covariates_matrix_train_clean, target_vector_train, #Data
+    n_ensembles = 1L,
     ...
 ){
   
@@ -2040,371 +2082,404 @@ fit_keras_model <- function(
   })
   eval_metric_trans <- args$eval_metric_trans
   
-  ### Define the structure of the network (how layers are organized)
-  ### Typical NN1 Architecture
-  if(keras_architecture_pars$n_layers == 1){
-    model_nn <- keras::keras_model_sequential()
-    tryCatch(
-      {#Try to create keras network
-        model_nn %>%
-          keras::layer_dense(
-            units       = keras_architecture_pars$units[1],
-            activation  = keras_architecture_pars$activation[1],
-            #Shape = # of features
-            input_shape =  ncol(covariates_matrix_train_clean), 
-            #L1 and L2 Regularization
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
+  ### Seed setter
+  set_all_seeds <- function(seed) {
+    base::set.seed(seed)
+    if (base::requireNamespace("tensorflow", quietly = TRUE)) {
+      tensorflow::tf$random$set_seed(as.integer(seed))
+    }
+    invisible(TRUE)
+  }
+  
+  fit_once <- function(seed = NULL) {
+    if (!is.null(seed)) {
+      set_all_seeds(seed)
+    }
+  
+      ### Define the structure of the network (how layers are organized)
+      ### Typical NN1 Architecture
+      if(keras_architecture_pars$n_layers == 1){
+        model_nn <- keras::keras_model_sequential()
+        tryCatch(
+          {#Try to create keras network
+            model_nn %>%
+              keras::layer_dense(
+                units       = keras_architecture_pars$units[1],
+                activation  = keras_architecture_pars$activation[1],
+                #Shape = # of features
+                input_shape =  ncol(covariates_matrix_train_clean), 
+                #L1 and L2 Regularization
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              )
+            
+            #Batch normalization
+            if (isTRUE(keras_architecture_pars$batch_norm_option[1])) {
+              model_nn <- model_nn %>% keras::layer_batch_normalization()
+            }
+            
+            model_nn <- model_nn %>%
+              keras::layer_dropout(rate = droprate) %>% #Adds dropout
+              #No activation means linear: f(x) = x
+              keras::layer_dense(units = 1) 
+          },
+          error = function(e) {
+            stop(
+              paste(
+                "Failure in creating keras network.",
+                "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+                "Original error:", conditionMessage(e)
+              ),
+              call. = FALSE
+            )
+          }
+        )
+      }
+      # Typical NN2 Architecture
+      if(keras_architecture_pars$n_layers == 2){
+        model_nn <- keras::keras_model_sequential()
+        tryCatch(
+          {#Try to create keras network
+            model_nn %>%
+              keras::layer_dense(
+                units = keras_architecture_pars$units[1],
+                #Units and activation may vary by layer
+                activation  = keras_architecture_pars$activation[1], 
+                #Shape = # of features
+                input_shape =  ncol(covariates_matrix_train_clean), 
+                #L1 and L2 Regularization
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>% 
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                units = keras_architecture_pars$units[2],
+                #Units and activation may vary by layer
+                activation = keras_architecture_pars$activation[2], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>% 
+              keras::layer_dropout(rate = droprate) %>% #Adds dropout
+              #No activation means linear: f(x) = x
+              keras::layer_dense(units = 1) 
+          },
+          error = function(e) {
+            stop(
+              paste(
+                "Failure in creating keras network.",
+                "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+                "Original error:", conditionMessage(e)
+              ),
+              call. = FALSE
+            )
+          }
+        )
+      }
+      # Typical NN3 Architecture
+      if(keras_architecture_pars$n_layers == 3){
+        model_nn <- keras::keras_model_sequential()
+        tryCatch(
+          {#Try to create keras network
+            model_nn %>%
+              keras::layer_dense(
+                units       = keras_architecture_pars$units[1],
+                # Units and activation may vary by layer
+                activation  = keras_architecture_pars$activation[1], 
+                # Shape = # of features
+                input_shape = ncol(covariates_matrix_train_clean), 
+                # L1 and L2 Regularization
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>% 
+              # Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
+              # Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[2],
+                activation         = keras_architecture_pars$activation[2], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>% 
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units      = keras_architecture_pars$units[3],
+                activation = keras_architecture_pars$activation[3],
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>% 
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>%
+              #No activation means linear: f(x) = x
+              keras::layer_dense(units = 1) 
+          },
+          error = function(e) {
+            stop(
+              paste(
+                "Failure in creating keras network.",
+                "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+                "Original error:", conditionMessage(e)
+              ),
+              call. = FALSE
+            )
+          }
+        )
+      } 
+      # Typical NN4 Architecture
+      if(keras_architecture_pars$n_layers == 4){
+        model_nn <- keras::keras_model_sequential()
+        tryCatch(
+          {# Try to create keras network
+            model_nn %>%
+              keras::layer_dense(
+                units              = keras_architecture_pars$units[1],
+                #Units and activation may vary by layer
+                activation         = keras_architecture_pars$activation[1],
+                #Shape = # of features
+                input_shape        =  ncol(covariates_matrix_train_clean), 
+                #L1 and L2 Regularization
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>% 
+              # Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
+              # Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                units              = keras_architecture_pars$units[2],
+                #Units and activation may vary by layer
+                activation         = keras_architecture_pars$activation[2], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>%
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[3],
+                activation         = keras_architecture_pars$activation[3], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>%
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[4],
+                activation         = keras_architecture_pars$activation[4], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[4]) keras::layer_batch_normalization() else .}() %>% 
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              #No activation means linear: f(x) = x
+              keras::layer_dense(units = 1) 
+          },
+          error = function(e) {
+            stop(
+              paste(
+                "Failure in creating keras network.",
+                "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+                "Original error:", conditionMessage(e)
+              ),
+              call. = FALSE
+            )
+          }
+        )
+      }
+      #Typical NN5 Architecture
+      if(keras_architecture_pars$n_layers == 5){
+        model_nn <- keras::keras_model_sequential()
+        tryCatch(
+          {#Try to create keras network
+            model_nn %>%
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[1],
+                activation         = keras_architecture_pars$activation[1], 
+                #Shape = # of features
+                input_shape        =  ncol(covariates_matrix_train_clean), 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>% #L1 and L2 Regularization
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[2],
+                activation         = keras_architecture_pars$activation[2],
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>%
+              #Adds dropout
+              keras::layer_dropout(rate = droprate) %>% 
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[3],
+                activation         = keras_architecture_pars$activation[3],
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>% 
+              keras::layer_dropout(rate = droprate) %>% #Adds dropout
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[4],
+                activation         = keras_architecture_pars$activation[4], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[4]) keras::layer_batch_normalization() else .}() %>%
+              keras::layer_dropout(rate = droprate) %>% #Adds dropout
+              keras::layer_dense(
+                #Units and activation may vary by layer
+                units              = keras_architecture_pars$units[5],
+                activation         = keras_architecture_pars$activation[5], 
+                kernel_regularizer = keras::regularizer_l1_l2(
+                  l1 = regularizer_l1, l2 = regularizer_l2)
+              ) %>%
+              #Batch normalization
+              {if (keras_architecture_pars$batch_norm_option[5]) keras::layer_batch_normalization() else .}() %>%
+              keras::layer_dropout(rate = droprate) %>% #Adds dropout
+              keras::layer_dense(units = 1) #No activation means linear: f(x) = x
+          },
+          error = function(e) {
+            stop(
+              paste(
+                "Failure in creating keras network.",
+                "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+                "Original error:", conditionMessage(e)
+              ),
+              call. = FALSE
+            )
+          }
+        )
+      } 
+      
+      #Backpropagation
+      tryCatch(
+        {#Try to compile keras model
+          model_nn %>% keras::compile( #Model Specification
+            #Loss function
+            loss = obj_fun_trans,
+            #Optimization method and learning rate
+            optimizer = switch(
+              keras_architecture_pars$nn_optimizer,
+              "Adam"    = keras::optimizer_adam(learning_rate = lr, clipnorm = 1.0),
+              "RMSProp" = keras::optimizer_rmsprop(learning_rate = lr),
+              keras::optimizer_adam(learning_rate = lr)
+            ),
+            #Custom eval metric translated
+            metrics = eval_metric_trans$metric
           )
-        
-        #Batch normalization
-        if (isTRUE(keras_architecture_pars$batch_norm_option[1])) {
-          model_nn <- model_nn %>% keras::layer_batch_normalization()
+        },
+        error = function(e) {
+          stop(
+            paste(
+              "Failure in creating keras network.",
+              "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+              "Original error:", conditionMessage(e)
+            ),
+            call. = FALSE
+          )
         }
-        
-        model_nn <- model_nn %>%
-          keras::layer_dropout(rate = droprate) %>% #Adds dropout
-          #No activation means linear: f(x) = x
-          keras::layer_dense(units = 1) 
-      },
-      error = function(e) {
-        stop(
-          paste(
-            "Failure in creating keras network.",
-            "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-            "Original error:", conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-  }
-  # Typical NN2 Architecture
-  if(keras_architecture_pars$n_layers == 2){
-    model_nn <- keras::keras_model_sequential()
-    tryCatch(
-      {#Try to create keras network
-        model_nn %>%
-          keras::layer_dense(
-            units = keras_architecture_pars$units[1],
-            #Units and activation may vary by layer
-            activation  = keras_architecture_pars$activation[1], 
-            #Shape = # of features
-            input_shape =  ncol(covariates_matrix_train_clean), 
-            #L1 and L2 Regularization
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>% 
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            units = keras_architecture_pars$units[2],
-            #Units and activation may vary by layer
-            activation = keras_architecture_pars$activation[2], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>% 
-          keras::layer_dropout(rate = droprate) %>% #Adds dropout
-          #No activation means linear: f(x) = x
-          keras::layer_dense(units = 1) 
-      },
-      error = function(e) {
-        stop(
-          paste(
-            "Failure in creating keras network.",
-            "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-            "Original error:", conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-  }
-  # Typical NN3 Architecture
-  if(keras_architecture_pars$n_layers == 3){
-    model_nn <- keras::keras_model_sequential()
-    tryCatch(
-      {#Try to create keras network
-        model_nn %>%
-          keras::layer_dense(
-            units       = keras_architecture_pars$units[1],
-            # Units and activation may vary by layer
-            activation  = keras_architecture_pars$activation[1], 
-            # Shape = # of features
-            input_shape = ncol(covariates_matrix_train_clean), 
-            # L1 and L2 Regularization
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>% 
-          # Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
-          # Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[2],
-            activation         = keras_architecture_pars$activation[2], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>% 
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units      = keras_architecture_pars$units[3],
-            activation = keras_architecture_pars$activation[3],
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>% 
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>%
-          #No activation means linear: f(x) = x
-          keras::layer_dense(units = 1) 
-      },
-      error = function(e) {
-        stop(
-          paste(
-            "Failure in creating keras network.",
-            "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-            "Original error:", conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-  } 
-  # Typical NN4 Architecture
-  if(keras_architecture_pars$n_layers == 4){
-    model_nn <- keras::keras_model_sequential()
-    tryCatch(
-      {# Try to create keras network
-        model_nn %>%
-          keras::layer_dense(
-            units              = keras_architecture_pars$units[1],
-            #Units and activation may vary by layer
-            activation         = keras_architecture_pars$activation[1],
-            #Shape = # of features
-            input_shape        =  ncol(covariates_matrix_train_clean), 
-            #L1 and L2 Regularization
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>% 
-          # Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
-          # Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            units              = keras_architecture_pars$units[2],
-            #Units and activation may vary by layer
-            activation         = keras_architecture_pars$activation[2], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>%
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[3],
-            activation         = keras_architecture_pars$activation[3], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>%
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[4],
-            activation         = keras_architecture_pars$activation[4], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[4]) keras::layer_batch_normalization() else .}() %>% 
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          #No activation means linear: f(x) = x
-          keras::layer_dense(units = 1) 
-      },
-      error = function(e) {
-        stop(
-          paste(
-            "Failure in creating keras network.",
-            "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-            "Original error:", conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-  }
-  #Typical NN5 Architecture
-  if(keras_architecture_pars$n_layers == 5){
-    model_nn <- keras::keras_model_sequential()
-    tryCatch(
-      {#Try to create keras network
-        model_nn %>%
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[1],
-            activation         = keras_architecture_pars$activation[1], 
-            #Shape = # of features
-            input_shape        =  ncol(covariates_matrix_train_clean), 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>% #L1 and L2 Regularization
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[1]) keras::layer_batch_normalization() else .}() %>% 
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[2],
-            activation         = keras_architecture_pars$activation[2],
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[2]) keras::layer_batch_normalization() else .}() %>%
-          #Adds dropout
-          keras::layer_dropout(rate = droprate) %>% 
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[3],
-            activation         = keras_architecture_pars$activation[3],
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[3]) keras::layer_batch_normalization() else .}() %>% 
-          keras::layer_dropout(rate = droprate) %>% #Adds dropout
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[4],
-            activation         = keras_architecture_pars$activation[4], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[4]) keras::layer_batch_normalization() else .}() %>%
-          keras::layer_dropout(rate = droprate) %>% #Adds dropout
-          keras::layer_dense(
-            #Units and activation may vary by layer
-            units              = keras_architecture_pars$units[5],
-            activation         = keras_architecture_pars$activation[5], 
-            kernel_regularizer = keras::regularizer_l1_l2(
-              l1 = regularizer_l1, l2 = regularizer_l2)
-          ) %>%
-          #Batch normalization
-          {if (keras_architecture_pars$batch_norm_option[5]) keras::layer_batch_normalization() else .}() %>%
-          keras::layer_dropout(rate = droprate) %>% #Adds dropout
-          keras::layer_dense(units = 1) #No activation means linear: f(x) = x
-      },
-      error = function(e) {
-        stop(
-          paste(
-            "Failure in creating keras network.",
-            "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-            "Original error:", conditionMessage(e)
-          ),
-          call. = FALSE
-        )
-      }
-    )
-  } 
-  
-  #Backpropagation
-  tryCatch(
-    {#Try to compile keras model
-      model_nn %>% keras::compile( #Model Specification
-        #Loss function
-        loss = obj_fun_trans,
-        #Optimization method and learning rate
-        optimizer = switch(
-          keras_architecture_pars$nn_optimizer,
-          "Adam"    = keras::optimizer_adam(learning_rate = lr, clipnorm = 1.0),
-          "RMSProp" = keras::optimizer_rmsprop(learning_rate = lr),
-          keras::optimizer_adam(learning_rate = lr)
-        ),
-        #Custom eval metric translated
-        metrics = eval_metric_trans$metric
       )
-    },
-    error = function(e) {
-      stop(
-        paste(
-          "Failure in creating keras network.",
-          "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-          "Original error:", conditionMessage(e)
-        ),
-        call. = FALSE
-      )
-    }
-  )
-  
-  #Fit
-  tryCatch(
-    {
-      if(is.null(early_stop)){
-        #In case no early_stop
-        fit_nn <- model_nn %>% 
-          keras::fit(
-            x          = as.matrix(covariates_matrix_train_clean), #features
-            y          = target_vector_train, #Training label
-            epochs     = number_of_epochs, #Number of epochs
-            batch_size = size_of_batch, #Batch size (should be a multiple of 2)
-            verbose    = FALSE
+      
+      #Fit
+      tryCatch(
+        {
+          if(is.null(early_stop)){
+            #In case no early_stop
+            fit_nn <- model_nn %>% 
+              keras::fit(
+                x          = as.matrix(covariates_matrix_train_clean), #features
+                y          = target_vector_train, #Training label
+                epochs     = number_of_epochs, #Number of epochs
+                batch_size = size_of_batch, #Batch size (should be a multiple of 2)
+                verbose    = FALSE
+              )
+          } else {
+            #In case of early_stop
+            fit_nn <- model_nn %>% 
+              keras::fit(
+                x          = as.matrix(covariates_matrix_train_clean), #features
+                y          = target_vector_train, #Training label
+                epochs     = number_of_epochs, #Number of epochs
+                batch_size = size_of_batch, #Batch size (should be a multiple of 2)
+                verbose    = FALSE,
+                callbacks = list(
+                  keras::callback_early_stopping(
+                    monitor              = eval_metric_trans$name,
+                    #Early stop (nº epochs with no improvement)
+                    patience             = early_stop, 
+                    #Restore best weights after stopping
+                    restore_best_weights = TRUE, 
+                    #Min for RMSE, MAE and HUBER
+                    mode                 = eval_metric_trans$mode 
+                  ) 
+                ), 
+                validation_data = 
+                  #Validation data
+                  list(as.matrix(covariates_val_clean), target_val)
+              )
+          }
+        },
+        error = function(e) {
+          stop(
+            paste(
+              "Failure in creating keras network.",
+              "Check units, activation, input_shape, regularizer, BN, droprate.\n",
+              "Original error:", conditionMessage(e)
+            ),
+            call. = FALSE
           )
-      } else {
-        #In case of early_stop
-        fit_nn <- model_nn %>% 
-          keras::fit(
-            x          = as.matrix(covariates_matrix_train_clean), #features
-            y          = target_vector_train, #Training label
-            epochs     = number_of_epochs, #Number of epochs
-            batch_size = size_of_batch, #Batch size (should be a multiple of 2)
-            verbose    = FALSE,
-            callbacks = list(
-              keras::callback_early_stopping(
-                monitor              = eval_metric_trans$name,
-                #Early stop (nº epochs with no improvement)
-                patience             = early_stop, 
-                #Restore best weights after stopping
-                restore_best_weights = TRUE, 
-                #Min for RMSE, MAE and HUBER
-                mode                 = eval_metric_trans$mode 
-              ) 
-            ), 
-            validation_data = 
-              #Validation data
-              list(as.matrix(covariates_val_clean), target_val)
-          )
-      }
-    },
-    error = function(e) {
-      stop(
-        paste(
-          "Failure in creating keras network.",
-          "Check units, activation, input_shape, regularizer, BN, droprate.\n",
-          "Original error:", conditionMessage(e)
-        ),
-        call. = FALSE
+        }
       )
-    }
-  )
-  return(list(model_nn = model_nn,
-              fit_nn   = fit_nn))
+      return(list(model_nn = model_nn,
+                  fit_nn   = fit_nn))
+    
+  }
+  
+  if (n_ensembles == 1L){
+    out <- fit_once(seed = NULL)
+    return(out)
+  }
+  
+  # Distinct seeds. Uses current RNG state; reproducible if caller set.seed() before.
+  seeds <- base::sample.int(n = 1000000000L, size = n_ensembles, replace = FALSE)
+  outs <- base::lapply(seeds, function(s) fit_once(seed = s))
+  
+  # Return list of models and fits
+  models <- base::lapply(outs, `[[`, "model_nn")
+  fits   <- base::lapply(outs, `[[`, "fit_nn")
+  
+  return(list(model_nn = models,
+              fit_nn   = fits,
+              seeds    = seeds))
   
 }
 
@@ -2813,6 +2888,7 @@ fit_rv_model <- function(
     obj_fun_trans, huber_delta, quantile_tau, 
     early_stop, keras_architecture_pars, #Model Parameters
     optimal_hyper = NULL, eval_metric_trans, #Validation Parameters
+    n_ensembles = 1L,
     upper_quant_wins = 0.95, lower_quant_wins = 0.05, verbose){ #MISC
   
   ### Fit model based on 'model'
@@ -2824,9 +2900,9 @@ fit_rv_model <- function(
                 ),
                 
                 ## GLMNET
-                glmnet::glmnet(
+                glmnet = glmnet::glmnet(
                   ### Features and target
-                  covariates_refit[,-1], 
+                  covariates_refit[,-1, drop = FALSE], 
                   target_refit, 
                   ### Hyperparameters
                   alpha = optimal_hyper["alpha"],
@@ -2852,7 +2928,7 @@ fit_rv_model <- function(
                 xgb = xgboost::xgb.train(
                   ### Features and target
                   data = xgboost::xgb.DMatrix(
-                    data = as.matrix(covariates_refit[,-1]), 
+                    data = as.matrix(covariates_refit[,-1,drop = FALSE]), 
                     label = target_refit),
                   objective = obj_fun_trans,
                   huber_slope = huber_delta,
@@ -2874,9 +2950,10 @@ fit_rv_model <- function(
                 ),
                 
                 ## Keras
-                nn = fit_keras_model(
+                nn = {
+                  keras_res <- fit_keras_model(
                   ### Feature
-                  covariates_matrix_train_clean = covariates_refit[,-1], 
+                  covariates_matrix_train_clean = covariates_refit[,-1,drop = FALSE], 
                   ### Target
                   target_vector_train = target_refit, 
                   obj_fun_trans = obj_fun_trans, #No need for switch
@@ -2885,6 +2962,7 @@ fit_rv_model <- function(
                   ### Keras Parameters
                   #### Architecture
                   keras_architecture_pars = keras_architecture_pars,
+                  n_ensembles             = n_ensembles,
                   
                   #### Hyperparameters
                   ##### Training
@@ -2902,7 +2980,23 @@ fit_rv_model <- function(
                   droprate = optimal_hyper["droprate"],
                   
                   verbose = verbose
-                )$model_nn,
+                )
+                  # Store only the trained models, but keep metadata as attributes.
+                  # (If n_ensembles==1L, model_nn is a single model; else it's a list of models.)
+                  fit_obj <- keras_res$model_nn
+                  if (!is.null(keras_res$seeds)) {
+                    base::attr(fit_obj, "seeds") <- keras_res$seeds
+                  }
+                  if (n_ensembles > 1L) {
+                    base::class(fit_obj) <- base::unique(c("keras_ensemble", base::class(fit_obj)))
+                  }
+                  if (n_ensembles > 1L && !base::is.list(keras_res$model_nn)) {
+                    stop("n_ensembles > 1L but fit_keras_model() did not return a list of models.", call. = FALSE)
+                  }
+                  
+                  fit_obj
+                  
+                },
                 lstm = {
                   
                   ##### Guards
@@ -2964,7 +3058,7 @@ fit_rv_model <- function(
     "rv_model", 
     fit_obj                 = fit,
     covariates              = names(covariates_refit[,-1]),
-    model_class             = class(fit),
+    model_class             = if (model == "nn" && n_ensembles > 1L) "keras_ensemble" else base::class(fit),
     model                   = model,
     best_hyperparameters    = if (model %in% c("har")) NULL else optimal_hyper,
     obj_fun                 = obj_fun_trans,
@@ -3355,7 +3449,7 @@ run_walk_forward_validation <- function(
                    tibble::remove_rownames()
           ),
           # Join to get all features even if 0 imp
-          data.frame(feat = colnames(covariates_refit[,-1])),
+          data.frame(feat = colnames(covariates_refit[,-1, drop = FALSE])),
           by = "feat"
         ) %>%
           dplyr::mutate(
