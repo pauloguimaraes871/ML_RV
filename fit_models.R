@@ -500,7 +500,7 @@
       nn3_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn3_backtest_res, "nn3_backtest_res_rescaled.rds") 
+      saveRDS(nn3_backtest_res, "nn3_backtest_res_rescaled_ens5.rds") 
       
       ### NN4
       future::plan("sequential")
@@ -535,7 +535,7 @@
       nn4_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn4_backtest_res, "nn4_backtest_res_rescaled.rds") 
+      saveRDS(nn4_backtest_res, "nn4_backtest_res_rescaled_ens5.rds") 
       
       ### NN5
       future::plan("sequential")
@@ -569,10 +569,9 @@
       )
       
       #### Save RDS
-      saveRDS(nn5_backtest_res, "nn5_backtest_res.rds") 
+      saveRDS(nn5_backtest_res, "nn5_backtest_res_ens5.rds") 
       
       #Join tables
-      
       har_backtest_res <- readRDS(file.path(here::here(), "models", "har_backtest_res_rescaled.rds"))
       glmnet_backtest_res <- readRDS(file.path(here::here(), "models", "glmnet_backtest_res_rescaled.rds"))
       rf_backtest_res    <- readRDS(file.path(here::here(), "models", "rf_backtest_res_rescaled.rds"))
@@ -1020,7 +1019,6 @@
       saveRDS(lstm_backtest_res_1986, "lstm_backtest_res_1986_rescaled_5.rds") 
       
       
-      
       #Join tables
       har_backtest         <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986.rds"))
       har_backtest_resc    <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986_rescaled.rds"))
@@ -1037,32 +1035,37 @@
       nn1_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986.rds"))
       nn1_backtest_2      <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_2.rds"))
       
-      nn1_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled.rds"))
-      nn1_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_2.rds"))
-      nn1_backtest_resc3  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_3.rds"))
-      nn1_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_4.rds"))
-      nn1_backtest_resc5  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_5.rds"))
-      nn1_backtest_resc6  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_6.rds"))
+      nn1_backtest_resc        <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled.rds"))
+      nn1_backtest_resc2       <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_2.rds"))
+      nn1_backtest_resc3       <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_3.rds"))
+      nn1_backtest_resc4       <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_4.rds"))
+      nn1_backtest_resc5       <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_5.rds"))
+      nn1_backtest_resc6       <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_6.rds"))
+      nn1_backtest_resc4_ens5  <- readRDS(file.path(here::here(), "models", "1986", "nn1_backtest_res_1986_rescaled_4_ens5.rds"))
       
-      nn2_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986.rds"))
-      nn2_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled.rds"))
-      nn2_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_2.rds"))
-      nn2_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_4.rds"))
+      nn2_backtest            <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986.rds"))
+      nn2_backtest_resc       <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled.rds"))
+      nn2_backtest_resc2      <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_2.rds"))
+      nn2_backtest_resc4      <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_4.rds"))
+      nn2_backtest_resc4_ens5 <- readRDS(file.path(here::here(), "models", "1986", "nn2_backtest_res_1986_rescaled_4_ens5.rds"))
       
-      nn3_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986.rds"))
-      nn3_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled.rds"))
-      nn3_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_2.rds"))
-      nn3_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_4.rds"))
+      nn3_backtest             <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986.rds"))
+      nn3_backtest_resc        <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled.rds"))
+      nn3_backtest_resc2       <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_2.rds"))
+      nn3_backtest_resc4       <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_4.rds"))
+      nn3_backtest_resc4_ens5  <- readRDS(file.path(here::here(), "models", "1986", "nn3_backtest_res_1986_rescaled_4_ens5.rds"))
       
-      nn4_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986.rds"))
-      nn4_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled.rds"))
-      nn4_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_2.rds"))
-      nn4_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_4.rds"))
+      nn4_backtest            <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986.rds"))
+      nn4_backtest_resc       <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled.rds"))
+      nn4_backtest_resc2      <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_2.rds"))
+      nn4_backtest_resc4      <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_4.rds"))
+      nn4_backtest_resc4_ens5 <- readRDS(file.path(here::here(), "models", "1986", "nn4_backtest_res_1986_rescaled_4_ens5.rds"))
       
-      nn5_backtest        <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986.rds"))
-      nn5_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled.rds"))
-      nn5_backtest_resc2  <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_2.rds"))
-      nn5_backtest_resc4  <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_4.rds"))
+      nn5_backtest            <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986.rds"))
+      nn5_backtest_resc       <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled.rds"))
+      nn5_backtest_resc2      <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_2.rds"))
+      nn5_backtest_resc4      <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_4.rds"))
+      nn5_backtest_resc4_ens5 <- readRDS(file.path(here::here(), "models", "1986", "nn5_backtest_res_1986_rescaled_4_ens5.rds"))
       
       lstm_backtest_res   <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986.rds"))
       lstm_backtest_resc4 <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_4.rds"))
@@ -1122,30 +1125,35 @@
         nn1_resc_4           = nn1_backtest_resc4,
         nn1_resc_5           = nn1_backtest_resc5,
         nn1_resc_6           = nn1_backtest_resc6,
+        nn1_resc_4_ens5      = nn1_backtest_resc4_ens5,
         
         ## Neural nets – NN2
         nn2                  = nn2_backtest,
         nn2_resc_1           = nn2_backtest_resc,
         nn2_resc_2           = nn2_backtest_resc2,
         nn2_resc_4           = nn2_backtest_resc4,
+        nn2_resc_4_ens5      = nn2_backtest_resc4_ens5,
         
         ## Neural nets – NN3
         nn3                  = nn3_backtest,
         nn3_resc_1           = nn3_backtest_resc,
         nn3_resc_2           = nn3_backtest_resc2,
         nn3_resc_4           = nn3_backtest_resc4,
+        nn3_resc_4_ens5      = nn3_backtest_resc4_ens5,
         
         ## Neural nets – NN4
         nn4                  = nn4_backtest,
         nn4_resc_1           = nn4_backtest_resc,
         nn4_resc_2           = nn4_backtest_resc2,
         nn4_resc_4           = nn4_backtest_resc4,
+        nn4_resc_4_ens5      = nn4_backtest_resc4_ens5,
         
         ## Neural nets – NN5
         nn5                  = nn5_backtest,
         nn5_resc_1           = nn5_backtest_resc,
         nn5_resc_2           = nn5_backtest_resc2,
         nn5_resc_4           = nn5_backtest_resc4,
+        nn5_resc_4_ens5      = nn5_backtest_resc4_ens5,
         
         ## LSTM
         lstm                 = lstm_backtest_res,
@@ -1195,6 +1203,7 @@
       }) %>%
         purrr::reduce(dplyr::bind_rows) %>%
         dplyr::mutate(
+          n_ensembles   = if (is.null(backtest_meta$n_ensembles)) 0 else backtest_meta$n_ensembles,
           preprocessing = dplyr::case_when(
             grepl("resc", model) ~ "minmax_scaling",
             TRUE                 ~ "zscore_standardization"
