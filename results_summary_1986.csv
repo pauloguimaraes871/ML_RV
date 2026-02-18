@@ -1,205 +1,235 @@
-metric;model;preprocessing;value;val_n;train_n;alpha;lambda.min.ratio;mtry;num.trees;max.depth;min.bucket;min_child_weight;max_depth;subsample;colsample_bytree;eta;gamma;nrounds;early_stop;regularizer_l1;regularizer_l2;droprate;lr;size_of_batch;number_of_epochs;rec_droprate
-mape;glmnet;minmax_scaling;0.07;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mape;glmnet;zscore_standardization;0.08;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;glmnet;minmax_scaling;0.13;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;glmnet;zscore_standardization;0.15;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;glmnet;minmax_scaling;0.22;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;glmnet;zscore_standardization;0.24;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;glmnet;minmax_scaling;0.44;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;glmnet;zscore_standardization;0.47;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;glmnet;minmax_scaling;0.56;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;glmnet;zscore_standardization;0.59;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;glmnet;zscore_standardization;0.64;60;120;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;glmnet;minmax_scaling;0.68;60;150;0, 1;1e-04, 0.01;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;har;minmax_scaling;0.08;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mape;har;zscore_standardization;0.11;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mape;har;minmax_scaling;0.13;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;har;zscore_standardization;0.23;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;har;zscore_standardization;0.31;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;har;minmax_scaling;0.31;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;har;zscore_standardization;0.36;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;har;minmax_scaling;0.36;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;har;zscore_standardization;0.61;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;har;minmax_scaling;0.72;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;har;zscore_standardization;0.79;0;180;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;har;minmax_scaling;0.95;0;210;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;lstm;minmax_scaling;-0.05;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-rss;lstm;minmax_scaling;0.11;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-mape;lstm;zscore_standardization;0.12;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-mape;lstm;minmax_scaling;0.13;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-mape;lstm;minmax_scaling;0.14;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-rss;lstm;zscore_standardization;0.21;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-mphe;lstm;zscore_standardization;0.27;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-mphe;lstm;minmax_scaling;0.31;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-mpe;lstm;zscore_standardization;0.33;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-mphe;lstm;minmax_scaling;0.35;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-mpe;lstm;minmax_scaling;0.37;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-mpe;lstm;minmax_scaling;0.39;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-mae;lstm;zscore_standardization;0.67;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-mae;lstm;minmax_scaling;0.74;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-mae;lstm;minmax_scaling;0.79;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-rmse;lstm;zscore_standardization;0.88;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-04, 0.01;0.2, 0.5;5e-04, 0.002;32, 64;40, 120;0, 0.3
-rmse;lstm;minmax_scaling;0.93;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;0, 0.3
-rmse;lstm;minmax_scaling;1.01;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;NA;0.001, 0.1;0.25, 0.75;1e-04, 0.001;8, 32;40, 120;0.25, 0.75
-rss;nn1;zscore_standardization;-0.03;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.09;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.10;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.10;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.11;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn1;minmax_scaling;0.12;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.13;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn1;zscore_standardization;0.13;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.21;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.21;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.22;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.23;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.26;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.26;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.26;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.30;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.32;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mphe;nn1;minmax_scaling;0.32;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mphe;nn1;zscore_standardization;0.33;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.34;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.34;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn1;minmax_scaling;0.37;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn1;zscore_standardization;0.38;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn1;minmax_scaling;0.42;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.56;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.57;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.59;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.64;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.68;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn1;minmax_scaling;0.74;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.75;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn1;zscore_standardization;0.76;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.83;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0.005, 0.1;0.005, 0.1;0.3, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.85;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.85;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.86;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-06, 0.01;1e-06, 0.01;0.1, 0.5;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn1;minmax_scaling;0.96;120;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn1;zscore_standardization;1.00;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn2;minmax_scaling;0.02;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn2;zscore_standardization;0.07;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn2;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn2;minmax_scaling;0.12;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn2;zscore_standardization;0.12;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn2;minmax_scaling;0.13;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn2;minmax_scaling;0.20;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn2;minmax_scaling;0.26;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn2;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn2;minmax_scaling;0.29;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn2;zscore_standardization;0.31;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn2;minmax_scaling;0.32;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn2;minmax_scaling;0.34;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn2;minmax_scaling;0.34;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn2;zscore_standardization;0.36;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn2;minmax_scaling;0.39;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn2;minmax_scaling;0.64;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn2;minmax_scaling;0.69;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn2;zscore_standardization;0.73;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn2;minmax_scaling;0.78;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn2;minmax_scaling;0.83;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn2;minmax_scaling;0.88;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn2;zscore_standardization;0.95;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn2;minmax_scaling;0.98;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn3;minmax_scaling;0.10;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn3;minmax_scaling;0.10;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn3;minmax_scaling;0.11;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn3;zscore_standardization;0.12;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn3;minmax_scaling;0.17;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mphe;nn3;minmax_scaling;0.22;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn3;zscore_standardization;0.23;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn3;minmax_scaling;0.23;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn3;zscore_standardization;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn3;minmax_scaling;0.29;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn3;minmax_scaling;0.30;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn3;minmax_scaling;0.31;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn3;zscore_standardization;0.35;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn3;minmax_scaling;0.35;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn3;minmax_scaling;0.38;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn3;minmax_scaling;0.39;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn3;minmax_scaling;0.59;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn3;minmax_scaling;0.61;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn3;zscore_standardization;0.70;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn3;minmax_scaling;0.71;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn3;minmax_scaling;0.77;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn3;minmax_scaling;0.77;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn3;zscore_standardization;0.87;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn3;minmax_scaling;0.90;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn4;minmax_scaling;0.10;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn4;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn4;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn4;zscore_standardization;0.12;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn4;zscore_standardization;0.17;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn4;minmax_scaling;0.23;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mphe;nn4;minmax_scaling;0.25;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn4;minmax_scaling;0.26;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn4;minmax_scaling;0.29;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn4;zscore_standardization;0.30;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn4;minmax_scaling;0.31;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rss;nn4;minmax_scaling;0.32;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn4;minmax_scaling;0.32;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn4;minmax_scaling;0.33;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn4;zscore_standardization;0.36;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn4;minmax_scaling;0.38;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn4;minmax_scaling;0.61;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn4;minmax_scaling;0.64;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn4;minmax_scaling;0.65;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn4;zscore_standardization;0.72;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn4;minmax_scaling;0.78;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn4;minmax_scaling;0.81;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn4;minmax_scaling;0.83;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn4;zscore_standardization;0.90;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn5;zscore_standardization;0.06;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn5;minmax_scaling;0.10;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn5;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn5;minmax_scaling;0.11;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;nn5;minmax_scaling;0.12;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mape;nn5;zscore_standardization;0.13;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn5;minmax_scaling;0.22;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rss;nn5;minmax_scaling;0.23;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn5;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn5;minmax_scaling;0.28;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mphe;nn5;minmax_scaling;0.32;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mphe;nn5;zscore_standardization;0.33;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn5;minmax_scaling;0.35;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn5;minmax_scaling;0.35;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mpe;nn5;minmax_scaling;0.37;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mpe;nn5;zscore_standardization;0.38;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn5;minmax_scaling;0.69;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn5;minmax_scaling;0.70;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mae;nn5;minmax_scaling;0.73;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-mae;nn5;zscore_standardization;0.76;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn5;minmax_scaling;0.87;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn5;minmax_scaling;0.87;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;10;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-rmse;nn5;minmax_scaling;0.94;90;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;1e-05, 0.05;1e-05, 0.05;0.25, 0.75;1e-04, 0.01;8, 32;50, 150;NA
-rmse;nn5;zscore_standardization;0.96;60;120;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;20;0, 1e-06;2e-04, 0.002;0.1, 0.25;8e-04, 0.002;32, 32;50, 150;NA
-mape;rf;zscore_standardization;0.08;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mape;rf;minmax_scaling;0.08;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;rf;zscore_standardization;0.14;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mphe;rf;minmax_scaling;0.15;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;rf;zscore_standardization;0.22;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mpe;rf;minmax_scaling;0.23;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;rf;zscore_standardization;0.45;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mae;rf;minmax_scaling;0.46;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;rf;minmax_scaling;0.59;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;rf;zscore_standardization;0.59;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rmse;rf;minmax_scaling;0.64;90;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-rss;rf;zscore_standardization;0.64;60;120;NA;NA;0.1, 0.9;300, 1500;3, 16;1, 6;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
-mape;xgb;zscore_standardization;0.08;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mape;xgb;minmax_scaling;0.09;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mphe;xgb;zscore_standardization;0.16;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mphe;xgb;minmax_scaling;0.18;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mpe;xgb;zscore_standardization;0.25;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mpe;xgb;minmax_scaling;0.26;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mae;xgb;zscore_standardization;0.50;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-mae;xgb;minmax_scaling;0.53;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-rss;xgb;minmax_scaling;0.55;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-rss;xgb;zscore_standardization;0.60;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-rmse;xgb;zscore_standardization;0.63;60;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
-rmse;xgb;minmax_scaling;0.66;90;120;0, 2;NA;NA;NA;NA;NA;2, 10;2, 5;0.6, 0.95;0.6, 0.95;0.05, 0.2;0, 5;150, 800;30;NA;NA;NA;NA;NA;NA;NA
+"metric","model","preprocessing","value","val_n","train_n","n_ensembles","alpha","lambda.min.ratio","mtry","num.trees","max.depth","min.bucket","min_child_weight","max_depth","subsample","colsample_bytree","eta","gamma","nrounds","early_stop","regularizer_l1","regularizer_l2","droprate","lr","size_of_batch","number_of_epochs","rec_droprate"
+"rss","har","zscore_standardization",0.357762405250421,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","har","zscore_standardization",0.789524623584975,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","har","zscore_standardization",0.614331338977646,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","har","zscore_standardization",0.233493933450173,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","har","zscore_standardization",0.307165669488823,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","har","zscore_standardization",0.106860233016372,0,180,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","har","minmax_scaling",0.0756815819675799,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","har","minmax_scaling",0.948550044615537,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","har","minmax_scaling",0.724956679053365,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","har","minmax_scaling",0.310717505818474,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","har","minmax_scaling",0.362478339526682,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","har","minmax_scaling",0.128029960074631,0,210,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","glmnet","zscore_standardization",0.635737432714705,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","glmnet","zscore_standardization",0.594600252332805,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","glmnet","zscore_standardization",0.471265015308207,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","glmnet","zscore_standardization",0.146949833265912,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","glmnet","zscore_standardization",0.235632507654104,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","glmnet","zscore_standardization",0.079588095249099,60,120,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","glmnet","minmax_scaling",0.679596730698718,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","glmnet","minmax_scaling",0.558467513297395,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","glmnet","minmax_scaling",0.443259724898662,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","glmnet","minmax_scaling",0.13261911026894,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","glmnet","minmax_scaling",0.221629862449331,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","glmnet","minmax_scaling",0.0736460680857692,60,150,0,"0, 1","1e-04, 0.01",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","rf","zscore_standardization",0.640023841879077,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","rf","zscore_standardization",0.591091461544588,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","rf","zscore_standardization",0.448595054970294,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","rf","zscore_standardization",0.142025738365342,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","rf","zscore_standardization",0.224297527485147,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","rf","zscore_standardization",0.0781145075419003,60,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","rf","minmax_scaling",0.585013025539641,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rmse","rf","minmax_scaling",0.635574812529307,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mae","rf","minmax_scaling",0.464279244641157,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mphe","rf","minmax_scaling",0.152421713719705,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mpe","rf","minmax_scaling",0.232139622320579,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"mape","rf","minmax_scaling",0.0824241865761653,90,120,0,NA,NA,"0.1, 0.9","300, 1500","3, 16","1, 6",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"rss","xgb","zscore_standardization",0.595809529758903,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"rmse","xgb","zscore_standardization",0.626341015341065,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mae","xgb","zscore_standardization",0.503541048012535,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mphe","xgb","zscore_standardization",0.162239349854387,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mpe","xgb","zscore_standardization",0.251770524006267,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mape","xgb","zscore_standardization",0.0841813767400084,60,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"rss","xgb","minmax_scaling",0.554031742716025,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"rmse","xgb","minmax_scaling",0.658872557639731,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mae","xgb","minmax_scaling",0.526983510658736,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mphe","xgb","minmax_scaling",0.175939363123558,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mpe","xgb","minmax_scaling",0.263491755329368,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"mape","xgb","minmax_scaling",0.0870577449231468,90,120,0,"0, 2",NA,NA,NA,NA,NA,"2, 10","2, 5","0.6, 0.95","0.6, 0.95","0.05, 0.2","0, 5","150, 800",30,NA,NA,NA,NA,NA,NA,NA
+"rss","nn1","zscore_standardization",-0.026618210142586,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn1","zscore_standardization",0.998210879333568,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn1","zscore_standardization",0.757162839628754,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn1","zscore_standardization",0.332567313286192,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn1","zscore_standardization",0.378581419814377,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn1","zscore_standardization",0.128986454135196,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.25566551475088,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.849966653184554,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.555256155564453,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.209577995106726,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.277628077782226,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.0959942100896402,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.263517282103638,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.845471742744048,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.56719720800101,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.213705273560901,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.283598604000505,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.0941417229478426,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.233706930615816,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.862412943405888,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.677651799012989,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.275597815033376,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.338825899506494,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.114416109122513,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-06, 0.01","1e-06, 0.01","0.1, 0.5","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.424442945791532,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.748503156117422,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.592588664565517,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.220270156141733,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.296294332282758,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.0977421180721666,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.340640997907231,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.830703315052895,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.640552413934955,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.257198612578824,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.320276206967478,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.108370590010294,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0.005, 0.1","0.005, 0.1","0.3, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.125555488259953,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.956645651678006,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.737963142726074,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.320890727811684,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.368981571363037,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.120572235660549,120,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn1","minmax_scaling",0.451648624360092,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn1","minmax_scaling",0.730598731789197,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn1","minmax_scaling",0.584510786085163,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn1","minmax_scaling",0.212571648753785,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn1","minmax_scaling",0.292255393042582,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn1","minmax_scaling",0.0962417766854335,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn2","zscore_standardization",0.0731377138544221,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn2","zscore_standardization",0.948473983347086,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn2","zscore_standardization",0.728315674924778,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn2","zscore_standardization",0.309051828606932,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn2","zscore_standardization",0.364157837462389,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn2","zscore_standardization",0.121724318495461,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn2","minmax_scaling",0.283152800292666,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn2","minmax_scaling",0.834124953470133,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn2","minmax_scaling",0.644501478020435,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn2","minmax_scaling",0.258279640466809,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn2","minmax_scaling",0.322250739010218,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn2","minmax_scaling",0.108951581691742,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn2","minmax_scaling",0.197400596925421,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn2","minmax_scaling",0.882606727205056,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn2","minmax_scaling",0.688885592014375,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn2","minmax_scaling",0.285191557072092,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn2","minmax_scaling",0.344442796007187,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn2","minmax_scaling",0.115873145960871,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn2","minmax_scaling",0.0218903699553857,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn2","minmax_scaling",0.975760453715201,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn2","minmax_scaling",0.776358545752208,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn2","minmax_scaling",0.341131708982724,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn2","minmax_scaling",0.388179272876104,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn2","minmax_scaling",0.126918709307551,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn2","minmax_scaling",0.516422189436881,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn2","minmax_scaling",0.686092430149442,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn2","minmax_scaling",0.555506930723095,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn2","minmax_scaling",0.191280598818292,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn2","minmax_scaling",0.277753465361547,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn2","minmax_scaling",0.0907699137605393,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn3","zscore_standardization",0.225364224573698,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn3","zscore_standardization",0.86709482104787,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn3","zscore_standardization",0.697199010326199,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn3","zscore_standardization",0.281149178846075,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn3","zscore_standardization",0.3485995051631,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn3","zscore_standardization",0.118420969538957,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn3","minmax_scaling",0.381448221842217,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn3","minmax_scaling",0.774828964324785,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn3","minmax_scaling",0.610681278665172,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn3","minmax_scaling",0.228994027504717,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn3","minmax_scaling",0.305340639332586,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn3","minmax_scaling",0.102538553256828,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn3","minmax_scaling",0.39221903743338,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn3","minmax_scaling",0.768053306966802,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn3","minmax_scaling",0.588645172853688,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn3","minmax_scaling",0.221311392478655,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn3","minmax_scaling",0.294322586426844,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn3","minmax_scaling",0.10056711198781,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn3","minmax_scaling",0.174452198133376,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn3","minmax_scaling",0.896438619322356,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn3","minmax_scaling",0.705263484349265,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn3","minmax_scaling",0.296811359967435,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn3","minmax_scaling",0.352631742174633,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn3","minmax_scaling",0.112780933978618,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn3","minmax_scaling",0.473530609430597,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn3","minmax_scaling",0.715873042090277,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn3","minmax_scaling",0.569140026102646,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn3","minmax_scaling",0.205187145420113,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn3","minmax_scaling",0.284570013051323,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn3","minmax_scaling",0.0930157649673222,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn4","zscore_standardization",0.168199222074141,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn4","zscore_standardization",0.898519440909266,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn4","zscore_standardization",0.723637478097841,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn4","zscore_standardization",0.300287839898581,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn4","zscore_standardization",0.361818739048921,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn4","zscore_standardization",0.120370910598976,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn4","minmax_scaling",0.29308985014862,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn4","minmax_scaling",0.828323391399984,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn4","minmax_scaling",0.652176111587402,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn4","minmax_scaling",0.25765411834644,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn4","minmax_scaling",0.326088055793701,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn4","minmax_scaling",0.106901572144749,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn4","minmax_scaling",0.321775735498995,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn4","minmax_scaling",0.811342972302975,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn4","minmax_scaling",0.643884306037322,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn4","minmax_scaling",0.250469458980661,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn4","minmax_scaling",0.321942153018661,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn4","minmax_scaling",0.10694497985759,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn4","minmax_scaling",0.380962210229215,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn4","minmax_scaling",0.776261462644796,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn4","minmax_scaling",0.614468515812485,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn4","minmax_scaling",0.232588918572415,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn4","minmax_scaling",0.307234257906242,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn4","minmax_scaling",0.101438642617945,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn4","minmax_scaling",0.308322292477894,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn4","minmax_scaling",0.820542980811721,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn4","minmax_scaling",0.661453242896545,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn4","minmax_scaling",0.259776195482221,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn4","minmax_scaling",0.330726621448272,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn4","minmax_scaling",0.108997214200343,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn5","zscore_standardization",0.0599509079577701,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn5","zscore_standardization",0.955197295729233,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn5","zscore_standardization",0.761519795389564,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn5","zscore_standardization",0.331095674539689,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn5","zscore_standardization",0.380759897694782,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn5","zscore_standardization",0.126138424978342,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn5","minmax_scaling",0.226115641376647,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn5","minmax_scaling",0.866674166773532,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn5","minmax_scaling",0.695068027279452,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn5","minmax_scaling",0.282116896959748,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn5","minmax_scaling",0.347534013639726,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn5","minmax_scaling",0.114116477888197,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn5","minmax_scaling",0.216060153542522,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rmse","nn5","minmax_scaling",0.872286571766313,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mae","nn5","minmax_scaling",0.693242994012606,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mphe","nn5","minmax_scaling",0.283525417079216,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mpe","nn5","minmax_scaling",0.346621497006303,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"mape","nn5","minmax_scaling",0.113785933863194,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,10,"0, 1e-06","2e-04, 0.002","0.1, 0.25","8e-04, 0.002","32, 32","50, 150",NA
+"rss","nn5","minmax_scaling",0.101866525400023,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn5","minmax_scaling",0.935017818100932,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn5","minmax_scaling",0.732634319942349,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn5","minmax_scaling",0.315421593714785,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn5","minmax_scaling",0.366317159971174,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn5","minmax_scaling",0.122176204393736,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","nn5","minmax_scaling",0.273337846656547,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rmse","nn5","minmax_scaling",0.841038188694213,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mae","nn5","minmax_scaling",0.680265836808093,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mphe","nn5","minmax_scaling",0.268100024339869,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mpe","nn5","minmax_scaling",0.340132918404046,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"mape","nn5","minmax_scaling",0.111862521429956,90,120,5,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,"1e-05, 0.05","1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150",NA
+"rss","lstm","zscore_standardization",0.207355071088084,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"rmse","lstm","zscore_standardization",0.877116255575927,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"mae","lstm","zscore_standardization",0.668027061298832,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"mphe","lstm","zscore_standardization",0.274899994216177,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"mpe","lstm","zscore_standardization",0.334013530649416,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"mape","lstm","zscore_standardization",0.116479211303578,60,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-04, 0.01","0.2, 0.5","5e-04, 0.002","32, 64","40, 120","0, 0.3"
+"rss","lstm","minmax_scaling",0.109707759551501,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"rmse","lstm","minmax_scaling",0.930927242147973,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"mae","lstm","minmax_scaling",0.744419323461588,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"mphe","lstm","minmax_scaling",0.311164882148677,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"mpe","lstm","minmax_scaling",0.372209661730794,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"mape","lstm","minmax_scaling",0.127958606729367,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"1e-05, 0.05","0.25, 0.75","1e-04, 0.01","8, 32","50, 150","0, 0.3"
+"rss","lstm","minmax_scaling",-0.0452719010252918,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
+"rmse","lstm","minmax_scaling",1.00870479029334,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
+"mae","lstm","minmax_scaling",0.785875130843565,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
+"mphe","lstm","minmax_scaling",0.345981082866547,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
+"mpe","lstm","minmax_scaling",0.392937565421783,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
+"mape","lstm","minmax_scaling",0.136172887693105,90,120,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,"0.001, 0.1","0.25, 0.75","1e-04, 0.001","8, 32","40, 120","0.25, 0.75"
