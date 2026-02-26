@@ -591,6 +591,7 @@ boxcox_inv <- function(y, lambda, offset) {
 ## Validator
 validator <- function(target, covariates, model,
                       hyper_grid_domain_list,
+                      tuning_method,
                       obj_fun, eval_metric,
                       train_n, val_n, rebal_months,
                       early_stop, gsm_algo,
@@ -1035,21 +1036,41 @@ validator <- function(target, covariates, model,
     }
   }
    
-  
-  #Bayesian Opt
-  if(any(
-    #Check if hyper_grid_domain_list is a list
-    !is.list(hyper_grid_domain_list),
-    #Check if hyper_grid_domain_list elements have length of 2 (boundaries)
-    !all(sapply(hyper_grid_domain_list, function(x) length(x) == 2)),
-    #Check if hyper_grid_domain_list elements are vectors
-    !all(sapply(hyper_grid_domain_list, function(x) is.vector(x))),
-    #Check if hyper_grid_domain_list contains numeric values
-    !all(sapply(hyper_grid_domain_list, function(x) is.numeric(x)))
-  )
-  ){
-    stop("hyper_grid_domain_list not in correct format for bayesian_opt tuning.")
+  #Tuning method
+  if (!tuning_method %in% c("grid_search", "bayesian_optimization")){
+    stop("tuning_method must be either 'grid_search' or 'bayesian_optimization'.")
   }
+  #Bayesian Opt
+  if (tuning_method == "bayesian_optimization"){
+    if(any(
+      #Check if hyper_grid_domain_list is a list
+      !is.list(hyper_grid_domain_list),
+      #Check if hyper_grid_domain_list elements have length of 2 (boundaries)
+      !all(sapply(hyper_grid_domain_list, function(x) length(x) == 2)),
+      #Check if hyper_grid_domain_list elements are vectors
+      !all(sapply(hyper_grid_domain_list, function(x) is.vector(x))),
+      #Check if hyper_grid_domain_list contains numeric values
+      !all(sapply(hyper_grid_domain_list, function(x) is.numeric(x)))
+    )
+    ){
+      stop("hyper_grid_domain_list not in correct format for bayesian_opt tuning.")
+    }
+  }
+  #Grid search
+  if (tuning_method == "grid_search"){
+    if(any(
+      #Check if hyper_grid_domain_list is a list
+      !is.list(hyper_grid_domain_list),
+      #Check if hyper_grid_domain_list elements are vectors
+      !all(sapply(hyper_grid_domain_list, function(x) is.vector(x))),
+      #Check if hyper_grid_domain_list contains numeric values
+      !all(sapply(hyper_grid_domain_list, function(x) is.numeric(x)))
+    )
+    ){
+      stop("hyper_grid_domain_list not in correct format for grid_search tuning.")
+    }
+  }
+
   
   ## Covariates first column should be month_id and others should be numeric
   if (!"month_id" %in% colnames(covariates)){
@@ -1455,6 +1476,167 @@ calc_eval_metrics <- function(pred, target,
   return (df_eval_metrics)
   
 }
+
+## Create an expanded hyper grid for tuning
+create_expanded_hyper_grid_list <- function(hyper_grid_domain_list, tuning_method, n_iter, model){
+  
+  #Set Hyperparameters grid
+  #Apply Grid Search
+  if (tuning_method == "grid_search"){
+    
+    #Eliminate repeated inputs
+    hyper_grid_domain_list <- lapply(hyper_grid_domain_list, function(x) unique(x))
+    #For glmnet, it is better to provide a sequence of lambdas
+    expanded_hyper_grid_list <- lapply(do.call(expand.grid, hyper_grid_domain_list), as.vector)
+    
+  } 
+  
+  #Check for adequate outputs
+  if(model == "glmnet"){
+    #Alpha
+    if(!all(is.null(expanded_hyper_grid_list$alpha))){
+      if(
+        !all(0 <= expanded_hyper_grid_list$alpha, expanded_hyper_grid_list$alpha <= 1))
+      {
+        stop("alpha should be set in interval [0,1]")
+      }
+    }
+    
+    #Lambda.min.ratio
+    if(!all(is.null(expanded_hyper_grid_list$lambda.min.ratio))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$lambda.min.ratio, expanded_hyper_grid_list$lambda.min.ratio < 1)
+      )
+      ){
+        stop("lambda.min.ratio should be set in interval [0,1)")
+      }
+    }
+  }
+  
+  if(model == "rf"){
+    #Num tress
+    if(!all(is.null(expanded_hyper_grid_list$num.trees))){
+      if(
+        !all(expanded_hyper_grid_list$num.trees == floor(expanded_hyper_grid_list$num.trees)
+        )){
+        stop("num.trees should have no decimals")
+      }
+    }
+    
+    
+    #mtry
+    if(!all(is.null(expanded_hyper_grid_list$mtry))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$mtry, expanded_hyper_grid_list$mtry <= 1)
+      )
+      ){
+        stop("mtry should be set in interval [0,1]")
+      }
+    }
+    
+    #max.depth
+    if(!all(is.null(expanded_hyper_grid_list$max.depth))){
+      if((
+        any(
+          !all(expanded_hyper_grid_list$max.depth > 0),
+          !all(expanded_hyper_grid_list$max.depth == floor(expanded_hyper_grid_list$max.depth)
+          )
+        )
+      )){
+        stop("max.depth should be positive with no decimals")
+      }
+    }
+  }
+  
+  if(model == "xgb"){
+    #eta
+    if(!all(is.null(expanded_hyper_grid_list$eta))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$eta, expanded_hyper_grid_list$eta <= 1)
+      )){
+        stop("eta should be set in interval [0,1]")
+      }
+    }
+    
+    #max_depth
+    if(!all(is.null(expanded_hyper_grid_list$max_depth))){
+      if((
+        any(
+          !all(expanded_hyper_grid_list$max_depth > 0),
+          !all(expanded_hyper_grid_list$max_depth == floor(expanded_hyper_grid_list$max_depth)
+          )
+        )
+      )){
+        stop("max_depth should be positive with no decimals")
+      }
+    }
+    
+    
+    #colsample_bytree
+    if(!all(is.null(expanded_hyper_grid_list$colsample_bytree))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$colsample_bytree, expanded_hyper_grid_list$colsample_bytree <= 1))){
+        stop("colsample_bytree should be set in interval [0,1]")
+      }
+    }
+    
+    #subsample
+    if(!all(is.null(expanded_hyper_grid_list$subsample))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$subsample, expanded_hyper_grid_list$subsample <= 1))){
+        stop("subsample should be set in interval [0,1]")
+      }
+    }
+  }
+  
+  if(model == "nn"){
+    #droprate
+    if(!all(is.null(expanded_hyper_grid_list$droprate))){
+      if((
+        !all(0 <= expanded_hyper_grid_list$droprate, expanded_hyper_grid_list$droprate < 1))){
+        stop("droprate should be set in interval [0,1)")
+      }
+    }
+    
+    #batch size
+    if(!all(is.null(expanded_hyper_grid_list$size_of_batch))){
+      if((
+        any(
+          !all(expanded_hyper_grid_list$size_of_batch > 0),
+          !all(expanded_hyper_grid_list$size_of_batch == floor(expanded_hyper_grid_list$size_of_batch)
+          )
+        )
+      )){
+        stop("size_of_batch should be positive with no decimals")
+      }
+      if(
+        !all(log2(expanded_hyper_grid_list$size_of_batch) == floor(log2(expanded_hyper_grid_list$size_of_batch)))
+      ){
+        warning("size_of_batch should preferably be power of 2.")
+      }
+      
+    }
+    
+    #epochs
+    if(!all(is.null(expanded_hyper_grid_list$number_of_epochs))){
+      if((
+        any(
+          !all(expanded_hyper_grid_list$number_of_epochs > 0),
+          !all(expanded_hyper_grid_list$number_of_epochs == floor(expanded_hyper_grid_list$number_of_epochs)
+          )
+        )
+      )){
+        stop("number_of_epochs should be positive with no decimals")
+      }
+    }
+    
+  }
+  ################################
+  
+  return(expanded_hyper_grid_list)
+  
+}
+
 
 ## Set eval function helper
 set_eval_function <- function(model){ #General Parameters
@@ -2479,7 +2661,7 @@ fit_lstm_model <- function(
 
 ## Hyper tuning
 hyper_tune <- function(
-    model, full_data_train_clean, covariates_val, target_val, #Data
+    model, tuning_method, full_data_train_clean, covariates_val, target_val, #Data
     eval_fun, obj_fun_trans, #Eval Function and custom obj
     eval_metric_trans, early_stop, #Early Stop
     eval_metric, huber_delta, quantile_tau,  #Chosen eval metric
@@ -2489,176 +2671,307 @@ hyper_tune <- function(
     parallel, #Parallelization (default is true with future backend)
     verbose){ #Verbose
   
-  ### Hyperparameter tuning following Bayesian Optimization!
+  ### Hyperparameter tuning
   
-  if(parallel){
-    
     #### Check if doRNG is available (required by doFuture::withDoRNG)
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("The 'doRNG' package is required. Please install it.")
     }
-    
-    #### Bayesian Optimization
-    bayes_opt <- doFuture::withDoRNG(
-      ParBayesianOptimization::bayesOpt(
-        #Passing variables to set_eval_fun
-        FUN = eval_fun(
-          
-          #Data
-          full_data_train_clean = full_data_train_clean, #full_data_train
-          covariates_val = covariates_val, #Pass feat_val
-          target_val = target_val, #Pass target_val
-          
-          #General Parameters
-          model = model,
-          
-          #Eval Function Parameters
-          eval_metric = eval_metric, #Chosen Eval
-          eval_metric_trans = eval_metric_trans,
-          huber_delta = huber_delta, #Huber delta for pseudo huber loss
-          quantile_tau = quantile_tau, #Quantile tau for pinball loss
-          
-          #Early Stop
-          early_stop = early_stop, #Halting criteria
-          
-          #Custom Loss
-          obj_fun_trans = obj_fun_trans, #Custom objective
-          
-          #Keras Network Parameters
-          keras_architecture_pars = keras_architecture_pars,
-          
-          verbose = FALSE
-          
-          #Future Implementation:
-          #Functions for custom eval and loss - XGB
-          #mpe_xgb <- mpe_xgb, #Custom mpe
-          #rss_xgb = rss_xgb, #Custom rss
-          #cp_xgb = cp_xgb, #custom cp
-          #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-          
-        ),
-        bounds = hyper_grid_domain_list, #Boundaries
-        initPoints = init_points, #Number of randomly chosen points to 
-        #sample the target function before B.O.
-        acq = acq, #Acquisition function to be used
-        iters.n = n_iter, #Number of times BO is to be repeated
-        iters.k = k_iter, #Number of times to sample the scoring function
-        #at each epoch. If running in parallel,
-        #set iters.k to some multiple of the number of 
-        #cores designated for the process
-        verbose = verbose, #Display msgs?
-        parallel = if (model %in% c("nn", "lstm")) FALSE else parallel #Parallel?
+  
+    ##Bayes Opt
+    if (tuning_method == "bayesian_optimization") {
+      
+      if (parallel){
+        #### Bayesian Optimization
+        bayes_opt <- doFuture::withDoRNG(
+          ParBayesianOptimization::bayesOpt(
+            #Passing variables to set_eval_fun
+            FUN = eval_fun(
+              
+              #Data
+              full_data_train_clean = full_data_train_clean, #full_data_train
+              covariates_val = covariates_val, #Pass feat_val
+              target_val = target_val, #Pass target_val
+              
+              #General Parameters
+              model = model,
+              
+              #Eval Function Parameters
+              eval_metric = eval_metric, #Chosen Eval
+              eval_metric_trans = eval_metric_trans,
+              huber_delta = huber_delta, #Huber delta for pseudo huber loss
+              quantile_tau = quantile_tau, #Quantile tau for pinball loss
+              
+              #Early Stop
+              early_stop = early_stop, #Halting criteria
+              
+              #Custom Loss
+              obj_fun_trans = obj_fun_trans, #Custom objective
+              
+              #Keras Network Parameters
+              keras_architecture_pars = keras_architecture_pars,
+              
+              verbose = FALSE
+              
+              #Future Implementation:
+              #Functions for custom eval and loss - XGB
+              #mpe_xgb <- mpe_xgb, #Custom mpe
+              #rss_xgb = rss_xgb, #Custom rss
+              #cp_xgb = cp_xgb, #custom cp
+              #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
+              
+            ),
+            bounds = hyper_grid_domain_list, #Boundaries
+            initPoints = init_points, #Number of randomly chosen points to 
+            #sample the target function before B.O.
+            acq = acq, #Acquisition function to be used
+            iters.n = n_iter, #Number of times BO is to be repeated
+            iters.k = k_iter, #Number of times to sample the scoring function
+            #at each epoch. If running in parallel,
+            #set iters.k to some multiple of the number of 
+            #cores designated for the process
+            verbose = verbose, #Display msgs?
+            parallel = if (model %in% c("nn", "lstm")) FALSE else parallel #Parallel?
+          )
+        )
+      } else {
+        bayes_opt <-
+          ParBayesianOptimization::bayesOpt(
+            #Passing variables to set_eval_fun
+            FUN = eval_fun(
+              
+              #Data
+              full_data_train_clean = full_data_train_clean, #full_data_train
+              covariates_val = covariates_val, #Pass feat_val
+              target_val = target_val, #Pass target_val
+              
+              #General Parameters
+              model = model,
+              
+              #Eval Function Parameters
+              eval_metric = eval_metric, #Chosen Eval
+              eval_metric_trans = eval_metric_trans,
+              huber_delta = huber_delta, #Huber delta for pseudo huber loss
+              quantile_tau = quantile_tau, #Quantile tau for pinball loss
+              
+              #Early Stop
+              early_stop = early_stop, #Halting criteria
+              
+              #Custom Loss
+              obj_fun_trans = obj_fun_trans, #Custom objective
+              
+              #Keras Network Parameters
+              keras_architecture_pars = keras_architecture_pars,
+              
+              verbose = TRUE
+              
+              #Future Implementation:
+              #Functions for custom eval and loss - XGB
+              #mpe_xgb <- mpe_xgb, #Custom mpe
+              #rss_xgb = rss_xgb, #Custom rss
+              #cp_xgb = cp_xgb, #custom cp
+              #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
+              
+            ),
+            bounds = hyper_grid_domain_list, #Boundaries
+            initPoints = init_points, #Number of randomly chosen points to 
+            #sample the target function before B.O.
+            acq = acq, #Acquisition function to be used
+            iters.n = n_iter, #Number of times BO is to be repeated
+            iters.k = k_iter, #Number of times to sample the scoring function
+            #at each epoch. If running in parallel, 
+            #set iters.k to some multiple of the number of 
+            #cores designated for the process
+            verbose = verbose, #Display msgs?
+            parallel = parallel #Parallel?
+          )
+        
+      }
+        
+      ### Store results
+      #### Hyperparameters
+      score_df <- as.data.frame(bayes_opt$scoreSummary)
+      keep_cols <- intersect(
+        colnames(score_df),
+        c(names(hyper_grid_domain_list), "best_lam", "best_iter")
       )
-    )
-  } else { #In case of not PARALLEL
-    
-    bayes_opt <-
-      ParBayesianOptimization::bayesOpt(
-        #Passing variables to set_eval_fun
-        FUN = eval_fun(
-          
-          #Data
-          full_data_train_clean = full_data_train_clean, #full_data_train
-          covariates_val = covariates_val, #Pass feat_val
-          target_val = target_val, #Pass target_val
-          
-          #General Parameters
-          model = model,
-          
-          #Eval Function Parameters
-          eval_metric = eval_metric, #Chosen Eval
-          eval_metric_trans = eval_metric_trans,
-          huber_delta = huber_delta, #Huber delta for pseudo huber loss
-          quantile_tau = quantile_tau, #Quantile tau for pinball loss
-          
-          #Early Stop
-          early_stop = early_stop, #Halting criteria
-          
-          #Custom Loss
-          obj_fun_trans = obj_fun_trans, #Custom objective
-          
-          #Keras Network Parameters
-          keras_architecture_pars = keras_architecture_pars,
-          
-          verbose = TRUE
-          
-          #Future Implementation:
-          #Functions for custom eval and loss - XGB
-          #mpe_xgb <- mpe_xgb, #Custom mpe
-          #rss_xgb = rss_xgb, #Custom rss
-          #cp_xgb = cp_xgb, #custom cp
-          #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-          
-        ),
-        bounds = hyper_grid_domain_list, #Boundaries
-        initPoints = init_points, #Number of randomly chosen points to 
-        #sample the target function before B.O.
-        acq = acq, #Acquisition function to be used
-        iters.n = n_iter, #Number of times BO is to be repeated
-        iters.k = k_iter, #Number of times to sample the scoring function
-        #at each epoch. If running in parallel, 
-        #set iters.k to some multiple of the number of 
-        #cores designated for the process
-        verbose = verbose, #Display msgs?
-        parallel = parallel #Parallel?
+      
+      #### Create data frame to store combinations of hyperparameters tried
+      eval_metric_val_current_date <- 
+        score_df[, keep_cols, drop = FALSE] 
+      
+      #### Chosen Eval metric
+      eval_metric_val_current_date$eval_metric <-
+        as.numeric(score_df[[eval_metric]])
+      
+      #### Create expanded hyper grid list
+      expanded_hyper_grid_list <- list() #Create expanded hyper_grid_list 
+      for (j in seq_len(ncol(dplyr::select(eval_metric_val_current_date,
+                                           -eval_metric)))){
+        expanded_hyper_grid_list[[j]] <- #To each element, a column!
+          dplyr::select(eval_metric_val_current_date, -eval_metric)[,j]
+      }
+      
+      #### Get optimal values
+      ##### Optimal Hyper Choice
+      optimal_hyper <- unlist(ParBayesianOptimization::getBestPars(bayes_opt)) 
+      
+      ##### Add best lam
+      try(optimal_hyper <- 
+            c(optimal_hyper,
+              best_lam = bayes_opt$scoreSummary$best_lam[
+                which.max(bayes_opt$scoreSummary$Score)]
+            ),
+          silent = TRUE
       )
-    
-  }
-
-  ### Store results
-    #### Hyperparameters
-    score_df <- as.data.frame(bayes_opt$scoreSummary)
-    keep_cols <- intersect(
-      colnames(score_df),
-      c(names(hyper_grid_domain_list), "best_lam", "best_iter")
-    )
-    
-    #### Create data frame to store combinations of hyperparameters tried
-    eval_metric_val_current_date <- 
-      score_df[, keep_cols, drop = FALSE] 
-    
-    #### Chosen Eval metric
-    eval_metric_val_current_date$eval_metric <-
-      as.numeric(score_df[[eval_metric]])
-    
-  #### Create expanded hyper grid list
-  expanded_hyper_grid_list <- list() #Create expanded hyper_grid_list 
-  for (j in seq_len(ncol(dplyr::select(eval_metric_val_current_date,
-                                       -eval_metric)))){
-    expanded_hyper_grid_list[[j]] <- #To each element, a column!
-      dplyr::select(eval_metric_val_current_date, -eval_metric)[,j]
-  }
-  
-  #### Get optimal values
-  ##### Optimal Hyper Choice
-  optimal_hyper <- unlist(ParBayesianOptimization::getBestPars(bayes_opt)) 
-  
-  ##### Add best lam
-  try(optimal_hyper <- 
-        c(optimal_hyper,
-          best_lam = bayes_opt$scoreSummary$best_lam[
-            which.max(bayes_opt$scoreSummary$Score)]
-        ),
-      silent = TRUE
-  )
-  
-  ##### Add best_iteration
-  try(optimal_hyper <- 
-        c(optimal_hyper, 
-          best_iter = bayes_opt$scoreSummary$best_iter[
-            which.max(bayes_opt$scoreSummary$Score)
-          ]),
-      silent = TRUE
-  )
-  
-  #### Assign val eval of optimal hyper choice
-  val_eval_metrics_hyper_choice_current_date <-
-    bayes_opt$scoreSummary[
-      ##### Take the row that maximizes the score
-      which.max(bayes_opt$scoreSummary$Score),
-      c("Score", "rss", "cp", "rmse", "mae",
-        "mphe", "mpe", "mape", "hr", "mb")
-    ]
+      
+      ##### Add best_iteration
+      try(optimal_hyper <- 
+            c(optimal_hyper, 
+              best_iter = bayes_opt$scoreSummary$best_iter[
+                which.max(bayes_opt$scoreSummary$Score)
+              ]),
+          silent = TRUE
+      )
+      
+      #### Assign val eval of optimal hyper choice
+      val_eval_metrics_hyper_choice_current_date <-
+        bayes_opt$scoreSummary[
+          ##### Take the row that maximizes the score
+          which.max(bayes_opt$scoreSummary$Score),
+          c("Score", "rss", "cp", "rmse", "mae",
+            "mphe", "mpe", "mape", "hr", "mb")
+        ]  
+      
+      
+      
+    }
+      
+    ##Grid/random search
+    if (tuning_method %in% c("grid_search", "random_search")){
+      
+      #Create expanded_hyper_grid_list
+      expanded_hyper_grid_list <- create_expanded_hyper_grid_list(
+        hyper_grid_domain_list = hyper_grid_domain_list,
+        n_iter                 = n_iter,
+        tuning_method          = tuning_method,
+        model                  = model
+      )
+      
+      if (parallel) {
+        
+        hyper_eval <- furrr::future_pmap(expanded_hyper_grid_list, #List of hyperparameters for search
+                                         eval_fun( #function on which to apply the search
+                                           #Data
+                                           full_data_train_clean = full_data_train_clean, #full_data_train
+                                           covariates_val = covariates_val, #Pass feat_val
+                                           target_val = target_val, #Pass target_val
+                                           
+                                           #General Parameters
+                                           model = model,
+                                           tuning_method = tuning_method, #Tuning method,
+                                           
+                                           #Eval Function Parameters
+                                           eval_metric = eval_metric, #Chosen Eval
+                                           eval_metric_trans = eval_metric_trans,
+                                           huber_delta = huber_delta, #Huber delta for pseudo huber loss
+                                           quantile_tau = quantile_tau, #Quantile tau for pinball loss
+                                           
+                                           #Early Stop
+                                           early_stop = early_stop, #Halting criteria
+                                           
+                                           #Custom Loss
+                                           obj_fun_trans = obj_fun_trans, #Custom objective
+                                           
+                                           #Keras Network Parameters
+                                           keras_architecture_pars = keras_architecture_pars,
+                                           
+                                           verbose = FALSE
+                                           
+                                           #Future implementation
+                                           #Functions for custom eval and loss - XGB
+                                           #mpe_xgb <- mpe_xgb, #Custom mpe
+                                           #rss_xgb = rss_xgb, #Custom rss
+                                           #cp_xgb = cp_xgb, #custom cp
+                                           #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
+                                           
+                                         ),
+                                         .options = furrr::furrr_options(seed = TRUE),
+                                         .progress = verbose
+        )
+        
+        
+      } else {
+        
+        
+        hyper_eval <-         purrr::pmap(expanded_hyper_grid_list, #List of hyperparameters for search
+                                          eval_fun( #function on which to apply the search
+                                            
+                                            #Data
+                                            full_data_train_clean = full_data_train_clean, #full_data_train
+                                            covariates_val = covariates_val, #Pass feat_val
+                                            target_val = target_val, #Pass target_val
+                                            
+                                            #General Parameters
+                                            model = model,
+                                            tuning_method = tuning_method, #Tuning method,
+                                            
+                                            #Eval Function Parameters
+                                            eval_metric = eval_metric, #Chosen Eval
+                                            eval_metric_trans = eval_metric_trans,
+                                            huber_delta = huber_delta, #Huber delta for pseudo huber loss
+                                            quantile_tau = quantile_tau, #Quantile tau for pinball loss
+                                            
+                                            #Early Stop
+                                            early_stop = early_stop, #Halting criteria
+                                            
+                                            #Custom Loss
+                                            obj_fun_trans = obj_fun_trans, #Custom objective
+                                            
+                                            #Keras Network Parameters
+                                            keras_architecture_pars = keras_architecture_pars,
+                                            
+                                            verbose = FALSE
+                                            
+                                            #Future implementation
+                                            #Functions for custom eval and loss - XGB
+                                            #mpe_xgb <- mpe_xgb, #Custom mpe
+                                            #rss_xgb = rss_xgb, #Custom rss
+                                            #cp_xgb = cp_xgb, #custom cp
+                                            #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
+                                            
+                                          )
+        )
+        
+      }
+      
+      
+      ###Fill best lambda
+      try(expanded_hyper_grid_list$best_lam <- as.numeric(sapply(hyper_eval, function(x) x$best_lam)),
+          silent = TRUE)
+      ###Fill early stop
+      try(expanded_hyper_grid_list$best_iter <- as.numeric(sapply(hyper_eval, function(x) x$best_iter)),
+          silent = TRUE)
+      
+      ##Fill chosen eval metric
+      eval_metric_val_current_date <- do.call(data.frame, expanded_hyper_grid_list)
+      eval_metric_val_current_date$eval_metric <- 
+        as.numeric(sapply(hyper_eval, function(x) x[eval_metric]))
+      
+      ### Get optimal values
+      #Get reference
+      optimal_hyper_ref <- which.max(sapply(hyper_eval, function(x) x$Score))
+      #Get optimal hyper choice
+      optimal_hyper <- sapply(expanded_hyper_grid_list, function(x) x[[optimal_hyper_ref]])
+      
+      #Values for eval_metrics for validation
+      val_eval_metrics_hyper_choice_current_date <- hyper_eval[[optimal_hyper_ref]][
+        c("Score", "rss", "cp", "rmse", "mae", "mphe", "mpe", "mape", "hr", "mb")
+      ] %>% as.data.frame()
+      
+    }  
+      
+      
   
   ### Print Results
   if(verbose){
@@ -2885,6 +3198,7 @@ run_walk_forward_validation <- function(
     gsm_algo = "ols",
     upper_quant_wins = 0.95,
     lower_quant_wins = 0.05,
+    tuning_method,
     n_iter = 10L, init_points = 5L,
     k_iter = 2L, acq = "ucb",
     n_ensembles = 1L,
@@ -2903,6 +3217,7 @@ run_walk_forward_validation <- function(
     target                  = target, 
     covariates              = covariates, 
     model                   = model,
+    tuning_method           = tuning_method,
     hyper_grid_domain_list  = hyper_grid_domain_list,
     obj_fun                 = obj_fun, 
     eval_metric             = eval_metric,
@@ -3128,6 +3443,7 @@ run_walk_forward_validation <- function(
         
         hyper_tune_res <- hyper_tune(
           model = model, # Model
+          tuning_method = tuning_method, # Tuning method
           full_data_train_clean = full_data_train_clean, # Data
           covariates_val = covariates_val, # Data
           target_val = target_val, # Data
@@ -3437,6 +3753,7 @@ run_walk_forward_validation <- function(
         n_obs                   = length(dates),
         n_test                  = length(dates_test),
         n_rebals                = length(rebal_dates),
+        tuning_method           = tuning_method,
         has_tuning              = has_tuning,
         n_iter                  = n_iter,
         init_points             = init_points,

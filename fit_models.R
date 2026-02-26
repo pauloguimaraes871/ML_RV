@@ -252,10 +252,9 @@
       dplyr::arrange(month_id)
   
     ### HAR
-    har_backtest_res <- run_walk_forward_validation(
+    harx_backtest_res <- run_walk_forward_validation(
       target = target_gold, 
-      covariates = covariates_1927_df_gold2 %>%
-        dplyr::select(month_id, dplyr::contains("rv_")),
+      covariates = covariates_1927_df_gold2,
       model = "har",
       hyper_grid_domain_list = list(),
       obj_fun = "squared_error", eval_metric = "rmse",
@@ -272,57 +271,58 @@
       parallel = TRUE,
       verbose = TRUE
     )
-    har_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+    harx_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
     
       #### Save RDS
-      saveRDS(har_backtest_res,    "har_backtest_res.rds")
+      saveRDS(harx_backtest_res,    "harx_backtest_res_rescaled.rds")
       
     ### GLMNET
-    future::plan("multisession")
-    doFuture::registerDoFuture()
-    
-    glmnet_backtest_res <- run_walk_forward_validation(
-      target = target_gold, 
-      covariates = covariates_1927_df_gold2,
-      model = "glmnet",
-      hyper_grid_domain_list = list(
-        alpha = c(0, 1),
-        lambda.min.ratio = c(1e-4, 1e-2)
-      ),
-      obj_fun = "squared_error", eval_metric = "rmse",
-      huber_delta = 1, quantile_tau = 0.5,
-      train_n = 120L, val_n = 90L,
-      rebal_months = c(6),
-      early_stop = NULL,
-      gsm_algo = "ols",
-      upper_quant_wins = 0.95,
-      lower_quant_wins = 0.05,
-      n_iter = 10L, init_points = 5L,
-      k_iter = 2L, acq = "ucb",
-      keras_architecture_pars = NULL,
-      parallel = FALSE,
-      verbose = TRUE,
-      .test_seed = 123
-    )
-    glmnet_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
-    
-    
-      #### Save RDS
-      saveRDS(glmnet_backtest_res, "glmnet_backtest_res.rds")
-      
-      ### RF
       future::plan("multisession")
       doFuture::registerDoFuture()
       
-      rf_backtest_res <- run_walk_forward_validation(
+      glmnet_backtest_grid_res <- run_walk_forward_validation(
+        target = target_gold, 
+        covariates = covariates_1927_df_gold2,
+        model = "glmnet",
+        hyper_grid_domain_list <- list(
+          alpha            = c(0, 0.25, 0.5, 0.75, 1),
+          lambda.min.ratio = c(1e-4, 3e-4, 1e-3, 3e-3, 1e-2)
+        ),
+        obj_fun = "squared_error", eval_metric = "rmse",
+        huber_delta = 1, quantile_tau = 0.5,
+        train_n = 120L, val_n = 90L,
+        rebal_months = c(6),
+        early_stop = NULL,
+        gsm_algo = "ols",
+        tuning_method = "grid_search",
+        upper_quant_wins = 0.95,
+        lower_quant_wins = 0.05,
+        n_iter = 10L, init_points = 5L,
+        k_iter = 2L, acq = "ucb",
+        keras_architecture_pars = NULL,
+        parallel = FALSE,
+        verbose = TRUE,
+        .test_seed = 123
+      )
+      glmnet_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      
+    
+      #### Save RDS
+      saveRDS(glmnet_backtest_grid_res, "glmnet_backtest_grid_res.rds")
+      
+      ### RF
+      #future::plan("multisession")
+      #doFuture::registerDoFuture()
+      
+      rf_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "rf",
         hyper_grid_domain_list = list(
-          mtry = c(0.1, 0.9),
-          num.trees = c(300L, 1500L),
-          max.depth = c(3L, 16L),
-          min.bucket = c(1L, 6L)
+          mtry       = c(0.1, 0.3, 0.5, 0.7, 0.9),
+          num.trees  = c(300L, 600L, 1000L, 1500L),
+          max.depth  = c(3L, 6L, 10L, 16L),
+          min.bucket = c(1L, 3L, 6L)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
@@ -332,39 +332,40 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
+        tuning_method = "grid_search",
         n_iter = 25L, init_points = 10L,
         k_iter = 20L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = TRUE,
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
-      rf_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      rf_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(rf_backtest_res, "rf_backtest_res.rds")
+      saveRDS(rf_backtest_grid_res, "rf_backtest_grid_res.rds")
     
       
       ### XGB
       future::plan("multisession")
       doFuture::registerDoFuture()
-      
-      xgb_backtest_res <- run_walk_forward_validation(
+      xgb_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "xgb",
         hyper_grid_domain_list = list(
-          min_child_weight = c(2L, 10L),      
-          max_depth        = c(2L, 5L),  
-          subsample        = c(0.60, 0.95),
-          colsample_bytree = c(0.60, 0.95),
-          eta              = c(0.05, 0.20),
-          alpha            = c(0.00, 2.00),   
-          gamma            = c(0.00, 5.00),  
-          nrounds          = c(150L, 800L)  
+          min_child_weight = c(2L, 5L, 10L),
+          max_depth        = c(2L, 3L, 4L, 5L),
+          subsample        = c(0.6, 0.8, 0.95),
+          colsample_bytree = c(0.6, 0.8, 0.95),
+          eta              = c(0.05, 0.1, 0.2),
+          alpha            = c(0, 0.5, 1, 2),
+          gamma            = c(0, 1, 3, 5),
+          nrounds          = c(150L, 300L, 500L, 800L)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
+        tuning_method = "grid_search",
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 30L,
@@ -378,27 +379,27 @@
         verbose = TRUE,
         .test_seed = 123
       )
-      xgb_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      xgb_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       
       #### Save RDS
-      saveRDS(xgb_backtest_res, "xgb_backtest_res_rescaled.rds")
+      saveRDS(xgb_backtest_grid_res, "xgb_backtest_grid_res.rds")
     
       ##NN
       nn_hyper_grid <- list(
-        regularizer_l1   = c(1e-5, 5e-2),
-        regularizer_l2   = c(1e-5, 5e-2),
-        droprate         = c(0.25, 0.75),
-        lr               = c(1e-4, 1e-2),
-        size_of_batch    = c(8L, 32L),
-        number_of_epochs = c(50L, 150L)
+        regularizer_l1   = c(1e-5, 1e-4, 1e-3, 1e-2),
+        regularizer_l2   = c(1e-5, 1e-4, 1e-3, 1e-2),
+        droprate         = c(0.25, 0.5, 0.75),
+        lr               = c(1e-4, 5e-4, 1e-3, 5e-3, 1e-2),
+        size_of_batch    = c(8L, 16L, 32L),
+        number_of_epochs = c(50L, 100L, 150L)
       )
       
     
       ### NN1
       future::plan("sequential")
       
-      nn1_backtest_res <- run_walk_forward_validation(
+      nn1_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -411,6 +412,7 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
@@ -425,16 +427,16 @@
         verbose = TRUE,
         .test_seed = 123
       )
-      nn1_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn1_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       
       #### Save RDS
-      saveRDS(nn1_backtest_res, "nn1_backtest_res_rescaled.rds")
+      saveRDS(nn1_backtest_grid_res, "nn1_backtest_grid_res.rds")
       
       ### NN2
       future::plan("sequential")
       
-      nn2_backtest_res <- run_walk_forward_validation(
+      nn2_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -450,6 +452,7 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
+        tuning_method = "grid_search",
         early_stop = 20L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
@@ -461,16 +464,16 @@
         verbose = TRUE,
         .test_seed = 123
       )
-      nn2_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn2_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_res, "nn2_backtest_res_rescaled_ens5.rds") 
+      saveRDS(nn2_backtest_grid_res, "nn2_backtest_grid_res_ens5.rds") 
     
       
       ### NN3
       future::plan("sequential")
       
-      nn3_backtest_res <- run_walk_forward_validation(
+      nn3_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -483,6 +486,7 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
@@ -497,15 +501,15 @@
         verbose = TRUE,
         .test_seed = 123
       )
-      nn3_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn3_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn3_backtest_res, "nn3_backtest_res_rescaled_ens5.rds") 
+      saveRDS(nn3_backtest_grid_res, "nn3_backtest_grid_res_rescaled_ens5.rds") 
       
       ### NN4
       future::plan("sequential")
       
-      nn4_backtest_res <- run_walk_forward_validation(
+      nn4_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -518,6 +522,7 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
@@ -532,15 +537,15 @@
         verbose = TRUE,
         .test_seed = 123
       )
-      nn4_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn4_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
       #### Save RDS
-      saveRDS(nn4_backtest_res, "nn4_backtest_res_rescaled_ens5.rds") 
+      saveRDS(nn4_backtest_grid_res, "nn4_backtest_grid_res_rescaled_ens5.rds") 
       
       ### NN5
       future::plan("sequential")
       
-      nn5_backtest_res <- run_walk_forward_validation(
+      nn5_backtest_grid_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -553,6 +558,7 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
@@ -569,7 +575,7 @@
       )
       
       #### Save RDS
-      saveRDS(nn5_backtest_res, "nn5_backtest_res_ens5.rds") 
+      saveRDS(nn5_backtest_grid_res, "nn5_backtest_grid_res_ens5.rds") 
       
       #Join tables
       har_backtest_res <- readRDS(file.path(here::here(), "models", "har_backtest_res_rescaled.rds"))
@@ -641,10 +647,9 @@
       
       
       ### HAR
-      har_backtest_res_1986 <- run_walk_forward_validation(
+      harx_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2 %>%
-          dplyr::select(month_id, dplyr::contains("rv_")),
+        covariates = covariates_1986_df_gold2,
         model = "har",
         hyper_grid_domain_list = list(),
         obj_fun = "squared_error", eval_metric = "rmse",
@@ -662,11 +667,11 @@
         verbose = TRUE
       )
       
-      har_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      harx_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
       
       
       #### Save RDS
-      saveRDS(har_backtest_res_1986, "har_backtest_res_1986_rescaled.rds")
+      saveRDS(harx_backtest_res_1986, "harx_backtest_res_1986_rescaled.rds")
       
       ### GLMNET
       future::plan("multisession")
@@ -1018,10 +1023,187 @@
       #### Save RDS
       saveRDS(lstm_backtest_res_1986, "lstm_backtest_res_1986_rescaled_5.rds") 
       
+
+# Collect results---------------------------------------------------------------    
+    
+    #1927
+      #Join tables
+      har_backtest         <- readRDS(file.path(here::here(), "models", "1927", "har_backtest_res.rds"))
+      har_backtest_resc    <- readRDS(file.path(here::here(), "models", "1927", "har_backtest_res_rescaled.rds"))
+      harx_backtest_res    <- readRDS(file.path(here::here(), "models", "1927", "harx_backtest_res_rescaled.rds"))
       
+      glmnet_backtest      <- readRDS(file.path(here::here(), "models", "1927", "glmnet_backtest_res.rds"))
+      glmnet_backtest_resc <- readRDS(file.path(here::here(), "models", "1927", "glmnet_backtest_res_rescaled.rds"))
+      
+      rf_backtest          <- readRDS(file.path(here::here(), "models", "1927", "rf_backtest_res.rds"))
+      rf_backtest_resc     <- readRDS(file.path(here::here(), "models", "1927", "rf_backtest_res_rescaled.rds"))
+      
+      xgb_backtest         <- readRDS(file.path(here::here(), "models", "1927", "xgb_backtest_res.rds"))
+      xgb_backtest_resc    <- readRDS(file.path(here::here(), "models", "1927", "xgb_backtest_res_rescaled.rds"))
+      
+      nn1_backtest             <- readRDS(file.path(here::here(), "models", "1927", "nn1_backtest_res.rds"))
+      nn1_backtest_2           <- readRDS(file.path(here::here(), "models", "1927", "nn1_backtest_res_2.rds"))
+      nn1_backtest_3           <- readRDS(file.path(here::here(), "models", "1927", "nn1_backtest_res_3.rds"))
+      nn1_backtest_resc        <- readRDS(file.path(here::here(), "models", "1927", "nn1_backtest_res_rescaled.rds"))
+      nn1_backtest_resc_ens5   <- readRDS(file.path(here::here(), "models", "1927", "nn1_backtest_res_rescaled_ens5.rds"))
+      
+      nn2_backtest             <- readRDS(file.path(here::here(), "models", "1927", "nn2_backtest_res.rds"))
+      nn2_backtest_resc        <- readRDS(file.path(here::here(), "models", "1927", "nn2_backtest_res_rescaled.rds"))
+      nn2_backtest_resc_ens5   <- readRDS(file.path(here::here(), "models", "1927", "nn2_backtest_res_rescaled_ens5.rds"))
+      
+      nn3_backtest             <- readRDS(file.path(here::here(), "models", "1927", "nn3_backtest_res.rds"))
+      nn3_backtest_resc        <- readRDS(file.path(here::here(), "models", "1927", "nn3_backtest_res_rescaled.rds"))
+      nn3_backtest_resc_ens5   <- readRDS(file.path(here::here(), "models", "1927", "nn3_backtest_res_rescaled_ens5.rds"))
+      
+      nn4_backtest             <- readRDS(file.path(here::here(), "models", "1927", "nn4_backtest_res.rds"))
+      nn4_backtest_resc        <- readRDS(file.path(here::here(), "models", "1927", "nn4_backtest_res_rescaled.rds"))
+      nn4_backtest_resc_ens5   <- readRDS(file.path(here::here(), "models", "1927", "nn4_backtest_res_rescaled_ens5.rds"))
+      
+      nn5_backtest             <- readRDS(file.path(here::here(), "models", "1927", "nn5_backtest_res.rds"))
+      
+        
+      list_backtest_res_1927 <- list(
+        ## Baselines
+        har                  = har_backtest,
+        har_resc             = har_backtest_resc,
+        harx_resc            = harx_backtest_res,
+        
+        glmnet               = glmnet_backtest,
+        glmnet_resc          = glmnet_backtest_resc,
+        
+        rf                   = rf_backtest,
+        rf_resc              = rf_backtest_resc,
+        
+        xgb                  = xgb_backtest,
+        xgb_resc             = xgb_backtest_resc,
+        
+        ## Neural nets – NN1
+        nn1                  = nn1_backtest,
+        nn1_2                = nn1_backtest_2, 
+        nn1_3                = nn1_backtest_3, 
+        nn1_resc_1           = nn1_backtest_resc,
+        nn1_resc_1_ens5      = nn1_backtest_resc_ens5,
+        
+        ## Neural nets – NN2
+        nn2                  = nn2_backtest,
+        nn2_resc_1           = nn2_backtest_resc,
+        nn2_resc_1_ens5      = nn2_backtest_resc_ens5,
+        
+        ## Neural nets – NN3
+        nn3                  = nn3_backtest,
+        nn3_resc_1           = nn3_backtest_resc,
+        nn3_resc_1_ens5      = nn3_backtest_resc_ens5,
+        
+        ## Neural nets – NN4
+        nn4                  = nn4_backtest,
+        nn4_resc_1           = nn4_backtest_resc,
+        nn4_resc_1_ens5      = nn4_backtest_resc_ens5,
+        
+        ## Neural nets – NN5
+        nn5                  = nn5_backtest
+      )
+      
+      
+      ##Ensemble
+      compute_ensemble <- function(backtests, list_backtest, ref_backtest){
+        ensemble <- purrr::imap(
+          list_backtest[
+            backtests
+          ],
+          function(backtest, name){
+            
+            df <- backtest@oos_outputs %>%
+              dplyr::select(month_id, pred)
+            
+            ## Add target only once
+            if (name == ref_backtest) {
+              df <- backtest@oos_outputs %>%
+                dplyr::select(month_id, target, pred)
+            }
+            
+            dplyr::rename(df, !!paste0("pred_", name) := pred)
+          }
+        ) %>%
+          purrr::reduce(dplyr::left_join, by = "month_id") %>%
+          dplyr::mutate(
+            ensemble_pred = base::rowMeans(
+              dplyr::select(., dplyr::starts_with("pred_")),
+              na.rm = TRUE
+            )
+          )
+        
+        ensemble
+      }
+     
+      ensemble_all_1927 <- compute_ensemble(
+        backtests = c("glmnet_resc", "rf_resc", "xgb_resc",
+                      "nn1_resc_1_ens5", "nn2_resc_1_ens5",
+                      "nn3_resc_1_ens5", "nn4_resc_1_ens5"),
+        list_backtest = list_backtest_res_1927,
+        ref_backtest = "glmnet_resc"
+      )
+      ensemble_nn_1927 <- compute_ensemble(
+        backtests = c("nn1_resc_1_ens5", "nn2_resc_1_ens5",
+                      "nn3_resc_1_ens5", "nn4_resc_1_ens5"),
+        list_backtest = list_backtest_res_1927,
+        ref_backtest = "nn1_resc_1_ens5"
+      )
+      ensemble_all_but_nn_1927 <- compute_ensemble(
+        backtests = c("glmnet_resc", "rf_resc", "xgb_resc"),
+        list_backtest = list_backtest_res_1927,
+        ref_backtest = "glmnet_resc"
+      )
+    
+        ### Calculate eval metrics and error
+        ensemble_all_testing_metrics <- calc_eval_metrics(
+          pred   = ensemble_all_1927$ensemble_pred,
+          target = ensemble_all_1927$target,
+          huber_delta = 1,
+          quantile_tau = 0.5,
+          eval_metric = "rmse",
+          return_error = FALSE
+        )
+        ensemble_nn_testing_metrics <- calc_eval_metrics(
+          pred   = ensemble_nn_1927$ensemble_pred,
+          target = ensemble_nn_1927$target,
+          huber_delta = 1,
+          quantile_tau = 0.5,
+          eval_metric = "rmse",
+          return_error = FALSE
+        )
+        ensemble_all_but_nn_testing_metrics <- calc_eval_metrics(
+          pred   = ensemble_all_but_nn_1927$ensemble_pred,
+          target = ensemble_all_but_nn_1927$target,
+          huber_delta = 1,
+          quantile_tau = 0.5,
+          eval_metric = "rmse",
+          return_error = FALSE
+        )
+        ensemble_all_nn_ensemble_testing_metrics <- calc_eval_metrics(
+          pred   = ensemble_all_but_nn_1927 %>% dplyr::left_join(
+            ensemble_nn_1927 %>% dplyr::select(month_id, pred_ensemble_nn = ensemble_pred),
+            by = "month_id"
+          ) %>%
+            dplyr::mutate(ensemble_pred = base::rowMeans(
+              dplyr::select(., dplyr::starts_with("pred_")),
+              na.rm = TRUE
+            )) %>%
+            dplyr::pull(ensemble_pred),
+          target = ensemble_all$target,
+          huber_delta = 1,
+          quantile_tau = 0.5,
+          eval_metric = "rmse",
+          return_error = FALSE
+        )
+      
+      
+      
+
+      #1986
       #Join tables
       har_backtest         <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986.rds"))
       har_backtest_resc    <- readRDS(file.path(here::here(), "models", "1986", "har_backtest_res_1986_rescaled.rds"))
+      harx_backtest_resc   <- readRDS(file.path(here::here(), "models", "1986", "harx_backtest_res_1986_rescaled.rds"))
       
       glmnet_backtest      <- readRDS(file.path(here::here(), "models", "1986", "glmnet_backtest_res_1986.rds"))
       glmnet_backtest_resc <- readRDS(file.path(here::here(), "models", "1986", "glmnet_backtest_res_1986_rescaled.rds"))
@@ -1072,40 +1254,11 @@
       lstm_backtest_resc4_pad <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_4_padding.rds"))
       lstm_backtest_resc5 <- readRDS(file.path(here::here(), "models",  "1986", "lstm_backtest_res_1986_rescaled_5.rds"))
       
-      
-      
-      #Join all with purrr::reduce
-      theme_map <- data.frame(
-        feat = c("(Intercept)",
-                 "rv_month_lag1", "rv_tw_lag1", "rv_td_lag1",
-                 "rq_month_lag1", "rq_tw_lag1", "rq_td_lag1",
-                 "cont_month_lag1", "cont_tw_lag1", "cont_td_lag1",
-                 "jump_month_lag1", "jump_tw_lag1", "jump_td_lag1",
-                 "negret_month_lag1", "negret_tw_lag1", "negret_td_lag1",
-                 "log_epu_diff_lag1", "gpr_lag1", "log_cons_sent_diff_lag1", 
-                 "ppi_vol", "ip_vol", "mbas_vol",
-                 "dy_lag1", "dfr_lag1", "dfy_lag1", "ey_lag1", "tbill_lag1",
-                 "tms_lag1", "oil_rv_month_lag1", "oil_rv_td_lag1", "oil_rv_tw_lag1", 
-                 "vix_lag1",
-                 "m_1", "m_2", "m_3", "m_4", "m_5", "m_6", "m_7", "m_8",
-                 "m_9", "m_10", "m_11", "m_12",
-                 "sqrt_days"
-                 ),
-        theme = c(
-          "(Intercept)",
-          rep("Past S&P 500 RV Terms", 15),
-          rep("Sentiment Variables", 3),
-          rep("Macroeconomic Variables", 3),
-          rep("Macrofinancial Variables", 9),
-          rep("Implied Vol", 1),
-          rep("Calendar Variables", 13)
-        )
-      )
-      
-      list_backtest_res <- list(
+      list_backtest_res_1986 <- list(
         ## Baselines
         har                  = har_backtest,
         har_resc             = har_backtest_resc,
+        harx_resc            = harx_backtest_resc,
         
         glmnet               = glmnet_backtest,
         glmnet_resc          = glmnet_backtest_resc,
@@ -1162,64 +1315,169 @@
       )
       
       
-      results_summary <- purrr::map(seq_along(list_backtest_res), function(table){
-        
-        list_backtest_res[[table]]@eval_metrics %>%
-          dplyr::select(metric, cons_oos) %>%
-          ### Rename
-          dplyr::rename(!!names(list_backtest_res)[table] := cons_oos) %>%
-          dplyr::filter(metric %in% c("rss", "rmse", "mae", "mphe", "mpe", "mape"))
-        
-      }) %>% 
-        purrr::reduce(dplyr::left_join, by = "metric") %>%
-        tidyr::pivot_longer(
-          cols = -metric,
-          names_to = "model",
-          values_to = "value"
-        )
+      ensemble_all_1986 <- compute_ensemble(
+        backtests = c("glmnet_resc", "rf_resc", "xgb_resc",
+                      "nn1_resc_4_ens5", "nn2_resc_4_ens5",
+                      "nn3_resc_4_ens5", "nn4_resc_4_ens5",
+                      "nn5_resc_4_ens5"),
+        list_backtest = list_backtest_res_1986,
+        ref_backtest = "glmnet_resc"
+      )
+      ensemble_nn_1986 <- compute_ensemble(
+        backtests = c("nn1_resc_4_ens5", "nn2_resc_4_ens5",
+                      "nn3_resc_4_ens5", "nn4_resc_4_ens5",
+                      "nn5_resc_4_ens5"
+                      ),
+        list_backtest = list_backtest_res_1986,
+        ref_backtest = "nn1_resc_4_ens5"
+      )
+      ensemble_all_but_nn_1986 <- compute_ensemble(
+        backtests = c("glmnet_resc", "rf_resc", "xgb_resc"),
+        list_backtest = list_backtest_res_1986,
+        ref_backtest = "glmnet_resc"
+      )
       
-      ### Add hyperparameters
-      results_summary_complete <- purrr::map(seq_along(list_backtest_res), function(table){
-        
-        hyperparams <- list_backtest_res[[table]]@backtest_meta$hyper_grid_domain_list %>%
-          as.data.frame() %>%
-          ##Collapse columns to character string with paste0
-          dplyr::mutate_all( function(x) paste0(x, collapse = ", ")) %>%
-          ##Onl first row needed
-          dplyr::slice(1) 
-        
-        hyperparams <- c(hyperparams,
-                         early_stop = list_backtest_res[[table]]@backtest_meta$early_stop,
-                         val_n = list_backtest_res[[table]]@backtest_meta$val_n,
-                         train_n = list_backtest_res[[table]]@backtest_meta$train_n
-                         ) %>% 
-          as.data.frame()
-        
-        ##Add
-        results_summary %>%
-          dplyr::filter(model == names(list_backtest_res)[table]) %>%
-          dplyr::cross_join(hyperparams)
-        
-      }) %>%
-        purrr::reduce(dplyr::bind_rows) %>%
-        dplyr::mutate(
-          n_ensembles   = if (is.null(backtest_meta$n_ensembles)) 0 else backtest_meta$n_ensembles,
-          preprocessing = dplyr::case_when(
-            grepl("resc", model) ~ "minmax_scaling",
-            TRUE                 ~ "zscore_standardization"
-          ),
-          .after = model
+      ### Calculate eval metrics and error
+      ensemble_all_testing_metrics <- calc_eval_metrics(
+        pred   = ensemble_all_1986$ensemble_pred,
+        target = ensemble_all_1986$target,
+        huber_delta = 1,
+        quantile_tau = 0.5,
+        eval_metric = "rmse",
+        return_error = FALSE
+      )
+      ensemble_nn_testing_metrics <- calc_eval_metrics(
+        pred   = ensemble_nn_1986$ensemble_pred,
+        target = ensemble_nn_1986$target,
+        huber_delta = 1,
+        quantile_tau = 0.5,
+        eval_metric = "rmse",
+        return_error = FALSE
+      )
+      ensemble_all_but_nn_testing_metrics <- calc_eval_metrics(
+        pred   = ensemble_all_but_nn_1986$ensemble_pred,
+        target = ensemble_all_but_nn_1986$target,
+        huber_delta = 1,
+        quantile_tau = 0.5,
+        eval_metric = "rmse",
+        return_error = FALSE
+      )
+      ensemble_all_nn_ensemble_testing_metrics <- calc_eval_metrics(
+        pred   = ensemble_all_but_nn_1986 %>% dplyr::left_join(
+          ensemble_nn_1986 %>% dplyr::select(month_id, pred_ensemble_nn = ensemble_pred),
+          by = "month_id"
         ) %>%
-        dplyr::mutate(
-          model = stringr::str_remove(model, "_resc.*$")
-        ) 
+          dplyr::mutate(ensemble_pred = base::rowMeans(
+            dplyr::select(., dplyr::starts_with("pred_")),
+            na.rm = TRUE
+          )) %>%
+          dplyr::pull(ensemble_pred),
+        target = ensemble_all_but_nn_1986$target,
+        huber_delta = 1,
+        quantile_tau = 0.5,
+        eval_metric = "rmse",
+        return_error = FALSE
+      )
+      
+      
+      
+      ##Function to compile results
+      compile_results <- function(list_backtest_res){
+        results_summary <- purrr::map(seq_along(list_backtest_res), function(table){
+          
+          list_backtest_res[[table]]@eval_metrics %>%
+            dplyr::select(metric, cons_oos) %>%
+            ### Rename
+            dplyr::rename(!!names(list_backtest_res)[table] := cons_oos) %>%
+            dplyr::filter(metric %in% c("rss", "rmse", "mae", "mphe", "mpe", "mape"))
+          
+        }) %>% 
+          purrr::reduce(dplyr::left_join, by = "metric") %>%
+          tidyr::pivot_longer(
+            cols = -metric,
+            names_to = "model",
+            values_to = "value"
+          )
+        
+        ### Add hyperparameters
+        results_summary_complete <- purrr::map(seq_along(list_backtest_res), function(table){
+          
+          hyperparams <- list_backtest_res[[table]]@backtest_meta$hyper_grid_domain_list %>%
+            as.data.frame() %>%
+            ##Collapse columns to character string with paste0
+            dplyr::mutate_all( function(x) paste0(x, collapse = ", ")) %>%
+            ##Onl first row needed
+            dplyr::slice(1) 
+          
+          hyperparams <- c(hyperparams,
+                           early_stop = list_backtest_res[[table]]@backtest_meta$early_stop,
+                           val_n = list_backtest_res[[table]]@backtest_meta$val_n,
+                           train_n = list_backtest_res[[table]]@backtest_meta$train_n,
+                           n_ensembles   = if (is.null(list_backtest_res[[table]]@backtest_meta$n_ensembles)){
+                             0
+                           } else list_backtest_res[[table]]@backtest_meta$n_ensembles
+          ) %>% 
+            as.data.frame()
+          
+          ##Add
+          results_summary %>%
+            dplyr::filter(model == names(list_backtest_res)[table]) %>%
+            dplyr::cross_join(hyperparams)
+          
+        }) %>%
+          purrr::reduce(dplyr::bind_rows) %>%
+          dplyr::mutate(
+            preprocessing = dplyr::case_when(
+              grepl("resc", model) ~ "minmax_scaling",
+              TRUE                 ~ "zscore_standardization"
+            ),
+            .after = model
+          ) %>%
+          dplyr::mutate(
+            model = stringr::str_remove(model, "_resc.*$")
+          ) 
+        
+      }
 
 
-      results_summary_complete %>% write.csv("results_summary_1986.csv", row.names = FALSE)
+      results_summary_complete_1927 <- compile_results(list_backtest_res_1927)
+      results_summary_complete_1927 %>% write.csv("results_summary_1927.csv", row.names = FALSE)
+      
+      results_summary_complete_1986 <- compile_results(list_backtest_res_1986)
+      results_summary_complete_1986 %>% write.csv("results_summary_1986.csv", row.names = FALSE)
         
       
       
       
+      
+      ## Plot
+      #Join all with purrr::reduce
+      theme_map <- data.frame(
+        feat = c("(Intercept)",
+                 "rv_month_lag1", "rv_tw_lag1", "rv_td_lag1",
+                 "rq_month_lag1", "rq_tw_lag1", "rq_td_lag1",
+                 "cont_month_lag1", "cont_tw_lag1", "cont_td_lag1",
+                 "jump_month_lag1", "jump_tw_lag1", "jump_td_lag1",
+                 "negret_month_lag1", "negret_tw_lag1", "negret_td_lag1",
+                 "log_epu_diff_lag1", "gpr_lag1", "log_cons_sent_diff_lag1", 
+                 "ppi_vol", "ip_vol", "mbas_vol",
+                 "dy_lag1", "dfr_lag1", "dfy_lag1", "ey_lag1", "tbill_lag1",
+                 "tms_lag1", "oil_rv_month_lag1", "oil_rv_td_lag1", "oil_rv_tw_lag1", 
+                 "vix_lag1",
+                 "m_1", "m_2", "m_3", "m_4", "m_5", "m_6", "m_7", "m_8",
+                 "m_9", "m_10", "m_11", "m_12",
+                 "sqrt_days"
+        ),
+        theme = c(
+          "(Intercept)",
+          rep("Past S&P 500 RV Terms", 15),
+          rep("Sentiment Variables", 3),
+          rep("Macroeconomic Variables", 3),
+          rep("Macrofinancial Variables", 9),
+          rep("Implied Vol", 1),
+          rep("Calendar Variables", 13)
+        )
+      )
       
       plot(glmnet_backtest_res, theme_map = theme_map, plot_id = 7)
       plot(rf_backtest_res,  theme_map = theme_map, plot_id = 7)
