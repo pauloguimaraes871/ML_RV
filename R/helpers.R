@@ -1820,11 +1820,11 @@ set_eval_function <- function(model){ #General Parameters
            },
            # XGB
            xgb = function(...){ #Wrapper function
-             
+           
              ## Get args
              ########################
              args <- list(...)
-             
+            
              ### Data arguments
              full_data_train_clean <- args$full_data_train_clean #full 
              covariates_val        <- args$covariates_val #validation 
@@ -1851,7 +1851,7 @@ set_eval_function <- function(model){ #General Parameters
              ## Deliver XGB function
              fit <- function(min_child_weight, max_depth, subsample,
                              colsample_bytree, eta, alpha, gamma, nrounds){ 
-               
+          
                ### Set objects in XGB Format
                covariates_matrix_train_clean <- full_data_train_clean %>% 
                  dplyr::select(-dplyr::all_of(target_name)) #Get training 
@@ -1871,28 +1871,28 @@ set_eval_function <- function(model){ #General Parameters
                
                ### Fit XGB model
                xgb_fit <- xgboost::xgb.train(
+                 params = list(
+                   objective        = obj_fun_trans,      # "reg:squarederror"
+                   eval_metric      = eval_metric_trans,  # "rmse"
+                   eta              = eta,
+                   min_child_weight = min_child_weight,
+                   max_depth        = as.integer(round(max_depth, 0)),
+                   subsample        = subsample,
+                   colsample_bytree = colsample_bytree,
+                   alpha            = alpha,
+                   gamma            = gamma,
+                   huber_slope      = huber_delta         # only meaningful for huber objective
+                 ),
                  data = full_data_train_xgb,
-                 eta = eta, #Learning Rate
-                 early_stopping_rounds = early_stop, #Number of rounds to early stop
-                 min_child_weight = min_child_weight, #Minimum sum of instance weight (hessian) needed in a child
-                 max_depth = round(max_depth, 0), #Max tree depth
-                 nrounds = nrounds, #Number of trees (boosting interations)
-                 subsample = subsample, #Subsample ratio of training instance
-                 colsample_bytree = colsample_bytree, #Col subsample
-                 alpha = alpha, #L1 regularization on weights
-                 gamma = gamma, #Min loss reduction to make a further partition
+                 nrounds = as.integer(nrounds),
+                 evals = list(
+                   train      = full_data_train_xgb,
+                   validation = full_data_val_clean_xgb
+                 ),
+                 early_stopping_rounds = as.integer(early_stop),
                  print_every_n = 25,
-                 verbose = FALSE,
-                 eval_metric = eval_metric_trans, #Set eval metric for ealy stop
-                 #Set custom objective
-                 objective = obj_fun_trans,
-                 #Watchlist,
-                 watchlist = list(train = full_data_train_xgb, 
-                                  validation = full_data_val_clean_xgb),
-                 huber_slope = huber_delta #Huber delta
-                 #quantile_alpha = quantile_tau #Tau for quantile regression
+                 verbose = 0
                )
-               
                
                ### Predict
                pred <- stats::predict(
@@ -1906,7 +1906,7 @@ set_eval_function <- function(model){ #General Parameters
                  huber_delta = huber_delta, quantile_tau = quantile_tau,
                  eval_metric = eval_metric,
                  early_stop = early_stop,
-                 best_iter = xgb_fit$best_iteration
+                 best_iter =  as.integer(xgboost::xgb.attr(xgb_fit, "best_iteration"))
                )
                
                #Return List
@@ -2018,6 +2018,7 @@ set_eval_function <- function(model){ #General Parameters
                model_obj  <- keras_results$model_nn #Neural network models
                hist_obj   <- keras_results$fit_nn #Training history
                Xv <- data.matrix(covariates_val_clean) #Features val
+               
                
                # ---- Predict: handle single vs ensemble ----
                if (is.list(model_obj)) {
@@ -2849,7 +2850,7 @@ hyper_tune <- function(
       
     ##Grid/random search
     if (tuning_method %in% c("grid_search", "random_search")){
-      
+ 
       #Create expanded_hyper_grid_list
       expanded_hyper_grid_list <- create_expanded_hyper_grid_list(
         hyper_grid_domain_list = hyper_grid_domain_list,
@@ -2886,7 +2887,7 @@ hyper_tune <- function(
                                            #Keras Network Parameters
                                            keras_architecture_pars = keras_architecture_pars,
                                            
-                                           verbose = FALSE
+                                           verbose = TRUE
                                            
                                            #Future implementation
                                            #Functions for custom eval and loss - XGB
@@ -2931,7 +2932,7 @@ hyper_tune <- function(
                                             #Keras Network Parameters
                                             keras_architecture_pars = keras_architecture_pars,
                                             
-                                            verbose = FALSE
+                                            verbose = TRUE
                                             
                                             #Future implementation
                                             #Functions for custom eval and loss - XGB
@@ -2944,7 +2945,6 @@ hyper_tune <- function(
         )
         
       }
-      
       
       ###Fill best lambda
       try(expanded_hyper_grid_list$best_lam <- as.numeric(sapply(hyper_eval, function(x) x$best_lam)),
@@ -3007,7 +3007,7 @@ fit_rv_model <- function(
     optimal_hyper = NULL, eval_metric_trans, #Validation Parameters
     n_ensembles = 1L,
     upper_quant_wins = 0.95, lower_quant_wins = 0.05, verbose){ #MISC
-  
+
   ### Fit model based on 'model'
   fit <- switch(model,
                 ## har
