@@ -18,7 +18,7 @@ library("dplyr")
       ### Parse as dates
       caldt = as.Date(caldt, format = "%m/%d/%y"),
       ### If parsed year > current year, subtract 100 years
-      caldt = if_else(caldt > Sys.Date(),
+      caldt = if_else(caldt > as.Date("2025-01-01"),
                       lubridate::add_with_rollback(caldt,
                                                    lubridate::years(-100)),
                       caldt)
