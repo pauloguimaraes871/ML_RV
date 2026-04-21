@@ -3788,3 +3788,258 @@ run_walk_forward_validation <- function(
      
   
 }
+
+## OOS Ports
+run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
+                          risk_aversion = c(1, 2, 5, 10)
+                          ){
+  
+  # Check----------------------------------------------------------------------
+  ## Check that oos_outputs is a data.frame with month_id, target, pred and error columns
+  if (!is.data.frame(oos_outputs)) {
+    stop("oos_outputs must be a data.frame.")
+  }
+  required_cols <- c("month_id", "target", "pred", "error")
+  if (!all(required_cols %in% colnames(oos_outputs))) {
+    stop(paste("oos_outputs must contain the following columns:",
+               paste(required_cols, collapse = ", ")))
+  }
+    ###Check that month_id is Date and others are numeric
+    if (!inherits(oos_outputs$month_id, "Date")) {
+      stop("month_id column in oos_outputs must be of type Date.")
+    }
+    if (!is.numeric(oos_outputs$target) || !is.numeric(oos_outputs$pred) || !is.numeric(oos_outputs$error)) {
+      stop("target, pred and error columns in oos_outputs must be numeric.")
+    }
+  ##Check that fwd_returns carries month_id, sp500 sp500_fwd1, rf and rf_fwd1 columns
+  if (!is.data.frame(fwd_returns)) {
+    stop("fwd_returns must be a data.frame.")
+  }
+  required_cols_fwd <- c("month_id", "sp500", "sp500_fwd1", "rf_fwd1", "rf")
+  if (!all(required_cols_fwd %in% colnames(fwd_returns))) {
+    stop(paste("fwd_returns must contain the following columns:",
+               paste(required_cols_fwd, collapse = ", ")))
+  }
+    ###Check that month_id is Date and others are numeric
+    if (!inherits(fwd_returns$month_id, "Date")) {
+      stop("month_id column in fwd_returns must be of type Date.")
+    }
+    if (!is.numeric(fwd_returns$sp500_fwd1) || !is.numeric(fwd_returns$rf_fwd1)) {
+      stop("sp500_fwd1 and rf_fwd1 columns in fwd_returns must be numeric.")
+    }
+    if (!is.numeric(fwd_returns$sp500) || !is.numeric(fwd_returns$rf)) {
+      stop("sp500 and rf columns in fwd_returns must be numeric.")
+    }
+    ### Check that _fwd1 returns are actually forward returns 
+    fwd_returns_check <- fwd_returns %>%
+      dplyr::arrange(month_id) %>%
+      dplyr::mutate(
+        sp500_fwd1_check = dplyr::lead(sp500) - sp500_fwd1,
+        rf_fwd1_check = dplyr::lead(rf) - rf_fwd1
+      )
+    if (any(abs(fwd_returns_check$sp500_fwd1_check) > 1e-6, na.rm = TRUE)) {
+      stop("sp500_fwd1 column in fwd_returns does not appear to be a forward return of sp500")
+    }
+    if (any(abs(fwd_returns_check$rf_fwd1_check) > 1e-6, na.rm = TRUE)) {
+      stop("rf_fwd1 column in fwd_returns does not appear to be a forward return of rf")
+    }
+
+  
+  ## Check that target_gold carries month_id and rv_month columns
+  if (!is.data.frame(target_gold)) {
+    stop("target_gold must be a data.frame.")
+  }
+  required_cols_gold <- c("month_id", "rv_month")
+  if (!all(required_cols_gold %in% colnames(target_gold))) {
+    stop(paste("target_gold must contain the following columns:",
+               paste(required_cols_gold, collapse = ", ")))
+  }
+    ###Check that month_id is Date and rv_month is numeric
+    if (!inherits(target_gold$month_id, "Date")) {
+      stop("month_id column in target_gold must be of type Date.")
+    }
+    if (!is.numeric(target_gold$rv_month)) {
+      stop("rv_month column in target_gold must be numeric.")
+    }
+  
+  ##Check that intersection of month_ids is non-empty
+  if (length(intersect(oos_outputs$month_id, fwd_returns$month_id)) == 0) {
+    stop("There must be at least one common month_id between oos_outputs and fwd_returns.")
+  }
+  if (length(intersect(oos_outputs$month_id, target_gold$month_id)) == 0) {
+    stop("There must be at least one common month_id between oos_outputs and target_gold.")
+  }
+  
+  
+  # Prepare---------------------------------------------------------------------
+    ## Merge oos_outputs with fwd_returns and target_gold to get a consolidated data.frame
+    consolidated_df <- oos_outputs %>%
+      ### Use old info from target_gold to populate the target column
+      dplyr::bind_rows(
+        target_gold %>%
+          dplyr::rename(target = rv_month) %>%
+          dplyr::filter(month_id < min(oos_outputs$month_id)) # Only keep rows with month_id before the first month_id in oos_outputs
+      ) %>%
+      dplyr::arrange(month_id) %>%
+      dplyr::left_join(fwd_returns, by = "month_id")
+  
+    ## Compute excess_ret, rv_hat_level (back to var), mu_expanding and rv_mean_expanding
+      ### Helper: expanding mean ignoring NAs
+      cummean_na <- function(x) {
+        cumsum(replace(x, is.na(x), 0)) / cumsum(!is.na(x))
+      }
+      ### Compute the necessary columns in one mutate step to avoid multiple passes over the data  
+      consolidated_df <- consolidated_df %>%
+        mutate(
+          excess_ret   = sp500 - rf,                   # realised excess return
+          pred_level   = boxcox_inv(pred, 0, 1e-08),   # back to variance scale
+          target_level = boxcox_inv(target, 0, 1e-08), # back to variance scale
+          
+          # expanding-window mean excess return (uses only past data)
+          mu_expanding      = lag(cummean_na(excess_ret)),
+          # expanding-window mean RV in level scale (for vol-scaling reference)
+          rv_mean_expanding = lag(cummean_na(target_level)),
+          
+          # expanding-window RV prediction in level scale
+          pred_level_expanding = lag(cummean_na(pred_level)),
+          
+          # Lagged target-level for Random Walk
+          target_level_lag = lag(target_level)
+        )
+  
+  
+    ## Determine backtest period based on month_ids intersection between oos_outputs and fwd_returns
+    backtest_months <- dplyr::intersect(oos_outputs$month_id, fwd_returns$month_id) %>%
+      as.Date() %>%
+      sort()
+    
+    ## Enunciate
+    message("Backtest period determined based on month_id intersection between oos_outputs and fwd_returns: ",
+            min(backtest_months), " to ", max(backtest_months))
+    
+  # Start backtest--------------------------------------------------------------  
+    w_compiled_list <- vector("list", length(backtest_months))
+    
+    ## Loop
+    for (i in seq_along(backtest_months)) {
+      
+      curr_month <- backtest_months[i] %>% as.Date()
+      message("Processing month: ", curr_month)
+      
+      ## Subset to only include data up to month id to avoid look-ahead bias
+      consolidated_subset <- consolidated_df %>%
+        dplyr::filter(month_id == curr_month)
+      
+      ## Define MVO optimal weights
+        ### Compute MVO weights for each risk_aversion and apply floor/cap
+        mvo_weights_df <- consolidated_subset %>%
+          select(month_id, mu_expanding, pred_level, sp500_fwd1, rf_fwd1) %>%
+          tidyr::expand_grid(gamma = risk_aversion) %>%
+          mutate(
+            method       = paste0("MVO_gamma_", gamma),
+            w_raw        = mu_expanding / (gamma * pred_level),
+            w_raw        = ifelse(is.finite(w_raw), w_raw, NA_real_),
+            w_capped     = pmin(1.5, pmax(0, w_raw)),       # floor 0%, cap 150%
+            
+            # strategy return
+            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+          )  
+        
+        ### Print two rows: weights and returns
+        message("Optimal MVO weights for month ", curr_month, ":")
+        print(mvo_weights_df %>% dplyr::select(gamma, w_capped, r_strat_fwd1))
+      
+      ## Define vol-scaling (Moreira and Muir style)
+      w_volscaled   <- consolidated_subset$rv_mean_expanding / consolidated_subset$pred_level
+      w_volscaled   <- ifelse(is.finite(w_volscaled), w_volscaled, NA_real_)
+      w_pred_scaled <- consolidated_subset$pred_level_expanding / consolidated_subset$pred_level
+      w_pred_scaled <- ifelse(is.finite(w_pred_scaled), w_pred_scaled, NA_real_)
+      w_oracle      <- consolidated_subset$rv_mean_expanding / consolidated_subset$target_level
+      w_oracle      <- ifelse(is.finite(w_oracle), w_oracle, NA_real_)
+        ### Vol-scaling: anchor on historical mean RV
+        vol_scaled_weights_df <- consolidated_subset %>% 
+          tidyr::expand_grid(method = c("vol_scaled", "oracle", "pred_scaled")) %>%
+          dplyr::left_join(
+            data.frame(
+              method = c("vol_scaled", "oracle", "pred_scaled"),
+              w_raw  = c(w_volscaled, w_oracle, w_pred_scaled)
+            ), by = "method"
+          ) %>%
+          dplyr::mutate(
+            w_capped     = pmin(1.5, pmax(0, w_raw)), 
+            
+            # strategy returns
+            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+          )
+      
+      ## Define benchmarks
+      w_buyhold <- 1
+      w_6040    <- 0.6
+      w_rw      <- consolidated_subset$rv_mean_expanding / consolidated_subset$target_level_lag
+      w_rw      <- ifelse(is.finite(w_rw), w_rw, NA_real_)
+        ### Benchmark weights
+        benchmark_weights_df <- consolidated_subset %>%
+          tidyr::expand_grid(method = c("buyhold", "6040", "rw")) %>%
+          dplyr::left_join(
+            data.frame(
+              method = c("buyhold", "6040", "rw"),
+              w_raw  = c(w_buyhold, w_6040, w_rw)
+            ), by = "method"
+          ) %>%
+          dplyr::mutate(
+            w_capped = pmin(1.5, pmax(0, w_raw)),
+            
+            # strategy returns
+            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+          )
+        
+      ## Compile results for the month
+      w_compiled_subset <- dplyr::bind_rows(
+        mvo_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1),
+        vol_scaled_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1),
+        benchmark_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1)
+      )
+      
+      ## Bind with big table
+      w_compiled_list[[i]] <- w_compiled_subset
+
+    }
+    
+  ## End of backtest loop
+    
+    ## Combine list into a single data.frame
+    w_compiled_df <- dplyr::bind_rows(w_compiled_list)
+    
+    ## Print summary of results
+    message("Backtest completed. Summary of strategy returns by method:")
+    strategy_summary <- w_compiled_df %>%
+      group_by(method) %>%
+      summarise(
+        avg_exc_ret  = mean(r_exc_fwd1, na.rm = TRUE),
+        sd_return    = sd(r_strat_fwd1, na.rm = TRUE),
+        sharpe_ratio = (avg_exc_ret / sd_return) * sqrt(12),
+        .groups = "drop"
+      ) %>%
+      arrange(desc(sharpe_ratio))
+    print(strategy_summary)
+    
+    ## Return the compiled weights and returns data.frame
+    return(list(
+      w_compiled_df = w_compiled_df,
+      strategy_summary = strategy_summary
+      ))  
+    
+  
+}
+    
+  
+  
+  
+  
+  
+  
+  
+  
