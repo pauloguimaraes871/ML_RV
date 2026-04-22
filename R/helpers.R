@@ -3791,8 +3791,8 @@ run_walk_forward_validation <- function(
 
 ## OOS Ports
 run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
-                          risk_aversion = c(1, 2, 5, 10)
-                          ){
+                          risk_aversion = c(1, 2, 5, 10),
+                          cost_per_unit = 0.001){
   
   # Check----------------------------------------------------------------------
   ## Check that oos_outputs is a data.frame with month_id, target, pred and error columns
@@ -3942,14 +3942,12 @@ run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
             w_capped     = pmin(1.5, pmax(0, w_raw)),       # floor 0%, cap 150%
             
             # strategy return
-            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
-            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+            r_strat_fwd1_capped = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1_capped   = r_strat_fwd1_capped - rf_fwd1, # excess return of strategy
+            r_strat_fwd1_raw    = w_raw * sp500_fwd1 + (1 - w_raw) * rf_fwd1,
+            r_exc_fwd1_raw      = r_strat_fwd1_raw - rf_fwd1
           )  
         
-        ### Print two rows: weights and returns
-        message("Optimal MVO weights for month ", curr_month, ":")
-        print(mvo_weights_df %>% dplyr::select(gamma, w_capped, r_strat_fwd1))
-      
       ## Define vol-scaling (Moreira and Muir style)
       w_volscaled   <- consolidated_subset$rv_mean_expanding / consolidated_subset$pred_level
       w_volscaled   <- ifelse(is.finite(w_volscaled), w_volscaled, NA_real_)
@@ -3969,9 +3967,11 @@ run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
           dplyr::mutate(
             w_capped     = pmin(1.5, pmax(0, w_raw)), 
             
-            # strategy returns
-            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
-            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+            # strategy return
+            r_strat_fwd1_capped = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1_capped   = r_strat_fwd1_capped - rf_fwd1, # excess return of strategy
+            r_strat_fwd1_raw    = w_raw * sp500_fwd1 + (1 - w_raw) * rf_fwd1,
+            r_exc_fwd1_raw      = r_strat_fwd1_raw - rf_fwd1
           )
       
       ## Define benchmarks
@@ -3991,16 +3991,21 @@ run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
           dplyr::mutate(
             w_capped = pmin(1.5, pmax(0, w_raw)),
             
-            # strategy returns
-            r_strat_fwd1 = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
-            r_exc_fwd1   = r_strat_fwd1 - rf_fwd1 # excess return of strategy
+            # strategy return
+            r_strat_fwd1_capped = w_capped * sp500_fwd1 + (1 - w_capped) * rf_fwd1,
+            r_exc_fwd1_capped   = r_strat_fwd1_capped - rf_fwd1, # excess return of strategy
+            r_strat_fwd1_raw    = w_raw * sp500_fwd1 + (1 - w_raw) * rf_fwd1,
+            r_exc_fwd1_raw      = r_strat_fwd1_raw - rf_fwd1
           )
         
       ## Compile results for the month
       w_compiled_subset <- dplyr::bind_rows(
-        mvo_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1),
-        vol_scaled_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1),
-        benchmark_weights_df %>% dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1, r_exc_fwd1)
+        mvo_weights_df %>% 
+          dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1_capped, r_exc_fwd1_capped, r_strat_fwd1_raw, r_exc_fwd1_raw),
+        vol_scaled_weights_df %>% 
+          dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1_capped, r_exc_fwd1_capped, r_strat_fwd1_raw, r_exc_fwd1_raw),
+        benchmark_weights_df %>% 
+          dplyr::select(month_id, method, w_raw, w_capped, r_strat_fwd1_capped, r_exc_fwd1_capped, r_strat_fwd1_raw, r_exc_fwd1_raw)
       )
       
       ## Bind with big table
@@ -4013,17 +4018,46 @@ run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
     ## Combine list into a single data.frame
     w_compiled_df <- dplyr::bind_rows(w_compiled_list)
     
+    ## Costs
+    w_compiled_df <- w_compiled_df %>%
+      dplyr::arrange(method, month_id) %>%
+      dplyr::group_by(method) %>%
+      dplyr::mutate(
+        w_prev                  = dplyr::coalesce(dplyr::lag(w_capped), 0),
+        turnover                = abs(w_capped - w_prev),
+        tc                      = cost_per_unit * turnover,
+        r_strat_fwd1_net_capped = r_strat_fwd1_capped - tc,
+        r_strat_fwd1_net_raw    = r_strat_fwd1_raw - tc,
+        r_exc_fwd1_net_capped   = r_exc_fwd1_capped - tc,
+        r_exc_fwd1_net_raw      = r_exc_fwd1_raw - tc
+      ) %>%
+      dplyr::ungroup()
+    
     ## Print summary of results
     message("Backtest completed. Summary of strategy returns by method:")
     strategy_summary <- w_compiled_df %>%
-      group_by(method) %>%
-      summarise(
-        avg_exc_ret  = mean(r_exc_fwd1, na.rm = TRUE),
-        sd_return    = sd(r_strat_fwd1, na.rm = TRUE),
-        sharpe_ratio = (avg_exc_ret / sd_return) * sqrt(12),
+      dplyr::group_by(method) %>%
+      dplyr::summarise(
+        ### Without considering costs
+        avg_exc_ret_raw     = mean(r_exc_fwd1_raw, na.rm = TRUE),
+        sd_return_raw       = sd(r_strat_fwd1_raw, na.rm = TRUE),
+        sharpe_ratio_raw    = (avg_exc_ret_raw / sd_return_raw) * sqrt(12),
+        avg_exc_ret_capped  = mean(r_exc_fwd1_capped, na.rm = TRUE),
+        sd_return_capped    = sd(r_strat_fwd1_capped, na.rm = TRUE),
+        sharpe_ratio_capped = (avg_exc_ret_capped / sd_return_capped) * sqrt(12),
+        
+        ### Considering costs
+        avg_exc_ret_net_raw     = mean(r_exc_fwd1_net_raw, na.rm = TRUE),
+        sd_return_net_raw       = sd(r_strat_fwd1_net_raw, na.rm = TRUE),
+        sharpe_ratio_net_raw    = (avg_exc_ret_net_raw / sd_return_net_raw) * sqrt(12),
+        avg_exc_ret_net_capped  = mean(r_exc_fwd1_net_capped, na.rm = TRUE),
+        sd_return_net_capped    = sd(r_strat_fwd1_net_capped, na.rm = TRUE),
+        sharpe_ratio_net_capped = (avg_exc_ret_net_capped / sd_return_net_capped) * sqrt(12),
+        
         .groups = "drop"
-      ) %>%
-      arrange(desc(sharpe_ratio))
+      ) %>% 
+      dplyr::arrange(desc(sharpe_ratio_capped))
+    
     print(strategy_summary)
     
     ## Return the compiled weights and returns data.frame
