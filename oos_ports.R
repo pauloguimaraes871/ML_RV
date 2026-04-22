@@ -169,8 +169,219 @@
           dplyr::select(model, dplyr::everything())
       }
     )
+    
   
-  
+    
+    # Define scatterplot
+    plot_risk_return <- function(strategy_summary, ret_col, sd_col, title) {
+      
+      # Define benchmark methods
+      benchmark_methods <- c("rw", "6040", "buyhold", "oracle")
+      
+      # Keep only one row per benchmark (since they repeat across models)
+      data <- strategy_summary %>%
+        dplyr::group_by(method) %>%
+        dplyr::mutate(
+          is_benchmark = method %in% benchmark_methods
+        ) %>%
+        dplyr::filter(!is_benchmark) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(-is_benchmark)
+      
+      ggplot2::ggplot(data, ggplot2::aes_string(x = sd_col, y = ret_col,
+                                                color = "model", shape = "method")) +
+        ggplot2::geom_point(size = 3, alpha = 0.8) +
+        ggplot2::labs(
+          title = title,
+          x = "Volatility (Std. Dev.)",
+          y = "Average Excess Return"
+        ) +
+        ggplot2::theme_minimal()
+    }
+    
+    p_capped_1986 <- plot_risk_return(
+      strategy_summary_1986 %>%
+        dplyr::filter(model %in% c("har", "har_resc", "harx", "harx_resc",
+                                   "glmnet_resc",  
+                                   "rf_resc", 
+                                   "xgb_resc", 
+                                   "nn1_resc_4_ens5", 
+                                   "nn2_resc_4_ens5",
+                                   "nn3_resc_4_ens5",
+                                   "nn4_resc_4_ens5", 
+                                   "nn5_resc_4_ens5",
+                                   "lstm_resc5", "ensemble_all", "ensemble_nn")) %>%
+        dplyr::mutate(model = dplyr::case_when(
+          model == "har" ~ "HAR",
+          model == "har_resc" ~ "HAR Range",
+          model == "harx" ~ "HAR-X",
+          model == "harx_resc" ~ "HAR-X Range",
+          model == "glmnet_resc" ~ "ENET Range",
+          model == "rf_resc" ~ "RF Range",
+          model == "rf_resc_grid" ~ "RF Range Grid",
+          model == "xgb_resc" ~ "XGB Range",
+          model == "xgb_resc_grid" ~ "XGB Range Grid",
+          model == "nn1_resc_4_ens5" ~ "NN1 Range ENS5",
+          model == "nn1_resc_grid" ~ "NN1 Range Grid",
+          model == "nn2_resc_4_ens5" ~ "NN2 Range ENS5",
+          model == "nn2_resc_grid" ~ "NN2 Range Grid",
+          model == "nn3_resc_4_ens5" ~ "NN3 Range ENS5",
+          model == "nn3_resc_grid" ~ "NN3 Range Grid",
+          model == "nn4_resc_4_ens5" ~ "NN4 Range ENS5",
+          model == "nn4_resc_grid" ~ "NN4 Range Grid",
+          model == "nn5_resc_4_ens5" ~ "NN5 Range ENS5",
+          model == "nn5_resc_grid" ~ "NN5 Range Grid",
+          model == "lstm_resc5" ~ "LSTM Range",
+          model == "ensemble_all" ~ "Ensemble All",
+          model == "ensemble_nn" ~ "Ensemble NN",
+          TRUE ~ model)),
+      ret_col = "avg_exc_ret_net_capped",
+      sd_col  = "sd_return_net_capped",
+      title   = "Risk-Return (Net, Capped)"
+    )
+    
+    p_capped_1986
+    
+    
+    # Bar plot of excess returns
+    plot_bar_sharpe <- function(strategy_summary, sharpe_col, title) {
+      
+      # Define benchmark methods
+      benchmark_methods <- c("rw", "6040", "buyhold", "oracle")
+      
+      # Keep only one row per benchmark (since they repeat across models)
+      data <- strategy_summary %>%
+        dplyr::group_by(method) %>%
+        dplyr::mutate(
+          is_benchmark = method %in% benchmark_methods,
+          keep_row = ifelse(is_benchmark, dplyr::row_number() == 1, TRUE)
+        ) %>%
+        dplyr::filter(keep_row) %>%
+        dplyr::ungroup()
+      
+      ggplot2::ggplot(
+        data,
+        ggplot2::aes(
+          x = reorder(method, .data[[sharpe_col]]),
+          y = .data[[sharpe_col]],
+          fill = model
+        )
+      ) +
+        ggplot2::geom_col(position = "dodge") +
+        ggplot2::coord_flip() +
+        ggplot2::labs(
+          title = title,
+          x = "Method",
+          y = "Sharpe Ratio"
+        ) +
+        ggplot2::theme_minimal()
+    }
+    
+    p_raw_1986 <- plot_bar_sharpe(
+      strategy_summary_1986 %>%
+        dplyr::filter(model %in% c("har", "har_resc", "harx", "harx_resc",
+                                   "glmnet_resc",  
+                                   "rf_resc", 
+                                   "xgb_resc", 
+                                   "nn1_resc_4_ens5", 
+                                   "nn2_resc_4_ens5",
+                                   "nn3_resc_4_ens5",
+                                   "nn4_resc_4_ens5", 
+                                   "nn5_resc_4_ens5",
+                                   "lstm_resc5",
+                                   "ensemble_all", "ensemble_nn", "ensemble_all_but_nn")) %>%
+        dplyr::filter(method != "oracle") %>%
+        dplyr::mutate(model = dplyr::case_when(
+          model == "har" ~ "HAR",
+          model == "har_resc" ~ "HAR Range",
+          model == "harx" ~ "HAR-X",
+          model == "harx_resc" ~ "HAR-X Range",
+          model == "glmnet_resc" ~ "ENET Range",
+          model == "rf_resc" ~ "RF Range",
+          model == "rf_resc_grid" ~ "RF Range Grid",
+          model == "xgb_resc" ~ "XGB Range",
+          model == "xgb_resc_grid" ~ "XGB Range Grid",
+          model == "nn1_resc_4_ens5" ~ "NN1 Range ENS5",
+          model == "nn1_resc_grid" ~ "NN1 Range Grid",
+          model == "nn2_resc_4_ens5" ~ "NN2 Range ENS5",
+          model == "nn2_resc_grid" ~ "NN2 Range Grid",
+          model == "nn3_resc_4_ens5" ~ "NN3 Range ENS5",
+          model == "nn3_resc_grid" ~ "NN3 Range Grid",
+          model == "nn4_resc_4_ens5" ~ "NN4 Range ENS5",
+          model == "nn4_resc_grid" ~ "NN4 Range Grid",
+          model == "nn5_resc_4_ens5" ~ "NN5 Range ENS5",
+          model == "nn5_resc_grid" ~ "NN5 Range Grid",
+          model == "lstm_resc5" ~ "LSTM Range",
+          model == "ensemble_all" ~ "Ensemble All",
+          model == "ensemble_nn" ~ "Ensemble NN",
+          model == "ensemble_all_but_nn" ~ "Ensemble All but NN",
+          TRUE ~ model)),
+      sharpe_col = "sharpe_ratio_raw",
+      title      = "Out-of-Sample Sharpe Ratio (Raw, Before Costs)"
+    )
+    
+    p_raw_1986
+    
+    p_capped_1986 <- plot_bar_sharpe(
+      strategy_summary_1986 %>%
+        dplyr::filter(model %in% c("har", "har_resc", "harx", "harx_resc",
+                                   "glmnet_resc",  
+                                   "rf_resc", 
+                                   "xgb_resc", 
+                                   "nn1_resc_4_ens5", 
+                                   "nn2_resc_4_ens5",
+                                   "nn3_resc_4_ens5",
+                                   "nn4_resc_4_ens5", 
+                                   "nn5_resc_4_ens5",
+                                   "lstm_resc5",
+                                   "ensemble_all", "ensemble_nn", "ensemble_all_but_nn")) %>%
+        dplyr::filter(method != "oracle") %>%
+        dplyr::mutate(model = dplyr::case_when(
+          model == "har" ~ "HAR",
+          model == "har_resc" ~ "HAR Range",
+          model == "harx" ~ "HAR-X",
+          model == "harx_resc" ~ "HAR-X Range",
+          model == "glmnet_resc" ~ "ENET Range",
+          model == "rf_resc" ~ "RF Range",
+          model == "rf_resc_grid" ~ "RF Range Grid",
+          model == "xgb_resc" ~ "XGB Range",
+          model == "xgb_resc_grid" ~ "XGB Range Grid",
+          model == "nn1_resc_4_ens5" ~ "NN1 Range ENS5",
+          model == "nn1_resc_grid" ~ "NN1 Range Grid",
+          model == "nn2_resc_4_ens5" ~ "NN2 Range ENS5",
+          model == "nn2_resc_grid" ~ "NN2 Range Grid",
+          model == "nn3_resc_4_ens5" ~ "NN3 Range ENS5",
+          model == "nn3_resc_grid" ~ "NN3 Range Grid",
+          model == "nn4_resc_4_ens5" ~ "NN4 Range ENS5",
+          model == "nn4_resc_grid" ~ "NN4 Range Grid",
+          model == "nn5_resc_4_ens5" ~ "NN5 Range ENS5",
+          model == "nn5_resc_grid" ~ "NN5 Range Grid",
+          model == "lstm_resc5" ~ "LSTM Range",
+          model == "ensemble_all" ~ "Ensemble All",
+          model == "ensemble_nn" ~ "Ensemble NN",
+          model == "ensemble_all_but_nn" ~ "Ensemble All but NN",
+          TRUE ~ model)),
+      sharpe_col = "sharpe_ratio_net_capped",
+      title      = "Out-of-Sample Sharpe Ratio (Capped, After Costs)"
+    )
+    
+    p_capped_1986
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     
     
