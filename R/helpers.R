@@ -1885,7 +1885,7 @@ set_eval_function <- function(model){ #General Parameters
                  ),
                  data = full_data_train_xgb,
                  nrounds = as.integer(nrounds),
-                 evals = list(
+                 watchlist = list(
                    train      = full_data_train_xgb,
                    validation = full_data_val_clean_xgb
                  ),

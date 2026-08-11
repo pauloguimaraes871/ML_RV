@@ -4,8 +4,8 @@
 
 
 # Initial Setup------------------------------------------------------------------
-renv::install("dplyr")
-renv::install("lubridate")
+#renv::install("dplyr")
+#renv::install("lubridate")
 library("dplyr")
 
   ## Load
@@ -450,13 +450,15 @@ library("dplyr")
       dates    = lubridate::mdy(dates),
       month_id = as.Date(paste(lubridate::year(dates),
                                lubridate::month(dates), "01", sep = "-")),
-      vix      = ( (vix/100)^2 ) / 12, #Follows Bekaert & Hoerova (2014)
-      vix_lag1 = dplyr::lag(vix, 1)
+      vix      = ( (vix/100)^2 ) / 12 #Follows Bekaert & Hoerova (2014)
     ) %>%
     ### Agg to month
     dplyr::group_by(month_id) %>%
     dplyr::filter(dates == max(dates)) %>% 
-    dplyr::arrange(month_id)
+    dplyr::arrange(month_id) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(vix_lag1 = dplyr::lag(vix, 1)) 
+
   
     #### Optional: Expand with VXO (for more 4 years of data)
     vxo <- readxl::read_excel(file.path(here::here(),"data", "VXO.xls"),
@@ -467,13 +469,14 @@ library("dplyr")
       dplyr::mutate(
         month_id = as.Date(paste(lubridate::year(dates),
                                  lubridate::month(dates), "01", sep = "-")),
-        vxo      = ( (vxo/100)^2 ) / 12, #Follows Bekaert & Hoerova (2014)
-        vxo_lag1 = dplyr::lag(vxo, 1)
+        vxo      = ( (vxo/100)^2 ) / 12 #Follows Bekaert & Hoerova (2014)
       ) %>%
       ### Agg to month
       dplyr::group_by(month_id) %>%
       dplyr::filter(dates == max(dates)) %>% 
-      dplyr::arrange(month_id)
+      dplyr::arrange(month_id) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(vxo_lag1 = dplyr::lag(vxo, 1)) 
     
     #### Bind rows for vix, considering dates before first date in vix
     vix <- dplyr::bind_rows(
@@ -598,9 +601,9 @@ library("dplyr")
     
     
   ## Save objects to data folder
-  saveRDS(covariates_1927_df, file = file.path(here::here(), "data", "covariates_1927.rds"))
-  saveRDS(covariates_1962_df, file = file.path(here::here(), "data", "covariates_1962.rds"))
-  saveRDS(covariates_1986_df, file = file.path(here::here(), "data", "covariates_1986.rds"))
+  saveRDS(covariates_1927_df, file = file.path(here::here(), "data", "covariates_1927v2.rds"))
+  saveRDS(covariates_1962_df, file = file.path(here::here(), "data", "covariates_1962v2.rds"))
+  saveRDS(covariates_1986_df, file = file.path(here::here(), "data", "covariates_1986v2.rds"))
   saveRDS(crsp_monthly,       file = file.path(here::here(), "data", "crsp_monthly.rds"))
     
     

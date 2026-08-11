@@ -119,6 +119,21 @@
     }
   )
   
+    ### Compile all strategy_summary into one df
+    all_ports_1927$harx_resc <- NULL
+    strategy_summary_1927 <- purrr::imap_dfr(
+      all_ports_1927,
+      function(port_res, model_name) {
+        port_res$strategy_summary %>%
+          dplyr::mutate(model = model_name) %>%
+          dplyr::select(model, dplyr::everything())
+      }
+    )
+    
+    ### Save
+    saveRDS(all_ports_1927, file.path(here::here(), "ports", "all_ports_1927.rds"))
+    saveRDS(strategy_summary_1927, file.path(here::here(), "ports", "strategy_summary_1927.rds"))
+  
   ## Backtest
   all_ports_1986 <- purrr::imap(
     list_backtest_res_1986,
@@ -170,7 +185,10 @@
       }
     )
     
-  
+    ### Save
+    saveRDS(all_ports_1986, file.path(here::here(), "ports", "all_ports_1986.rds"))
+    saveRDS(strategy_summary_1986, file.path(here::here(), "ports", "strategy_summary_1986.rds"))
+    
     
     # Define scatterplot
     plot_risk_return <- function(strategy_summary, ret_col, sd_col, title) {
@@ -276,6 +294,94 @@
         ) +
         ggplot2::theme_minimal()
     }
+    
+    p_raw_1927 <- plot_bar_sharpe(
+      strategy_summary_1927 %>%
+        dplyr::filter(model %in% c("har", "har_resc", "harx", "harx_resc",
+                                   "glmnet_resc",  
+                                   "rf_resc", 
+                                   "xgb_resc", 
+                                   "nn1_resc_1_ens5", 
+                                   "nn2_resc_1_ens5",
+                                   "nn3_resc_1_ens5",
+                                   "nn4_resc_1_ens5",
+                                   "lstm_resc5",
+                                   "ensemble_all", "ensemble_nn", "ensemble_all_but_nn")) %>%
+        dplyr::filter(method != "oracle") %>%
+        dplyr::mutate(model = dplyr::case_when(
+          model == "har" ~ "HAR",
+          model == "har_resc" ~ "HAR Range",
+          model == "harx" ~ "HAR-X",
+          model == "harx_resc" ~ "HAR-X Range",
+          model == "glmnet_resc" ~ "ENET Range",
+          model == "rf_resc" ~ "RF Range",
+          model == "rf_resc_grid" ~ "RF Range Grid",
+          model == "xgb_resc" ~ "XGB Range",
+          model == "xgb_resc_grid" ~ "XGB Range Grid",
+          model == "nn1_resc_1_ens5" ~ "NN1 Range ENS5",
+          model == "nn1_resc_grid" ~ "NN1 Range Grid",
+          model == "nn2_resc_1_ens5" ~ "NN2 Range ENS5",
+          model == "nn2_resc_grid" ~ "NN2 Range Grid",
+          model == "nn3_resc_1_ens5" ~ "NN3 Range ENS5",
+          model == "nn3_resc_grid" ~ "NN3 Range Grid",
+          model == "nn4_resc_1_ens5" ~ "NN4 Range ENS5",
+          model == "nn4_resc_grid" ~ "NN4 Range Grid",
+          model == "nn5_resc_1_ens5" ~ "NN5 Range ENS5",
+          model == "nn5_resc_grid" ~ "NN5 Range Grid",
+          model == "lstm_resc5" ~ "LSTM Range",
+          model == "ensemble_all" ~ "Ensemble All",
+          model == "ensemble_nn" ~ "Ensemble NN",
+          model == "ensemble_all_but_nn" ~ "Ensemble All but NN",
+          TRUE ~ model)),
+      sharpe_col = "sharpe_ratio_raw",
+      title      = "Out-of-Sample Sharpe Ratio (Raw, Before Costs)"
+    )
+    
+    p_raw_1927
+    
+    p_capped_1927 <- plot_bar_sharpe(
+      strategy_summary_1927 %>%
+        dplyr::filter(model %in% c("har", "har_resc", "harx", "harx_resc",
+                                   "glmnet_resc",  
+                                   "rf_resc", 
+                                   "xgb_resc", 
+                                   "nn1_resc_1_ens5", 
+                                   "nn2_resc_1_ens5",
+                                   "nn3_resc_1_ens5",
+                                   "nn4_resc_1_ens5",
+                                   "lstm_resc5",
+                                   "ensemble_all", "ensemble_nn", "ensemble_all_but_nn")) %>%
+        dplyr::filter(method != "oracle") %>%
+        dplyr::mutate(model = dplyr::case_when(
+          model == "har" ~ "HAR",
+          model == "har_resc" ~ "HAR Range",
+          model == "harx" ~ "HAR-X",
+          model == "harx_resc" ~ "HAR-X Range",
+          model == "glmnet_resc" ~ "ENET Range",
+          model == "rf_resc" ~ "RF Range",
+          model == "rf_resc_grid" ~ "RF Range Grid",
+          model == "xgb_resc" ~ "XGB Range",
+          model == "xgb_resc_grid" ~ "XGB Range Grid",
+          model == "nn1_resc_1_ens5" ~ "NN1 Range ENS5",
+          model == "nn1_resc_grid" ~ "NN1 Range Grid",
+          model == "nn2_resc_1_ens5" ~ "NN2 Range ENS5",
+          model == "nn2_resc_grid" ~ "NN2 Range Grid",
+          model == "nn3_resc_1_ens5" ~ "NN3 Range ENS5",
+          model == "nn3_resc_grid" ~ "NN3 Range Grid",
+          model == "nn4_resc_1_ens5" ~ "NN4 Range ENS5",
+          model == "nn4_resc_grid" ~ "NN4 Range Grid",
+          model == "nn5_resc_1_ens5" ~ "NN5 Range ENS5",
+          model == "nn5_resc_grid" ~ "NN5 Range Grid",
+          model == "lstm_resc5" ~ "LSTM Range",
+          model == "ensemble_all" ~ "Ensemble All",
+          model == "ensemble_nn" ~ "Ensemble NN",
+          model == "ensemble_all_but_nn" ~ "Ensemble All but NN",
+          TRUE ~ model)),
+      sharpe_col = "sharpe_ratio_net_capped",
+      title      = "Out-of-Sample Sharpe Ratio (Capped, After Costs)"
+    )
+    
+    p_capped_1927
     
     p_raw_1986 <- plot_bar_sharpe(
       strategy_summary_1986 %>%

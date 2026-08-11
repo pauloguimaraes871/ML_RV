@@ -15,11 +15,11 @@
 
   ## Covariates
   covariates_1927_df <- readRDS(file.path(here::here(), 
-                                          "data", "covariates_1927.rds"))
+                                          "data", "covariates_1927v2.rds"))
   covariates_1962_df <- readRDS(file.path(here::here(),
-                                          "data", "covariates_1962.rds"))
+                                          "data", "covariates_1962v2.rds"))
   covariates_1986_df <- readRDS(file.path(here::here(),
-                                          "data", "covariates_1986.rds"))
+                                          "data", "covariates_1986v2.rds"))
   
   ## Target
   target            <- readRDS(file.path(here::here(), "data", "crsp_monthly.rds"))
@@ -231,12 +231,12 @@
     )
   
   ## Save covariates_gold and target_gold to data folder
-  saveRDS(covariates_1927_df_gold, here::here("data", "covariates_1927_df_gold.rds"))
-  saveRDS(covariates_1962_df_gold, here::here("data", "covariates_1962_df_gold.rds"))
-  saveRDS(covariates_1986_df_gold, here::here("data", "covariates_1986_df_gold.rds"))
-  saveRDS(covariates_1927_df_gold2, here::here("data", "covariates_1927_df_gold2.rds"))
-  saveRDS(covariates_1962_df_gold2, here::here("data", "covariates_1962_df_gold2.rds"))
-  saveRDS(covariates_1986_df_gold2, here::here("data", "covariates_1986_df_gold2.rds"))
+  saveRDS(covariates_1927_df_gold, here::here("data", "covariates_1927_df_goldv2.rds"))
+  saveRDS(covariates_1962_df_gold, here::here("data", "covariates_1962_df_goldv2.rds"))
+  saveRDS(covariates_1986_df_gold, here::here("data", "covariates_1986_df_goldv2.rds"))
+  saveRDS(covariates_1927_df_gold2, here::here("data", "covariates_1927_df_gold2v2.rds"))
+  saveRDS(covariates_1962_df_gold2, here::here("data", "covariates_1962_df_gold2v2.rds"))
+  saveRDS(covariates_1986_df_gold2, here::here("data", "covariates_1986_df_gold2v2.rds"))
   saveRDS(target_gold, here::here("data", "target_gold.rds"))
   
 # Run models for 1927--------------------------------------------------------
@@ -271,6 +271,7 @@
       rebal_months = c(6),
       early_stop = NULL,
       gsm_algo = "ols",
+      tuning_method = "grid_search",
       upper_quant_wins = 0.95,
       lower_quant_wins = 0.05,
       n_iter = 10L, init_points = 5L,
@@ -279,58 +280,59 @@
       parallel = TRUE,
       verbose = TRUE
     )
-    harx_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+    harx_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold_range_v2"
     
       #### Save RDS
-      saveRDS(harx_backtest_res,    "harx_backtest_res_rescaled.rds")
+      saveRDS(harx_backtest_res, here::here("models_v2", "1927", "harx_range_1927.rds"))
       
     ### GLMNET
-      future::plan("multisession")
-      doFuture::registerDoFuture()
+    future::plan("multisession")
+    doFuture::registerDoFuture()
       
-      glmnet_backtest_grid_res <- run_walk_forward_validation(
+      glmnet_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "glmnet",
-        hyper_grid_domain_list <- list(
-          alpha            = c(0, 0.25, 0.5, 0.75, 1),
-          lambda.min.ratio = c(1e-4, 3e-4, 1e-3, 3e-3, 1e-2)
+        hyper_grid_domain_list = list(
+          alpha = c(0, 1),
+          lambda.min.ratio = c(1e-4, 0.01)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "bayesian_optimization",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 120L, val_n = 90L,
+        train_n = 150L, val_n = 60L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
-        tuning_method = "grid_search",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 10L, init_points = 5L,
-        k_iter = 2L, acq = "ucb",
+        n_iter = 15L, init_points = 20L,
+        k_iter = 4L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = FALSE,
+        parallel = TRUE,
         verbose = TRUE,
         .test_seed = 123
       )
-      glmnet_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
-    
+      glmnet_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
+      
       #### Save RDS
-      saveRDS(glmnet_backtest_grid_res, "glmnet_backtest_grid_res.rds")
+      saveRDS(glmnet_backtest_res, here::here("models_v2", "1927", "enet_range_1927.rds"))
       
       ### RF
       #future::plan("multisession")
       #doFuture::registerDoFuture()
       
-      rf_backtest_grid_res <- run_walk_forward_validation(
+      rf_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "rf",
+        tuning_method = "bayesian_optimization",
         hyper_grid_domain_list = list(
-          mtry       = c(0.1, 0.3, 0.5, 0.7, 0.9),
-          num.trees  = c(300L, 600L, 1000L, 1500L),
-          max.depth  = c(3L, 6L, 10L, 16L),
-          min.bucket = c(1L, 3L, 6L)
+          mtry = c(0.25, 0.9),
+          num.trees = c(300L, 1500L),
+          max.depth = c(3L, 12L),
+          min.bucket = c(1L, 6L)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
@@ -340,40 +342,42 @@
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        tuning_method = "grid_search",
         n_iter = 25L, init_points = 10L,
         k_iter = 20L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = FALSE,
+        parallel = TRUE,
         verbose = TRUE,
         .test_seed = 123
       )
-      rf_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      
+   
+      rf_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(rf_backtest_grid_res, "rf_backtest_grid_res.rds")
-    
+      saveRDS(rf_backtest_res, here::here("models_v2", "1927", "rf_range_1927.rds"))
+      
       
       ### XGB
       future::plan("multisession")
       doFuture::registerDoFuture()
-      xgb_backtest_grid_res <- run_walk_forward_validation(
+      
+      xgb_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "xgb",
+        tuning_method = "bayesian_optimization",
         hyper_grid_domain_list = list(
-          min_child_weight = c(2L, 5L, 10L),
-          max_depth        = c(2L, 3L, 4L, 5L),
-          subsample        = c(0.6, 0.8, 0.95),
-          colsample_bytree = c(0.6, 0.8, 0.95),
-          eta              = c(0.05, 0.1, 0.2),
-          alpha            = c(0, 0.5, 1, 2),
-          gamma            = c(0, 1, 3, 5),
-          nrounds          = c(150L, 300L, 500L, 800L)
+          min_child_weight = c(2L, 10L),      
+          max_depth        = c(2L, 5L),  
+          subsample        = c(0.60, 0.95),
+          colsample_bytree = c(0.60, 0.95),
+          eta              = c(0.05, 0.20),
+          alpha            = c(0.00, 2.00),   
+          gamma            = c(0.00, 5.00),  
+          nrounds          = c(150L, 800L)  
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
         huber_delta = 1, quantile_tau = 0.5,
-        tuning_method = "grid_search",
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = 30L,
@@ -383,31 +387,33 @@
         n_iter = 12L, init_points = 12L,
         k_iter = 8L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = TRUE,
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
-      xgb_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
       
+      xgb_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(xgb_backtest_grid_res, "xgb_backtest_grid_res.rds")
-    
+      saveRDS(xgb_backtest_res, here::here("models_v2", "1986", "xgb_range_1927.rds"))
+      
+      
       ##NN
       nn_hyper_grid <- list(
-        regularizer_l1   = c(1e-5, 1e-4, 1e-3, 1e-2),
-        regularizer_l2   = c(1e-5, 1e-4, 1e-3, 1e-2),
-        droprate         = c(0.25, 0.5, 0.75),
-        lr               = c(1e-4, 5e-4, 1e-3, 5e-3, 1e-2),
-        size_of_batch    = c(8L, 16L, 32L),
-        number_of_epochs = c(50L, 100L, 150L)
+        regularizer_l1   = c(1e-6, 1e-4),
+        regularizer_l2   = c(1e-4, 1e-2),
+        droprate         = c(0.15, 0.50),
+        lr               = c(1e-4, 5e-3),
+        size_of_batch    = c(32L, 256L),
+        number_of_epochs = c(30L, 100L)
       )
       
-    
       ### NN1
-      future::plan("sequential")
+      future::plan(future::sequential)
       
-      nn1_backtest_grid_res <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn1_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -420,31 +426,33 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
-        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        n_iter = 16L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
-      nn1_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
-      
+      nn1_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(nn1_backtest_grid_res, "nn1_backtest_grid_res.rds")
+      saveRDS(nn1_backtest_res, here::here("models_v2", "1927", "nn1_range_1927.rds"))
       
+  
       ### NN2
       future::plan("sequential")
       
-      nn2_backtest_grid_res <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn2_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -460,28 +468,29 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        tuning_method = "grid_search",
-        early_stop = 20L,
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        n_iter = 16L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
-      nn2_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn2_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_grid_res, "nn2_backtest_grid_res_ens5.rds") 
-    
+      saveRDS(nn2_backtest_res, here::here("models_v2", "1927", "nn2_range_1927.rds"))
       
       ### NN3
       future::plan("sequential")
       
-      nn3_backtest_grid_res <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn3_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -494,30 +503,32 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
-        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
-        n_ensembles = 5,
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
-      nn3_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn3_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(nn3_backtest_grid_res, "nn3_backtest_grid_res_rescaled_ens5.rds") 
+      saveRDS(nn3_backtest_res, here::here("models_v2", "1927", "nn3_range_1927.rds"))
       
       ### NN4
       future::plan("sequential")
       
-      nn4_backtest_grid_res <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn4_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -530,30 +541,32 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
-        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
-        n_ensembles = 5,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
-      nn4_backtest_grid_res@backtest_meta$dataset <- "covariates_1927_df_gold2"
+      nn4_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(nn4_backtest_grid_res, "nn4_backtest_grid_res_rescaled_ens5.rds") 
+      saveRDS(nn4_backtest_res, here::here("models_v2", "1927", "nn4_range_1927.rds"))
       
       ### NN5
       future::plan("sequential")
       
-      nn5_backtest_grid_res <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn5_backtest_res <- run_walk_forward_validation(
         target = target_gold, 
         covariates = covariates_1927_df_gold2,
         model = "nn",
@@ -566,25 +579,27 @@
         ),
         hyper_grid_domain_list = nn_hyper_grid,
         obj_fun = "squared_error", eval_metric = "rmse",
-        tuning_method = "grid_search",
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_iter = 16L, init_points = 12L,
-        n_ensembles = 5,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
-        .test_seed = 123
+        .test_seed = NA
       )
+      nn5_backtest_res@backtest_meta$dataset <- "covariates_1927_df_gold2v2"
       
       #### Save RDS
-      saveRDS(nn5_backtest_grid_res, "nn5_backtest_grid_res_ens5.rds") 
+      saveRDS(nn5_backtest_res, here::here("models_v2", "1927", "nn5_range_1927.rds"))
       
+     
       #Join tables
       har_backtest_res <- readRDS(file.path(here::here(), "models", "har_backtest_res_rescaled.rds"))
       glmnet_backtest_res <- readRDS(file.path(here::here(), "models", "glmnet_backtest_res_rescaled.rds"))
@@ -657,7 +672,7 @@
       ### HAR
       harx_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "har",
         hyper_grid_domain_list = list(),
         obj_fun = "squared_error", eval_metric = "rmse",
@@ -665,7 +680,7 @@
         train_n = 210L, val_n = 0L,
         rebal_months = c(6),
         early_stop = NULL,
-        tuning_method = "grid_search",
+        tuning_method = "bayesian_optimization",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
@@ -676,11 +691,10 @@
         verbose = TRUE
       )
       
-      harx_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold"
-      
+      harx_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(harx_backtest_res_1986, "harx_backtest_res_1986.rds")
+      saveRDS(harx_backtest_res_1986, here::here("models_v2", "1986", "harx_zscore_1986.rds"))
       
       ### GLMNET
       future::plan("multisession")
@@ -688,15 +702,16 @@
       
       glmnet_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "glmnet",
         hyper_grid_domain_list = list(
           alpha = c(0, 1),
           lambda.min.ratio = c(1e-4, 0.01)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
+        tuning_method = "bayesian_optimization",
         huber_delta = 1, quantile_tau = 0.5,
-        train_n = 150L, val_n = 60L,
+        train_n = 120L, val_n = 90L,
         rebal_months = c(6),
         early_stop = NULL,
         gsm_algo = "ols",
@@ -710,23 +725,25 @@
         .test_seed = 123
       )
       
-      glmnet_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      glmnet_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(glmnet_backtest_res_1986, "glmnet_backtest_res_1986_rescaled.rds")
+      saveRDS(glmnet_backtest_res_1986, here::here("models_v2", "1986", "enet_zscore_1986.rds"))
       
       ### RF
       future::plan("multisession")
       doFuture::registerDoFuture()
+      set.seed(123)
       
-      rf_backtest_res_1986 <- run_walk_forward_validation(
+      rf_backtest_res_1986  <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "rf",
+        tuning_method = "bayesian_optimization",
         hyper_grid_domain_list = list(
-          mtry = c(0.1, 0.9),
+          mtry = c(0.25, 0.9),
           num.trees = c(300L, 1500L),
-          max.depth = c(3L, 16L),
+          max.depth = c(3L, 12L),
           min.bucket = c(1L, 6L)
         ),
         obj_fun = "squared_error", eval_metric = "rmse",
@@ -740,25 +757,26 @@
         n_iter = 25L, init_points = 10L,
         k_iter = 20L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = TRUE,
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
       
-      rf_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      rf_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(rf_backtest_res_1986, "rf_backtest_res_1986_rescaled.rds")
-      
+      saveRDS(rf_backtest_res_1986, here::here("models_v2", "1986", "rf_zscore_1986_grid.rds"))
       
       ### XGB
       future::plan("multisession")
       doFuture::registerDoFuture()
+      set.seed(123)
       
       xgb_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "xgb",
+        tuning_method = "bayesian_optimization",
         hyper_grid_domain_list = list(
           min_child_weight = c(2L, 10L),      
           max_depth        = c(2L, 5L),  
@@ -780,32 +798,34 @@
         n_iter = 12L, init_points = 12L,
         k_iter = 8L, acq = "ucb",
         keras_architecture_pars = NULL,
-        parallel = TRUE,
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
       
-      xgb_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      xgb_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(xgb_backtest_res_1986, "xgb_backtest_res_1986_rescaled.rds")
-      
+      saveRDS(xgb_backtest_res_1986, here::here("models_v2", "1986", "xgb_zscore_1986_grid.rds"))
+
       ##NN
       nn_hyper_grid <- list(
-        regularizer_l1   = c(1e-5, 1e-4, 1e-3),
-        regularizer_l2   = c(1e-5, 1e-4),
-        droprate         = c(0.0, 0.25, 0.5),
-        lr               = c(0.001, 0.01, 0.1),
-        size_of_batch    = 32L,
-        number_of_epochs = 100L
+        regularizer_l1   = c(1e-6, 1e-4),
+        regularizer_l2   = c(1e-4, 1e-2),
+        droprate         = c(0.15, 0.50),
+        lr               = c(1e-4, 5e-3),
+        size_of_batch    = c(32L, 256L),
+        number_of_epochs = c(30L, 100L)
       )
       
       ### NN1
       future::plan(future::sequential)
       
-      nn1_backtest_grid_res_1986 <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn1_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "nn",
         keras_architecture_pars = list(
           units             = 32,
@@ -819,29 +839,32 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
-        tuning_method = "grid_search",
+        early_stop = 10L,
+        tuning_method = "bayesian_optimization",
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        n_iter = 24L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
-        parallel = TRUE,
+        n_ensembles = 10,
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = NA
       )
-      nn1_backtest_grid_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      nn1_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(nn1_backtest_grid_res_1986, "nn1_backtest_grid_res_1986_resc_ens5.rds")
+      saveRDS(nn1_backtest_res_1986, here::here("models_v2", "1986", "nn1_zscore_1986_grid.rds"))
       
+
       ### NN2
       future::plan(future::sequential)
       
-      nn2_backtest_grid_res_1986 <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn2_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16),
@@ -855,30 +878,32 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        tuning_method = "grid_search",
-        n_iter = 24L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        tuning_method = "bayesian_optimization",
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
-      nn2_backtest_grid_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      
+      nn2_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(nn2_backtest_grid_res_1986, "nn2_backtest_grid_res_1986_resc_ens5_3.rds") 
-      
-      
+      saveRDS(nn2_backtest_res_1986, here::here("models_v2", "1986", "nn2_zscore_1986_grid.rds"))
+
       ### NN3
       future::plan(future::sequential)
       
-      nn3_backtest_grid_res_1986 <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn3_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8),
@@ -892,30 +917,32 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        tuning_method = "grid_search",
-        n_iter = 24L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
-        parallel = TRUE,
+        n_ensembles = 10,
+        tuning_method = "bayesian_optimization",
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
+        parallel = FALSE,
         verbose = TRUE,
         .test_seed = NA
       )
-      nn3_backtest_grid_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      nn3_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       
       #### Save RDS
-      saveRDS(nn3_backtest_grid_res_1986, "nn3_backtest_grid_res_1986_resc_ens5_2.rds") 
-      
+      saveRDS(nn3_backtest_res_1986, here::here("models_v2", "1986", "nn3_zscore_1986_grid.rds"))
+
       ### NN4
       future::plan("sequential")
       
-      nn4_backtest_grid_res_1986 <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn4_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4),
@@ -929,30 +956,32 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        tuning_method = "grid_search",
-        n_iter = 24L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
+        n_ensembles = 10,
+        tuning_method = "bayesian_optimization",
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = NA
       )
-      nn4_backtest_grid_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      nn4_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       
       #### Save RDS
-      saveRDS(nn4_backtest_grid_res_1986, "nn4_backtest_grid_res_1986_resc_ens5_3.rds") 
+      saveRDS(nn4_backtest_res_1986, here::here("models_v2", "1986", "nn4_zscore_1986_grid.rds"))
       
       ### NN5
       future::plan("sequential")
       
-      nn5_backtest_grid_res_1986 <- run_walk_forward_validation(
+      set.seed(123)
+      tensorflow::set_random_seed(123)
+      nn5_backtest_res_1986 <- run_walk_forward_validation(
         target = target_gold, 
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model = "nn",
         keras_architecture_pars = list(
           units             = c(32, 16, 8, 4, 2),
@@ -966,27 +995,27 @@
         huber_delta = 1, quantile_tau = 0.5,
         train_n = 120L, val_n = 90L,
         rebal_months = c(6),
-        early_stop = 20L,
+        early_stop = 10L,
         gsm_algo = "ols",
         upper_quant_wins = 0.95,
         lower_quant_wins = 0.05,
-        n_ensembles = 5,
-        n_iter = 24L, init_points = 12L,
-        k_iter = 2L, acq = "ucb",
-        tuning_method = "grid_search",
+        n_ensembles = 10,
+        n_iter = 8L, init_points = 16L,
+        k_iter = 2L, acq = "ei",
+        tuning_method = "bayesian_optimization",
         parallel = FALSE,
         verbose = TRUE,
         .test_seed = 123
       )
-      nn5_backtest_grid_res_1986@backtest_meta$dataset <- "covariates_1986_df_gold2"
+      nn5_backtest_res_1986@backtest_meta$dataset <- "covariates_1986_df_goldv2"
       
       #### Save RDS
-      saveRDS(nn5_backtest_grid_res_1986, "nn5_backtest_grid_res_1986_resc_ens5.rds") 
-      
+      saveRDS(nn5_backtest_res_1986, here::here("models_v2", "1986", "nn5_zscore_1986_grid.rds"))
+
       ##LSTM
       lstm_backtest_res_1986 <- run_walk_forward_validation(
         target     = target_gold,
-        covariates = covariates_1986_df_gold2,
+        covariates = covariates_1986_df_gold,
         model      = "lstm",
         
         # LSTM architecture: things that do NOT change during BO
