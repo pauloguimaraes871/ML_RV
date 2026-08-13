@@ -2388,7 +2388,7 @@ set_eval_function <- function(model){ #General Parameters
                  huber_delta = huber_delta, quantile_tau = quantile_tau,
                  eval_metric = eval_metric,
                  early_stop = early_stop,
-                 best_iter =  as.integer(xgboost::xgb.attr(xgb_fit, "best_iteration"))
+                 best_iter = as.integer(xgb_fit$best_iteration)
                )
                
                #Return List
