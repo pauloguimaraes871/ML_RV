@@ -104,7 +104,146 @@ generate_HAR_terms <- function(
   
   ### Return
   return(design)
-  
+
+}
+
+
+## Helper function to build the whole block of lagged RV-style features for a
+## SINGLE daily return series: RV, RQ, the jump/continuous decomposition and
+## the leverage (negative return) term.
+## The daily S&P 500 series and every factor in the panel are routed through
+## this one function. That is what guarantees the panel uses the definitions
+## already established for the S&P returns instead of a parallel copy of them
+## that can silently drift.
+generate_rv_feature_block <- function(
+    data,                     # daily observations for ONE series only
+    date_col,                 # name of the Date column (character)
+    ret_col,                  # name of the daily return column (character)
+    week_len = 5,             # trading days in the 'week' block
+    month_trading_days = 22,  # scaling base (monthly units)
+    jump_threshold = 3        # c in the c^2 * Vhat_t truncation threshold
+){
+
+  ### Normalise to fixed internal names so every block below reads identically
+  ### whether the input is the S&P series or one factor
+  series <- data %>%
+    dplyr::transmute(
+      caldt = as.Date(.data[[date_col]]),
+      ret   = as.numeric(.data[[ret_col]])
+    ) %>%
+    dplyr::arrange(caldt)
+
+  ### Lagged RV
+  rv <- generate_HAR_terms(
+    data = series %>% dplyr::mutate(rv = ret ^ 2),
+    date_col = caldt,
+    value_col = "rv",
+    prefix = NULL,
+    week_len = week_len,
+    month_trading_days = month_trading_days,
+    scale_to_month = TRUE,
+    month_agg = "sum"
+  )
+
+  ### Realized Quarticity (Bollerslev et al. (2016))
+  rq <- generate_HAR_terms(
+    data = series %>% dplyr::mutate(rq = (ret ^ 4) / 3),
+    date_col = caldt,
+    value_col = "rq",
+    prefix = NULL,
+    week_len = week_len,
+    month_trading_days = month_trading_days,
+    scale_to_month = TRUE,
+    month_agg = "mean"
+  )
+
+  ### Jump and Continuous Comp (Anderson et al. (2007); Bekaert-Horoeva (2014)
+  jc <- series %>%
+    dplyr::arrange(caldt) %>%
+    dplyr::mutate(
+      r         = ret,                # daily return in decimal
+      rv        = r^2,                # daily realized variance proxy
+      abs_ret   = abs(r)              # absolute daily return
+    ) %>%
+    ### Local variance estimate Vhat_t -> 22-day rolling MEAN of past daily RVs
+    dplyr::mutate(
+      vhat_raw = as.numeric(stats::filter(rv, rep(1/month_trading_days,
+                                                  month_trading_days),
+                                          sides = 1)),
+      vhat = dplyr::lag(vhat_raw, 1), #Lag by 1 day
+      theta_t = jump_threshold^2 * vhat #Threshold c^2 * Vhat_t
+    ) %>%
+    ### Bipower variation (BPV) and Jump variation (J)
+    ### TBPV analog: keep |r_t||r_{t-1}| only if both RVs <= theta_t
+    ### TBPV_t := mu1^{-2} * |r_t||r_{t-1}| * I(RV_t<=theta_t) *
+    ### I(RV_{t-1}<=theta_{t-1})
+    ### This is equation 2.14 of Corsi-Pirino-Renò (2010)
+    dplyr::mutate(
+      abs_ret_lag1 = dplyr::lag(abs_ret, 1),
+      rv_lag1      = dplyr::lag(rv, 1),
+      theta_lag1   = dplyr::lag(theta_t, 1),
+      #### Indicator RV_t <= theta_t
+      ind_t        = !is.na(theta_t)   & (rv <= theta_t),
+      ind_lag1     = !is.na(theta_lag1) & (rv_lag1  <= theta_lag1),
+      keep_pair    = ind_t & ind_lag1,
+      mu1          = sqrt(2/pi),
+      #### Pseudo TBPV
+      pseudo_tbpv  = (abs_ret * abs_ret_lag1) / (mu1 ^ 2),
+      pseudo_tbpv  = dplyr::if_else(keep_pair, pseudo_tbpv, NA_real_),
+      #### Daily TBPV with fallback so TBPV does not exceed RV
+      tbvp         = dplyr::coalesce(pseudo_tbpv, pmin(rv, theta_t)),
+      #### Define J and C as Bekaert and Horoeva (2014)
+      j            = pmax(rv - tbvp, 0),
+      c            =  rv - j
+    ) %>%
+    dplyr::select(caldt, j, c)
+
+  #### jump
+  jump <- generate_HAR_terms(
+    data = jc %>% dplyr::rename(jump = j),
+    date_col = caldt,
+    value_col = "jump",
+    prefix = NULL,
+    week_len = week_len,
+    month_trading_days = month_trading_days,
+    scale_to_month = TRUE,
+    month_agg = "mean"
+  )
+
+  #### continuos
+  cont <- generate_HAR_terms(
+    data = jc %>% dplyr::rename(cont = c),
+    date_col = caldt,
+    value_col = "cont",
+    prefix = NULL,
+    week_len = week_len,
+    month_trading_days = month_trading_days,
+    scale_to_month = TRUE,
+    month_agg = "mean"
+  )
+
+  ### Leverage (Campbell & Hentschel (1992); Bekaert & Hoerova (2014))
+  negret <- generate_HAR_terms(
+    data = series,
+    date_col = caldt,
+    value_col = "ret",
+    prefix = "r",
+    week_len = week_len,
+    month_trading_days = month_trading_days,
+    scale_to_month = TRUE,
+    month_agg = "sum"
+  ) %>%
+    dplyr::transmute(
+      month_id,
+      negret_month_lag1 = pmin(r_month_lag1, 0),
+      negret_tw_lag1    = pmin(r_tw_lag1,    0),
+      negret_td_lag1    = pmin(r_td_lag1,    0)
+    )
+
+  ### Returned as a named list rather than a single joined frame so the caller
+  ### can keep feeding the blocks into covariates_list one by one
+  list(rv = rv, rq = rq, jump = jump, cont = cont, negret = negret)
+
 }
 
 
@@ -547,6 +686,92 @@ rescale_expanding_to_unit <- function(x, min_n = 36L) {
   out
 }
 
+## Covariate preprocessing
+## Moved here from fit_models.R so that it is reachable from the test suite;
+## the single-series body below is unchanged.
+## `key_col` is the only addition. Every statistic applied here (LOCF, the
+## expanding quantiles, the expanding median/MAD and the expanding min/max) is
+## path dependent, so a panel MUST be processed one series at a time. Running
+## them over a stacked panel would let the tail of one factor's history set the
+## scaling — and fill the leading NAs — of the next factor in the frame.
+prep_covariates <- function(df,
+                            scaling = c("zscore", "range"),
+                            winsorize_range = c(0.01, 0.99),
+                            min_n = 36L,
+                            key_col = NULL) {
+
+  scaling <- match.arg(scaling)
+
+  ### Panel case: recurse one key at a time, so the body below only ever sees
+  ### a single series and stays identical to the S&P 500 code path
+  if (!is.null(key_col)) {
+
+    stopifnot(key_col %in% names(df))
+
+    #### model.matrix() codes `month` from its DECLARED levels. If a key were
+    #### observed for fewer than 12 calendar months and carried a dropped-level
+    #### factor, it would return fewer dummy columns and group_modify() would
+    #### pad the difference with NA without complaining. Fail loudly instead.
+    if ("month" %in% names(df)) {
+      stopifnot(
+        is.factor(df$month),
+        identical(levels(df$month), as.character(1:12))
+      )
+    }
+
+    return(
+      df %>%
+        dplyr::group_by(.data[[key_col]]) %>%
+        dplyr::group_modify(
+          ~ prep_covariates(.x,
+                            scaling         = scaling,
+                            winsorize_range = winsorize_range,
+                            min_n           = min_n,
+                            key_col         = NULL)
+        ) %>%
+        dplyr::ungroup() %>%
+        #### group_modify() returns rows grouped by key. Re-sort by month so the
+        #### result is directly usable by the walk-forward engine, which needs
+        #### month_id non-decreasing for a month's keys to stay contiguous.
+        dplyr::arrange(month_id, .data[[key_col]])
+    )
+  }
+
+  df %>%
+  ### Use LOCF to fill NAs
+  impute_locf() %>%
+  dplyr::arrange(month_id) %>%
+  ### Add month dummies
+  { mm <- stats::model.matrix(~ month - 1, data = .)
+  colnames(mm) <- sub("^month", "m_", colnames(mm))
+  dplyr::bind_cols(., as.data.frame(mm))
+  } %>%
+  dplyr::select(-month) %>%
+  ### Winsorize
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::where(is.numeric) &
+        !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
+      ~ winsorize_expanding(.x,
+                            p_lo = min(winsorize_range),
+                            p_hi = max(winsorize_range),
+                            min_n = min_n)
+      )
+    ) %>%
+  ### Scale
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::where(is.numeric) &
+        !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
+      ~ if (scaling == "zscore") {
+        scale_expanding(.x, min_n = min_n)
+      } else {
+        rescale_expanding_to_unit(.x, min_n = min_n)
+      }
+    )
+  )
+}
+
 ## Box-Cox
 ### Fit Box-Cox lambda and offset on an initial training window
 boxcox_fit   <- function(x, train_n, lower = -2, upper = 2, eps = 1e-8) {
@@ -597,9 +822,12 @@ validator <- function(target, covariates, model,
                       early_stop, gsm_algo,
                       keras_architecture_pars,
                       n_ensembles,
-                      parallel
+                      parallel,
+                      key_col = NULL,
+                      fixed_params = list(),
+                      log10_params = character()
 ){
-  
+
   ## Initial checks
   if (!model %in% c("har", "glmnet", "rf", "xgb", "nn", "lstm")){
     stop("Model not recognized. Please choose one of the following models: 
@@ -644,9 +872,37 @@ validator <- function(target, covariates, model,
   if (model == "har" && length(hyper_grid_domain_list) > 0) {
     warning("hyper_grid_domain_list is ignored when model is 'har'.")
   }
+
+  ## Fixed versus tunable hyperparameters
+  ## A constant is an engine argument that is simply not searched. Every
+  ## model-specific NAME and DOMAIN check below applies to the UNION, because
+  ## the engine needs the complete argument set regardless of which list a
+  ## value came from. The tuning-format checks further down deliberately keep
+  ## using the searched domain on its own, since a constant is a scalar and not
+  ## a bound.
+  if (!is.list(fixed_params)) {
+    stop("fixed_params must be a list.")
+  }
+  hyper_overlap <- intersect(names(hyper_grid_domain_list), names(fixed_params))
+  if (length(hyper_overlap) > 0) {
+    stop("fixed and tunable hyperparameter names must be disjoint. Both: ",
+         paste(hyper_overlap, collapse = ", "))
+  }
+  tunable_domain_list    <- hyper_grid_domain_list
+  hyper_grid_domain_list <- c(hyper_grid_domain_list, fixed_params)
+
+  ## Bounds declared on a log10 scale are converted back to ENGINE units before
+  ## the domain rules below run, so that a rule such as "eta must lie in [0,1]"
+  ## means the same thing whichever scale the search happens on. Without this a
+  ## perfectly valid bound of c(-2, -0.82) would be rejected as a negative eta.
+  for (log_nm in intersect(log10_params, names(hyper_grid_domain_list))) {
+    hyper_grid_domain_list[[log_nm]] <- 10 ^ hyper_grid_domain_list[[log_nm]]
+  }
+
   #GLMNET
   if(model == "glmnet" &&
-     !all(names(hyper_grid_domain_list) == c("alpha", "lambda.min.ratio"))){
+     !setequal(names(hyper_grid_domain_list),
+               c("alpha", "lambda.min.ratio"))){
     stop("hyperparameters do not match model choice")
   }
   if(model == "glmnet"){
@@ -672,8 +928,8 @@ validator <- function(target, covariates, model,
   
   #RF
   if(model == "rf" && 
-     !all(names(hyper_grid_domain_list) == c("mtry", "num.trees", 
-                                             "max.depth", "min.bucket"))){
+     !setequal(names(hyper_grid_domain_list),
+               c("mtry", "num.trees", "max.depth", "min.bucket"))){
     stop("hyperparameters do not match model choice")
   }
   if(model == "rf"){
@@ -717,9 +973,10 @@ validator <- function(target, covariates, model,
   
   #XGB
   if(model == "xgb" && 
-     !all(names(hyper_grid_domain_list) == c("min_child_weight", "max_depth", 
-                                             "subsample", "colsample_bytree", 
-                                             "eta", "alpha", "gamma", "nrounds"))){
+     !setequal(names(hyper_grid_domain_list),
+               c("min_child_weight", "max_depth",
+                 "subsample", "colsample_bytree",
+                 "eta", "alpha", "gamma", "nrounds"))){
     stop("hyperparameters do not match model choice")
   }
   if(model == "xgb"){
@@ -774,9 +1031,10 @@ validator <- function(target, covariates, model,
   
   #NN
   if(model == "nn" && 
-     !all(names(hyper_grid_domain_list) == c("regularizer_l1", "regularizer_l2",
-                                             "droprate", "lr", "size_of_batch",
-                                             "number_of_epochs"))){
+     !setequal(names(hyper_grid_domain_list),
+               c("regularizer_l1", "regularizer_l2",
+                 "droprate", "lr", "size_of_batch",
+                 "number_of_epochs"))){
     stop("hyperparameters do not match model choice")
   }
   if(model == "nn"){
@@ -833,10 +1091,11 @@ validator <- function(target, covariates, model,
   
   #LSTM
   if(model == "lstm" && 
-     !all(names(hyper_grid_domain_list) == c("regularizer_l2",
-                                             "droprate","rec_droprate",
-                                              "lr", "size_of_batch",
-                                             "number_of_epochs"))){
+     !setequal(names(hyper_grid_domain_list),
+               c("regularizer_l2",
+                 "droprate", "rec_droprate",
+                 "lr", "size_of_batch",
+                 "number_of_epochs"))){
     stop("hyperparameters do not match model choice")
   }
   if (model == "lstm") {
@@ -1041,16 +1300,19 @@ validator <- function(target, covariates, model,
     stop("tuning_method must be either 'grid_search' or 'bayesian_optimization'.")
   }
   #Bayesian Opt
+  ## These apply to the SEARCHED domain only. A fixed constant is a scalar, so
+  ## checking it for length-2 bounds would reject exactly the declaration this
+  ## design is meant to encourage.
   if (tuning_method == "bayesian_optimization"){
     if(any(
-      #Check if hyper_grid_domain_list is a list
-      !is.list(hyper_grid_domain_list),
-      #Check if hyper_grid_domain_list elements have length of 2 (boundaries)
-      !all(sapply(hyper_grid_domain_list, function(x) length(x) == 2)),
-      #Check if hyper_grid_domain_list elements are vectors
-      !all(sapply(hyper_grid_domain_list, function(x) is.vector(x))),
-      #Check if hyper_grid_domain_list contains numeric values
-      !all(sapply(hyper_grid_domain_list, function(x) is.numeric(x)))
+      #Check if tunable_domain_list is a list
+      !is.list(tunable_domain_list),
+      #Check if tunable_domain_list elements have length of 2 (boundaries)
+      !all(sapply(tunable_domain_list, function(x) length(x) == 2)),
+      #Check if tunable_domain_list elements are vectors
+      !all(sapply(tunable_domain_list, function(x) is.vector(x))),
+      #Check if tunable_domain_list contains numeric values
+      !all(sapply(tunable_domain_list, function(x) is.numeric(x)))
     )
     ){
       stop("hyper_grid_domain_list not in correct format for bayesian_opt tuning.")
@@ -1059,12 +1321,12 @@ validator <- function(target, covariates, model,
   #Grid search
   if (tuning_method == "grid_search"){
     if(any(
-      #Check if hyper_grid_domain_list is a list
-      !is.list(hyper_grid_domain_list),
-      #Check if hyper_grid_domain_list elements are vectors
-      !all(sapply(hyper_grid_domain_list, function(x) is.vector(x))),
-      #Check if hyper_grid_domain_list contains numeric values
-      !all(sapply(hyper_grid_domain_list, function(x) is.numeric(x)))
+      #Check if tunable_domain_list is a list
+      !is.list(tunable_domain_list),
+      #Check if tunable_domain_list elements are vectors
+      !all(sapply(tunable_domain_list, function(x) is.vector(x))),
+      #Check if tunable_domain_list contains numeric values
+      !all(sapply(tunable_domain_list, function(x) is.numeric(x)))
     )
     ){
       stop("hyper_grid_domain_list not in correct format for grid_search tuning.")
@@ -1072,7 +1334,26 @@ validator <- function(target, covariates, model,
   }
 
   
-  ## Covariates first column should be month_id and others should be numeric
+  ## Panel key
+  ## When key_col is supplied, covariates and target are a PANEL: one row per
+  ## (month_id, key). Uniqueness, ordering and the sample-size test then have to
+  ## be expressed in terms of unique MONTHS, because train_n and val_n always
+  ## count months and never rows. With key_col = NULL every check below reduces
+  ## to the original single-series behaviour.
+  if (!is.null(key_col)){
+    if (!is.character(key_col) || length(key_col) != 1L){
+      stop("key_col must be a single column name.")
+    }
+    if (!key_col %in% colnames(covariates)){
+      stop("key_col not found in covariates.")
+    }
+    if (!key_col %in% colnames(target)){
+      stop("key_col not found in target.")
+    }
+  }
+  id_cols <- c("month_id", key_col)
+
+  ## Covariates should carry month_id (plus the key) and numeric features
   if (!"month_id" %in% colnames(covariates)){
     stop("covariates must contain a 'month_id' column.")
   }
@@ -1080,18 +1361,25 @@ validator <- function(target, covariates, model,
       !lubridate::is.POSIXt(covariates$month_id)){
     stop("covariates$month_id must be of Date or POSIXt type.")
   }
-  if (ncol(covariates) < 2){
-    stop("covariates must contain at least one feature column in addition to 'month_id'.")
+  if (is.null(key_col) && anyDuplicated(covariates$month_id)){
+    stop("covariates$month_id contains duplicate values.")
   }
-  if (!all(sapply(covariates[,-1], is.numeric))){
-    stop("All columns in covariates except 'month_id' must be numeric.")
+  if (ncol(covariates) < (length(id_cols) + 1L)){
+    stop("covariates must contain at least one feature column in addition to the id columns.")
   }
-  ## Target should contain only 2 cols: month_id and rv_month
-  if (ncol(target) != 2){
-    stop("target must contain exactly two columns: 'month_id' and 'rv_month'.")
+  ## The key is a relational id, so it is exempt from the numeric requirement.
+  ## Everything else must be numeric, which is what stops a stray character
+  ## column from reaching the design matrix.
+  if (!all(sapply(covariates[, setdiff(colnames(covariates), id_cols),
+                             drop = FALSE], is.numeric))){
+    stop("All columns in covariates except the id columns must be numeric.")
   }
-  if (!all(c("month_id", "rv_month") %in% colnames(target))){
-    stop("target must contain columns named 'month_id' and 'rv_month'.")
+  ## Target should contain only month_id (plus the key) and rv_month
+  if (ncol(target) != (length(id_cols) + 1L)){
+    stop("target must contain exactly the id columns and 'rv_month'.")
+  }
+  if (!all(c(id_cols, "rv_month") %in% colnames(target))){
+    stop("target must contain the id columns and a column named 'rv_month'.")
   }
   if (!lubridate::is.Date(target$month_id) &&
       !lubridate::is.POSIXt(target$month_id)){
@@ -1100,22 +1388,38 @@ validator <- function(target, covariates, model,
   if (!is.numeric(target$rv_month)){
     stop("target$rv_month must be numeric.")
   }
-  ## Check month_id in covariates and target match and are sorted
-  if (!all(sort(covariates$month_id) == sort(target$month_id))){
-    stop("month_id values in covariates and target must match.")
+  ## Check covariates and target describe exactly the same observations
+  if (is.null(key_col)){
+    if (!all(sort(covariates$month_id) == sort(target$month_id))){
+      stop("month_id values in covariates and target must match.")
+    }
+  } else {
+    cov_ids <- paste(covariates$month_id, covariates[[key_col]], sep = "|")
+    tgt_ids <- paste(target$month_id,     target[[key_col]],     sep = "|")
+    if (length(cov_ids) != length(tgt_ids) || !setequal(cov_ids, tgt_ids)){
+      stop("(month_id, key) pairs in covariates and target must match.")
+    }
   }
-  if (!isTRUE(all.equal(covariates$month_id, sort(covariates$month_id)))){
+  ## month_id must be non-decreasing. For a panel that means every row of a
+  ## given month is contiguous; ties across keys within a month are expected.
+  if (base::is.unsorted(covariates$month_id)){
     stop("covariates$month_id must be sorted in ascending order.")
   }
-  if (!isTRUE(all.equal(target$month_id, sort(target$month_id)))){
+  if (base::is.unsorted(target$month_id)){
     stop("target$month_id must be sorted in ascending order.")
   }
-  ## Check there are no duplicated month_id
-  if (any(duplicated(covariates$month_id))){
-    stop("covariates$month_id contains duplicate values.")
-  }
-  if (any(duplicated(target$month_id))){
-    stop("target$month_id contains duplicate values.")
+  ## Check there are no duplicated observations
+  if (is.null(key_col)){
+    if (any(duplicated(target$month_id))){
+      stop("target$month_id contains duplicate values.")
+    }
+  } else {
+    if (any(duplicated(covariates[, id_cols]))){
+      stop("covariates contains duplicate (month_id, key) pairs.")
+    }
+    if (any(duplicated(target[, id_cols]))){
+      stop("target contains duplicate (month_id, key) pairs.")
+    }
   }
   ## Check there are no NAs in covariates and target
   if (any(is.na(covariates))){
@@ -1124,10 +1428,11 @@ validator <- function(target, covariates, model,
   if (any(is.na(target))){
     stop("target contains NA values.")
   }
-  ## Check there are enough data points
-  total_n <- nrow(covariates)
+  ## Check there are enough data points, counted in MONTHS rather than rows so
+  ## that a wide panel cannot appear to satisfy train_n + val_n on breadth alone
+  total_n <- dplyr::n_distinct(covariates$month_id)
   if (total_n < (train_n + val_n + 12)){
-    stop("Not enough data points for the specified train_n and val_n.")
+    stop("Not enough months for the specified train_n and val_n.")
   }
   ## Check there are enough rebalancing months
   if (length(rebal_months) == 0){
@@ -1262,15 +1567,20 @@ translate_metrics <- function(model, eval_metric, obj_fun,
 
 ## Split helper
 split_ts <- function(covariates, target, dates, current_date,
-                     train_n, val_n){
-  
+                     train_n, val_n, key_col = NULL){
+
   ### Checks
-  stopifnot(!base::is.unsorted(covariates$month_id))               
-  stopifnot(!base::is.unsorted(target$month_id))                                               
-  
+  stopifnot(!base::is.unsorted(covariates$month_id))
+  stopifnot(!base::is.unsorted(target$month_id))
+
+  ### Relational ids. `dates` holds UNIQUE months, so d is a month index and the
+  ### filters below select every key observed in the selected months. That is
+  ### what keeps a whole month inside a single train/validation/test block.
+  id_cols <- c("month_id", key_col)
+
   ### Get d
   d <- which(dates == current_date)
-  
+
   
   ### Train
   covariates_train <- covariates %>%
@@ -1285,10 +1595,10 @@ split_ts <- function(covariates, target, dates, current_date,
                       dates[d - val_n - 1]
                     )
     )
-  full_data_train_clean <- covariates_train %>% 
-    dplyr::left_join(target, by = "month_id") %>%
-    dplyr::select(-month_id)
-  target_train          <- full_data_train_clean %>% 
+  full_data_train_clean <- covariates_train %>%
+    dplyr::left_join(target, by = id_cols) %>%
+    dplyr::select(-dplyr::all_of(id_cols))
+  target_train          <- full_data_train_clean %>%
     dplyr::pull(rv_month)
   
   ### Validation
@@ -1313,9 +1623,9 @@ split_ts <- function(covariates, target, dates, current_date,
                         dates[d - 1]
                       )
       )
-    full_data_val_clean <- covariates_val %>% 
-      dplyr::left_join(target, by = "month_id") %>%
-      dplyr::select(-month_id)
+    full_data_val_clean <- covariates_val %>%
+      dplyr::left_join(target, by = id_cols) %>%
+      dplyr::select(-dplyr::all_of(id_cols))
     target_val          <- full_data_val_clean %>%
       dplyr::pull(rv_month)
   }
@@ -1333,12 +1643,29 @@ split_ts <- function(covariates, target, dates, current_date,
                       dates[d - 1]
                     )
     )
-  full_data_refit_clean <- covariates_refit %>% 
-    dplyr::left_join(target, by = "month_id") %>%
-    dplyr::select(-month_id)
+  full_data_refit_clean <- covariates_refit %>%
+    dplyr::left_join(target, by = id_cols) %>%
+    dplyr::select(-dplyr::all_of(id_cols))
   target_refit          <- full_data_refit_clean %>%
     dplyr::pull(rv_month)
-  
+
+  ### Drop the panel key from the returned covariate frames.
+  ### They keep month_id, which the temporal defensive checks downstream rely
+  ### on, but shedding the key here means fit_rv_model(), set_eval_function()
+  ### and predict() need no panel awareness at all: their existing
+  ### covariates[, -1] convention keeps working and factor identity can never
+  ### reach a design matrix.
+  if (!is.null(key_col)){
+    covariates_train <- covariates_train %>%
+      dplyr::select(-dplyr::all_of(key_col))
+    covariates_refit <- covariates_refit %>%
+      dplyr::select(-dplyr::all_of(key_col))
+    if (val_n > 0){
+      covariates_val <- covariates_val %>%
+        dplyr::select(-dplyr::all_of(key_col))
+    }
+  }
+
   ### Return
   if (val_n > 0){
     list(
@@ -1478,6 +1805,161 @@ calc_eval_metrics <- function(pred, target,
 }
 
 ## Create an expanded hyper grid for tuning
+## Fixed versus tunable hyperparameters
+## Engines such as ranger and xgboost need arguments that we deliberately do
+## NOT optimize (number of trees, subsample rates, l2 penalty). Passing them
+## through the search is wasteful and misleading: as a Bayesian bound they
+## become a degenerate interval that the optimizer still models, and as a grid
+## dimension they add a factor of one that only inflates the bookkeeping.
+## partition_hyper_domain() validates the split so the two can never collide.
+partition_hyper_domain <- function(hyper_grid_domain_list,
+                                   fixed_params = list(),
+                                   int_params   = character(),
+                                   log10_params = character(),
+                                   tuning_method){
+
+  if (!is.list(hyper_grid_domain_list)){
+    stop("hyper_grid_domain_list must be a list.")
+  }
+  if (!is.list(fixed_params)){
+    stop("fixed_params must be a list.")
+  }
+
+  tunable_names <- names(hyper_grid_domain_list)
+  fixed_names   <- names(fixed_params)
+
+  ### Everything must be named, otherwise the splice into the engine call is
+  ### positional and therefore silently wrong
+  if (length(hyper_grid_domain_list) > 0 &&
+      (is.null(tunable_names) || any(!nzchar(tunable_names)))){
+    stop("every element of hyper_grid_domain_list must be named.")
+  }
+  if (length(fixed_params) > 0 &&
+      (is.null(fixed_names) || any(!nzchar(fixed_names)))){
+    stop("every element of fixed_params must be named.")
+  }
+  if (anyDuplicated(tunable_names) > 0){
+    stop("hyper_grid_domain_list contains duplicated names.")
+  }
+  if (anyDuplicated(fixed_names) > 0){
+    stop("fixed_params contains duplicated names.")
+  }
+
+  ### The core invariant: a parameter is either searched or held constant
+  overlap <- intersect(tunable_names, fixed_names)
+  if (length(overlap) > 0){
+    stop("fixed and tunable hyperparameter names must be disjoint. Both: ",
+         paste(overlap, collapse = ", "))
+  }
+
+  ### Constants must be scalars, since they are recycled across every
+  ### evaluation without expanding the search
+  not_scalar <- fixed_names[
+    vapply(fixed_params, function(x) length(x) != 1L, logical(1))
+  ]
+  if (length(not_scalar) > 0){
+    stop("fixed_params must be single values: ",
+         paste(not_scalar, collapse = ", "))
+  }
+
+  ### Declarations must refer to parameters that actually exist
+  unknown <- setdiff(c(int_params, log10_params),
+                     c(tunable_names, fixed_names))
+  if (length(unknown) > 0){
+    stop("int_params/log10_params name unknown hyperparameters: ",
+         paste(unknown, collapse = ", "))
+  }
+
+  ### A search-scale transformation only means something for a searched
+  ### parameter. Grid values are always written in engine units.
+  fixed_on_log <- intersect(log10_params, fixed_names)
+  if (length(fixed_on_log) > 0){
+    stop("log10_params must be tunable, not fixed: ",
+         paste(fixed_on_log, collapse = ", "))
+  }
+
+  if (tuning_method == "bayesian_optimization"){
+    wrong_len <- tunable_names[
+      vapply(hyper_grid_domain_list, function(x) length(x) != 2L, logical(1))
+    ]
+    if (length(wrong_len) > 0){
+      stop("Bayesian bounds must be length-2: ",
+           paste(wrong_len, collapse = ", "))
+    }
+    #### This is the check that stops a constant being smuggled in as a bound
+    degenerate <- tunable_names[
+      vapply(hyper_grid_domain_list,
+             function(x) isTRUE(x[1] == x[2]), logical(1))
+    ]
+    if (length(degenerate) > 0){
+      stop("degenerate Bayesian bounds (lower == upper) for: ",
+           paste(degenerate, collapse = ", "),
+           ". Declare these in fixed_params instead.")
+    }
+  }
+
+  list(
+    tunable      = hyper_grid_domain_list,
+    fixed        = fixed_params,
+    int_params   = intersect(int_params, c(tunable_names, fixed_names)),
+    ### log10 search units apply to Bayesian bounds only
+    log10_params = if (tuning_method == "bayesian_optimization"){
+      intersect(log10_params, tunable_names)
+    } else character()
+  )
+}
+
+## Turn a point in SEARCH units into the full argument set in ENGINE units.
+## Used by both tuning methods so the two cannot drift apart.
+resolve_hyper_values <- function(searched, fixed = list(),
+                                 int_params = character(),
+                                 log10_params = character()){
+
+  ### Bounds stated on a log10 scale; the engine receives the level
+  for (nm in intersect(log10_params, names(searched))){
+    searched[[nm]] <- 10 ^ searched[[nm]]
+  }
+
+  vals <- c(searched, fixed)
+
+  ### Rounded last, so a log-scaled integer is rounded after exponentiation
+  for (nm in intersect(int_params, names(vals))){
+    vals[[nm]] <- as.integer(round(vals[[nm]]))
+  }
+
+  vals
+}
+
+## Build the objective handed to ParBayesianOptimization.
+## bayesOpt() matches `bounds` against formals(FUN), so the objective must
+## expose exactly the searched names and nothing else. The constants are
+## injected into the engine call inside the closure instead.
+make_hyper_objective <- function(inner, tunable_names, fixed = list(),
+                                 int_params = character(),
+                                 log10_params = character()){
+
+  force(inner)
+
+  if (length(tunable_names) == 0L){
+    stop("make_hyper_objective() needs at least one searched parameter.")
+  }
+
+  objective <- function(){
+    ### inherits = FALSE so only the formals are collected, never an object of
+    ### the same name from the enclosing scope
+    searched <- mget(tunable_names, envir = environment(), inherits = FALSE)
+    do.call(inner, resolve_hyper_values(searched, fixed,
+                                        int_params, log10_params))
+  }
+
+  formals(objective) <- stats::setNames(
+    rep(list(quote(expr = )), length(tunable_names)),
+    tunable_names
+  )
+
+  objective
+}
+
 create_expanded_hyper_grid_list <- function(hyper_grid_domain_list, tuning_method, n_iter, model){
   
   #Set Hyperparameters grid
@@ -2667,6 +3149,9 @@ hyper_tune <- function(
     eval_metric_trans, early_stop, #Early Stop
     eval_metric, huber_delta, quantile_tau,  #Chosen eval metric
     hyper_grid_domain_list, n_iter, #Hyperparameter grid
+    fixed_params = list(), #Engine constants that are NOT searched
+    int_params = character(), #Names to be rounded to integer
+    log10_params = character(), #Names whose BOUNDS are on a log10 scale
     init_points, k_iter, acq, #Bayesian Optimization
     keras_architecture_pars, #Keras Parameters
     parallel, #Parallelization (default is true with future backend)
@@ -2678,7 +3163,19 @@ hyper_tune <- function(
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("The 'doRNG' package is required. Please install it.")
     }
-  
+
+    #### Split the declaration into what is searched and what is held constant.
+    #### Validated on every call, which is cheap, and keeps the two tuning
+    #### methods reading from exactly the same resolved definition.
+    hyper_parts <- partition_hyper_domain(
+      hyper_grid_domain_list = hyper_grid_domain_list,
+      fixed_params           = fixed_params,
+      int_params             = int_params,
+      log10_params           = log10_params,
+      tuning_method          = tuning_method
+    )
+
+
     ##Bayes Opt
     if (tuning_method == "bayesian_optimization") {
       
@@ -2687,7 +3184,11 @@ hyper_tune <- function(
         bayes_opt <- doFuture::withDoRNG(
           ParBayesianOptimization::bayesOpt(
             #Passing variables to set_eval_fun
-            FUN = eval_fun(
+            FUN = make_hyper_objective(
+              #The inner fit() has hard-coded formals covering every engine
+              #argument. Wrapping it is what lets `bounds` carry only the
+              #searched names while the constants are spliced in internally.
+              inner = eval_fun(
               
               #Data
               full_data_train_clean = full_data_train_clean, #full_data_train
@@ -2713,16 +3214,21 @@ hyper_tune <- function(
               keras_architecture_pars = keras_architecture_pars,
               
               verbose = FALSE
-              
+
               #Future Implementation:
               #Functions for custom eval and loss - XGB
               #mpe_xgb <- mpe_xgb, #Custom mpe
               #rss_xgb = rss_xgb, #Custom rss
               #cp_xgb = cp_xgb, #custom cp
               #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-              
+
+              ),
+              tunable_names = names(hyper_parts$tunable),
+              fixed         = hyper_parts$fixed,
+              int_params    = hyper_parts$int_params,
+              log10_params  = hyper_parts$log10_params
             ),
-            bounds = hyper_grid_domain_list, #Boundaries
+            bounds = hyper_parts$tunable, #Boundaries (searched names only)
             initPoints = init_points, #Number of randomly chosen points to 
             #sample the target function before B.O.
             acq = acq, #Acquisition function to be used
@@ -2739,7 +3245,11 @@ hyper_tune <- function(
         bayes_opt <-
           ParBayesianOptimization::bayesOpt(
             #Passing variables to set_eval_fun
-            FUN = eval_fun(
+            FUN = make_hyper_objective(
+              #The inner fit() has hard-coded formals covering every engine
+              #argument. Wrapping it is what lets `bounds` carry only the
+              #searched names while the constants are spliced in internally.
+              inner = eval_fun(
               
               #Data
               full_data_train_clean = full_data_train_clean, #full_data_train
@@ -2765,16 +3275,21 @@ hyper_tune <- function(
               keras_architecture_pars = keras_architecture_pars,
               
               verbose = TRUE
-              
+
               #Future Implementation:
               #Functions for custom eval and loss - XGB
               #mpe_xgb <- mpe_xgb, #Custom mpe
               #rss_xgb = rss_xgb, #Custom rss
               #cp_xgb = cp_xgb, #custom cp
               #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-              
+
+              ),
+              tunable_names = names(hyper_parts$tunable),
+              fixed         = hyper_parts$fixed,
+              int_params    = hyper_parts$int_params,
+              log10_params  = hyper_parts$log10_params
             ),
-            bounds = hyper_grid_domain_list, #Boundaries
+            bounds = hyper_parts$tunable, #Boundaries (searched names only)
             initPoints = init_points, #Number of randomly chosen points to 
             #sample the target function before B.O.
             acq = acq, #Acquisition function to be used
@@ -2815,7 +3330,18 @@ hyper_tune <- function(
       
       #### Get optimal values
       ##### Optimal Hyper Choice
-      optimal_hyper <- unlist(ParBayesianOptimization::getBestPars(bayes_opt)) 
+      ##### getBestPars() returns the point in SEARCH units and covers only the
+      ##### searched names. fit_rv_model() reads every engine argument out of
+      ##### optimal_hyper by name, so the constants are re-attached and the
+      ##### log-scaled values converted back to engine units here.
+      optimal_hyper <- unlist(resolve_hyper_values(
+        searched     = as.list(
+          unlist(ParBayesianOptimization::getBestPars(bayes_opt))
+        ),
+        fixed        = hyper_parts$fixed,
+        int_params   = hyper_parts$int_params,
+        log10_params = hyper_parts$log10_params
+      ))
       
       ##### Add best lam
       try(optimal_hyper <- 
@@ -2852,13 +3378,32 @@ hyper_tune <- function(
     if (tuning_method %in% c("grid_search", "random_search")){
  
       #Create expanded_hyper_grid_list
+      #Expanded over the SEARCHED dimensions only. Grid values are always
+      #written in engine units, so no scale transformation applies here.
       expanded_hyper_grid_list <- create_expanded_hyper_grid_list(
-        hyper_grid_domain_list = hyper_grid_domain_list,
+        hyper_grid_domain_list = hyper_parts$tunable,
         n_iter                 = n_iter,
         tuning_method          = tuning_method,
         model                  = model
       )
-      
+
+      #Recycle the constants across the combinations. Adding them to the grid
+      #before expansion would multiply it by a factor of one and change nothing
+      #except the bookkeeping; recycling afterwards keeps the evaluation count
+      #equal to the number of genuinely distinct configurations, while still
+      #giving pmap() and fit_rv_model() the complete argument set.
+      n_comb <- length(expanded_hyper_grid_list[[1]])
+      for (fixed_nm in names(hyper_parts$fixed)){
+        expanded_hyper_grid_list[[fixed_nm]] <-
+          rep(hyper_parts$fixed[[fixed_nm]], n_comb)
+      }
+      for (int_nm in intersect(hyper_parts$int_params,
+                               names(expanded_hyper_grid_list))){
+        expanded_hyper_grid_list[[int_nm]] <-
+          as.integer(round(expanded_hyper_grid_list[[int_nm]]))
+      }
+
+
       if (parallel) {
         
         hyper_eval <- furrr::future_pmap(expanded_hyper_grid_list, #List of hyperparameters for search
@@ -3187,6 +3732,153 @@ fit_rv_model <- function(
 
 
 ## Walk Forward Validation
+## Run matrix
+## The set of runs fit_models.R will execute, as data rather than as a sequence
+## of hand-edited blocks. Kept here instead of inline in the script so the test
+## suite can assert on it without sourcing a file that would start fitting.
+##
+## `tuned` distinguishes HAR and HARX from the rest: they have no meaningful
+## algorithmic hyperparameter search, so they are fitted ONCE per preprocessing
+## specification. Emitting a grid and a Bayesian copy of an identical fit would
+## be two names for one number.
+##
+## LSTM, NN4 and NN5 are deliberately absent. Their helpers remain untouched in
+## this file; they are simply not part of the current run plan.
+build_run_matrix <- function(run_1986 = TRUE, run_1927 = TRUE,
+                             run_panel = TRUE, run_spx_only = FALSE,
+                             models = c("har", "harx", "glmnet", "rf",
+                                        "xgb", "nn1", "nn2", "nn3"),
+                             preprocessing = c("range", "zscore"),
+                             tuning_methods = c("grid_search",
+                                                "bayesian_optimization")){
+
+  untuned <- c("har", "harx")
+
+  samples   <- c(if (isTRUE(run_1986)) "1986", if (isTRUE(run_1927)) "1927")
+  universes <- c(if (isTRUE(run_panel)) "panel", if (isTRUE(run_spx_only)) "spx")
+
+  if (length(samples) == 0L || length(universes) == 0L){
+    return(
+      tibble::tibble(
+        universe = character(), sample = character(), model_id = character(),
+        preprocessing = character(), tuning_method = character()
+      )
+    )
+  }
+
+  rows <- list()
+
+  for (universe in universes){
+    for (sample_id in samples){
+      for (model_id in models){
+        for (prep in preprocessing){
+
+          ### An untuned model gets one row per preprocessing specification,
+          ### with no tuning method attached
+          methods <- if (model_id %in% untuned) NA_character_ else tuning_methods
+
+          for (method in methods){
+            rows[[length(rows) + 1L]] <- tibble::tibble(
+              universe      = universe,
+              sample        = sample_id,
+              model_id      = model_id,
+              preprocessing = prep,
+              tuning_method = method
+            )
+          }
+        }
+      }
+    }
+  }
+
+  dplyr::bind_rows(rows)
+}
+
+## Provenance
+## Fields a cache decision is allowed to depend on. Everything outside this
+## vector is descriptive: timestamps, elapsed time and free-text labels differ
+## between two identical runs and must never make them look different.
+## Kept as an explicit ordered vector, rather than "all names in the list", so
+## that adding a descriptive field to backtest_meta cannot silently invalidate
+## every existing cache entry.
+## These are INPUTS to a run, never facts derived from it. That distinction is
+## what makes the signature computable before a fit, which a cache lookup needs.
+## Derived facts -- feature_names, the date ranges, the rebalance dates -- are
+## still recorded in the provenance, but they are implied by the inputs: they
+## cannot change unless something in this vector changed first, and the dataset
+## hash covers the data itself. Signing them would buy nothing and would make
+## the cache unusable, since you would have to fit a run to discover its key.
+.provenance_signature_fields <- c(
+  ### Declared by the caller
+  "dataset_version", "universe", "inclusion_policy",
+  "covariates_artifact", "covariates_sha256",
+  "target_artifact", "target_sha256",
+  "preprocessing", "winsorize_range", "scaling_min_n",
+  "target_transform", "target_inverse_transform",
+  "feature_set", "model_id",
+  ### Engine settings, all known before the fit
+  "model", "key_col", "target_name",
+  "train_n", "val_n", "rebal_months",
+  "obj_fun", "eval_metric", "huber_delta", "quantile_tau",
+  "tuning_method", "tunable_domain", "fixed_params",
+  "int_params", "log10_params",
+  "n_iter", "init_points", "k_iter", "acq",
+  "early_stop", "n_ensembles", "keras_architecture_pars",
+  "seed"
+)
+
+## SHA-256 of a file, for recording which artifact a run actually consumed
+hash_artifact <- function(path){
+  if (is.null(path) || is.na(path) || !file.exists(path)) return(NA_character_)
+  digest::digest(file = path, algo = "sha256")
+}
+
+## Deterministic signature over the fields above.
+## Built by name in a FIXED order, so two runs specified in a different order
+## still sign identically, and a field that is absent signs the same as a field
+## that is NULL.
+compute_run_signature <- function(provenance){
+
+  if (!requireNamespace("digest", quietly = TRUE)){
+    stop("The 'digest' package is required to sign a run.")
+  }
+  if (!is.list(provenance)){
+    stop("provenance must be a list.")
+  }
+
+  canonical <- lapply(.provenance_signature_fields,
+                      function(nm) provenance[[nm]])
+  names(canonical) <- .provenance_signature_fields
+
+  digest::digest(canonical, algo = "sha256")
+}
+
+## Which signature fields disagree. Used by the cache report so a miss can be
+## explained instead of just asserted.
+provenance_diff <- function(stored, requested){
+
+  if (!is.list(stored) || !is.list(requested)) return(.provenance_signature_fields)
+
+  differing <- vapply(
+    .provenance_signature_fields,
+    function(nm) !isTRUE(all.equal(stored[[nm]], requested[[nm]])),
+    logical(1)
+  )
+
+  .provenance_signature_fields[differing]
+}
+
+## Cache decision.
+## Deliberately ignores the filename. A file called xgb_range_1927.rds proves
+## nothing about what was fitted or on which sample; only the recorded
+## provenance does.
+provenance_matches <- function(stored, requested){
+
+  if (!is.list(stored) || !is.list(requested)) return(FALSE)
+
+  identical(compute_run_signature(stored), compute_run_signature(requested))
+}
+
 run_walk_forward_validation <- function(
     target, covariates, model,
     hyper_grid_domain_list = list(),
@@ -3205,7 +3897,12 @@ run_walk_forward_validation <- function(
     keras_architecture_pars = NULL,
     parallel = TRUE,
     verbose = TRUE,
-    .test_seed = 123
+    .test_seed = 123,
+    key_col = NULL,
+    fixed_params = list(),
+    int_params = character(),
+    log10_params = character(),
+    run_spec = list()
 ){
   
   elapsed_time <- system.time({
@@ -3228,10 +3925,13 @@ run_walk_forward_validation <- function(
     n_ensembles             = n_ensembles,
     gsm_algo                = gsm_algo,
     keras_architecture_pars = keras_architecture_pars,
-    parallel                = parallel
+    parallel                = parallel,
+    key_col                 = key_col,
+    fixed_params            = fixed_params,
+    log10_params            = log10_params
   )
-  
-  
+
+
   ## Print arguments
   has_tuning <- if (model != "har") TRUE else FALSE
   if (isTRUE(verbose)){
@@ -3258,7 +3958,11 @@ run_walk_forward_validation <- function(
   
   
   ## Get dates metrics
-  dates            <- covariates %>% dplyr::pull(month_id)
+  ### UNIQUE months, not rows. train_n, val_n and test_n all count months, so a
+  ### panel carrying several keys per month must not inflate them, and every key
+  ### observed in a month necessarily lands in the same train/validation/test
+  ### block. For a single series this is identical to covariates$month_id.
+  dates            <- sort(unique(covariates$month_id))
   test_n           <- length(dates) - train_n - val_n + 1
   dates_test       <- dates[(train_n + val_n):
                               (train_n + val_n + test_n - 1)]
@@ -3306,13 +4010,11 @@ run_walk_forward_validation <- function(
       hyper_choice                  <- NULL
     }
   
-    ###Prediction, error and Y objects
-    oos_pred         <- vector(length = length(dates_test)) #initialize prediction 
-    names(oos_pred)  <- as.character(dates_test)
-    oos_error        <- vector(length = length(dates_test)) #Initialize error
-    names(oos_error) <- as.character(dates_test)
-    oos_y            <- vector(length = length(dates_test)) #Initialize y 
-    names(oos_y)     <- as.character(dates_test)
+    ###Prediction and target rows, collected long
+    ### One row per (month_id, key). A panel contributes several rows per test
+    ### month, a single series exactly one, so the storage cannot assume a
+    ### one-to-one mapping between test months and predictions.
+    oos_rows <- vector("list", length(dates_test))
     
     ###Feature importance
     feat_imp_list <- list()
@@ -3346,8 +4048,9 @@ run_walk_forward_validation <- function(
         dates        = dates,
         current_date = current_date,
         train_n      = train_n,
-        val_n        = val_n
-      ) 
+        val_n        = val_n,
+        key_col      = key_col
+      )
       
       #### Defensive checks
         ##### There is no date overlap between train and val
@@ -3454,6 +4157,8 @@ run_walk_forward_validation <- function(
           quantile_tau = quantile_tau,  # Eval metric
           hyper_grid_domain_list = hyper_grid_domain_list,
           n_iter = n_iter, #Hyperparameter grid
+          fixed_params = fixed_params, #Engine constants, not searched
+          int_params = int_params, log10_params = log10_params,
           init_points = init_points, k_iter = k_iter,
           acq = acq, #Bayesian Optimization
           keras_architecture_pars = keras_architecture_pars, #Keras Pars
@@ -3624,13 +4329,9 @@ run_walk_forward_validation <- function(
      #### Test reference
      test_ref <- d - train_n - val_n + 1
 
-     #### Get covariates and target for current date
-     target_test     <- target %>% 
-       dplyr::filter(month_id == current_date) %>%
-       dplyr::pull(rv_month)
-     
+     #### Get covariates for current date
      if (model != "lstm"){
-       covariates_test <- covariates %>% 
+       covariates_test <- covariates %>%
          dplyr::filter(month_id == current_date)
      } else {
        kap   <- rv_model_fit@keras_architecture_pars
@@ -3651,6 +4352,23 @@ run_walk_forward_validation <- function(
        }
      }
      
+     #### Get the target for exactly those rows
+     #### Joined rather than filtered so that target values line up with the
+     #### covariate rows key by key, instead of relying on both frames
+     #### happening to be in the same order. LSTM keeps the original behaviour:
+     #### its covariates_test is a multi-month window that yields one
+     #### prediction for current_date.
+     target_test <- if (model == "lstm"){
+       target %>%
+         dplyr::filter(month_id == current_date) %>%
+         dplyr::pull(rv_month)
+     } else {
+       covariates_test %>%
+         dplyr::select(dplyr::all_of(c("month_id", key_col))) %>%
+         dplyr::left_join(target, by = c("month_id", key_col)) %>%
+         dplyr::pull(rv_month)
+     }
+
      #### Make predictions
      pred_out <- predict(rv_model_fit, new_covariates = covariates_test)
      
@@ -3661,9 +4379,22 @@ run_walk_forward_validation <- function(
          pred <- pred_out
        }
 
-     oos_pred[test_ref] <- as.numeric(pred)
-     oos_y[test_ref]    <- target_test 
-       
+     oos_current <- tibble::tibble(
+       month_id = rep(as.Date(current_date), length(as.numeric(pred))),
+       target   = as.numeric(target_test),
+       pred     = as.numeric(pred)
+     )
+
+     #### Carry the key so downstream code can separate the market series from
+     #### the factors without having to re-derive identity from row order
+     if (!is.null(key_col) && model != "lstm"){
+       oos_current <- oos_current %>%
+         dplyr::mutate("{key_col}" := covariates_test[[key_col]],
+                       .after = month_id)
+     }
+
+     oos_rows[[test_ref]] <- oos_current
+
   }
     
   ## End of WF loop-------------------------------------------------------------
@@ -3675,10 +4406,13 @@ run_walk_forward_validation <- function(
       tictoc::toc()
     }
   
+    ### Consolidate the long OOS rows before scoring
+    oos_outputs <- dplyr::bind_rows(oos_rows)
+
     ### Calculate eval metrics and error
     testing_metrics <- calc_eval_metrics(
-      pred   = oos_pred,
-      target = oos_y,
+      pred   = oos_outputs$pred,
+      target = oos_outputs$target,
       huber_delta = huber_delta,
       quantile_tau = quantile_tau,
       eval_metric = eval_metric,
@@ -3693,15 +4427,10 @@ run_walk_forward_validation <- function(
                             values_to = "cons_oos") %>%
         dplyr::filter(metric != "Score")
     
-    ### Consolidate oos y, pred and error into a single tibble
-    oos_error <- as.numeric(testing_metrics$error)
-    
-    oos_outputs <- data.frame(
-      month_id = as.Date(names(oos_y)),
-      target   = as.numeric(oos_y),
-      pred     = as.numeric(oos_pred),
-      error    = as.numeric(oos_error)
-    ) %>% tibble::as_tibble()
+    ### Attach the error column, keeping the month_id[, key], target, pred,
+    ### error column order the rest of the codebase expects
+    oos_outputs <- oos_outputs %>%
+      dplyr::mutate(error = as.numeric(testing_metrics$error))
     
   
     ### Validation metrics
@@ -3729,6 +4458,65 @@ run_walk_forward_validation <- function(
       
   }) # End of elapsed time    
      
+    ### Provenance
+      #### Assembled once, here, from the same run specification that drove the
+      #### fit. Nothing is appended to the object afterwards: provenance added
+      #### after the fact is a claim about a run rather than a record of it,
+      #### which is precisely how a model artifact ends up mislabelled.
+      ####
+      #### Two sources, kept separate on purpose:
+      ####  - run_spec holds what the engine cannot know (which artifact was
+      ####    read, its hash, the preprocessing and target transform applied
+      ####    upstream, the universe and inclusion policy);
+      ####  - engine_facts holds what the caller cannot fake, because these are
+      ####    read back out of the objects the run actually used.
+      feature_names <- if (!is.null(rv_model_fit)){
+        rv_model_fit@covariates
+      } else character()
+
+      engine_facts <- list(
+        model                   = model,
+        key_col                 = key_col,
+        feature_names           = feature_names,
+        target_name             = "rv_month",
+        date_min                = min(dates),
+        date_max                = max(dates),
+        dates_test_min          = min(dates_test),
+        dates_test_max          = max(dates_test),
+        rebal_dates             = rebal_dates,
+        train_n                 = train_n,
+        val_n                   = val_n,
+        rebal_months            = rebal_months,
+        obj_fun                 = obj_fun,
+        eval_metric             = eval_metric,
+        huber_delta             = huber_delta,
+        quantile_tau            = quantile_tau,
+        tuning_method           = tuning_method,
+        tunable_domain          = hyper_grid_domain_list,
+        fixed_params            = fixed_params,
+        int_params              = int_params,
+        log10_params            = log10_params,
+        n_iter                  = n_iter,
+        init_points             = init_points,
+        k_iter                  = k_iter,
+        acq                     = acq,
+        early_stop              = early_stop,
+        n_ensembles             = n_ensembles,
+        keras_architecture_pars = keras_architecture_pars,
+        seed                    = .test_seed
+      )
+
+      #### A run_spec must not be able to overwrite an observed fact, or the
+      #### signature would describe what was requested instead of what ran
+      spec_overlap <- intersect(names(run_spec), names(engine_facts))
+      if (length(spec_overlap) > 0){
+        stop("run_spec must not redeclare engine-observed provenance fields: ",
+             paste(spec_overlap, collapse = ", "))
+      }
+
+      provenance <- c(run_spec, engine_facts)
+      provenance$run_signature <- compute_run_signature(provenance)
+
     ### Workflow list
       #### Create a workflow obj that contains all the arguments used
       backtest_meta <- list(
@@ -3738,7 +4526,13 @@ run_walk_forward_validation <- function(
         train_n                 = train_n,
         val_n                   = val_n,
         rebal_months            = rebal_months,
+        ### Recorded separately on purpose: what was searched is a different
+        ### fact from what was held constant, and a cache match has to agree on
+        ### both
         hyper_grid_domain_list  = hyper_grid_domain_list,
+        fixed_params            = fixed_params,
+        int_params              = int_params,
+        log10_params            = log10_params,
         early_stop              = early_stop,
         n_ensembles             = n_ensembles,
         gsm_algo                = gsm_algo,
@@ -3750,6 +4544,10 @@ run_walk_forward_validation <- function(
         huber_delta             = huber_delta,
         quantile_tau            = quantile_tau,
         keras_architecture_pars = keras_architecture_pars,
+        key_col                 = key_col,
+        n_keys                  = if (is.null(key_col)) 1L else
+                                    dplyr::n_distinct(covariates[[key_col]]),
+        n_rows                  = nrow(covariates),
         n_obs                   = length(dates),
         n_test                  = length(dates_test),
         n_rebals                = length(rebal_dates),
@@ -3760,8 +4558,13 @@ run_walk_forward_validation <- function(
         k_iter                  = k_iter,
         acq                     = acq,
         parallel                = parallel,
+        ### Descriptive only. Deliberately outside the signature: two identical
+        ### runs differ here, and that must not count as a cache miss.
         timestamp               = Sys.time(),
-        elapsed_time            = elapsed_time
+        elapsed_time            = elapsed_time,
+        ### Provenance and its signature, the only things a cache lookup reads
+        provenance              = provenance,
+        run_signature           = provenance$run_signature
       )
      
       
@@ -4069,7 +4872,6 @@ run_oos_ports <- function(oos_outputs, fwd_returns, target_gold,
   
 }
     
-  
   
   
   

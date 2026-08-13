@@ -560,12 +560,14 @@ testthat::test_that("prep_covariates isolates keys when key_col is supplied", {
     scaling = "zscore", min_n = 6
   )
 
-  testthat::expect_equal(
-    as.data.frame(res %>%
-                    dplyr::filter(name == "B") %>%
-                    dplyr::select(-name)),
-    as.data.frame(res_b_alone)
+  res_b_panel <- as.data.frame(
+    res %>% dplyr::filter(name == "B") %>% dplyr::select(-name)
   )
+  res_b_alone <- as.data.frame(res_b_alone)
+  row.names(res_b_panel) <- NULL
+  row.names(res_b_alone) <- NULL
+
+  testthat::expect_equal(res_b_panel, res_b_alone)
 })
 
 
