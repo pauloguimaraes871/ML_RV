@@ -1,0 +1,22 @@
+"role","artifact","sha256","n_rows","n_cols","n_keys","date_min","date_max","notes"
+"input","[usa]_[all_factors]_[daily]_[vw_cap].csv","b4a248b40e071b544dd5fbb0bce525718f58fb4d5f55cb639702292eec90f7a8",NA,NA,NA,NA,NA,NA
+"input","crsp.csv","af635266800a847df406fae9134d9a7a0c4a3fd32eb024a7262e54fc738239cf",NA,NA,NA,NA,NA,NA
+"output","covariates_panel_1986_v3.rds","96b4ba04aebbea04cc86d0b168434a08cfa6a6559ead2a173c7c406bcb56153b",71918,35,154,"1986-02-01","2024-12-01",NA
+"output","covariates_panel_1986_zscore_v3.rds","a9c837221d240cf33635c7451fb0594ac7171a366943f02921afacb089bc9a38",71918,46,154,"1986-02-01","2024-12-01",NA
+"output","covariates_panel_1986_range_v3.rds","c8dad8237eec59e42e0c1c8d8bc44ece9deb77210cd9129f70f27648198a0128",71918,46,154,"1986-02-01","2024-12-01",NA
+"output","covariates_panel_1927_v3.rds","384420481a203457f6865dca8fccdff3f18ce57e568cbb7693d178587bbadaf1",145267,25,154,"1927-01-01","2024-12-01",NA
+"output","covariates_panel_1927_zscore_v3.rds","36b454966433f0540a5bd3457c864a302f1a58d15886bc06c043c1f592c0dae1",145267,36,154,"1927-01-01","2024-12-01",NA
+"output","covariates_panel_1927_range_v3.rds","b30b8203b963e6891ae9d93e6502ea1d335dd50382ee7963db94d5c9f85c0a52",145267,36,154,"1927-01-01","2024-12-01",NA
+"output","covariates_spx_1986_zscore_v3.rds","02554c0dd77f6d9e331357404517e960319f88ffcc72fb7d4288f941508d960a",467,45,1,"1986-02-01","2024-12-01",NA
+"output","covariates_spx_1986_range_v3.rds","5d7f0916194e0359e78092c9e94f052149809453aeeb4a3e4ab5dbb3b888febd",467,45,1,"1986-02-01","2024-12-01",NA
+"output","covariates_spx_1927_zscore_v3.rds","60fa6366f2e73fff608440e8cd5f3fbdf7f352ed417721cd043e500318deb559",1176,35,1,"1927-01-01","2024-12-01",NA
+"output","covariates_spx_1927_range_v3.rds","bbf8f5ebaa29f28e6f812b7230d6da97793a4e5da91377763d1df47e8e03f359",1176,35,1,"1927-01-01","2024-12-01",NA
+"output","target_panel_v3.rds","ea5b3555a347f5f17158069faff2f9140b02eca32bb261cdea59b99e899a2f1f",147627,3,154,"1926-01-01","2025-12-01",NA
+"output","target_spx_v3.rds","dca6d140514ecffffdc4756069cbcda21e601c1c416a73e20ab10d6c19b4622e",1188,2,1,"1926-01-01","2024-12-01",NA
+"policy","universe",NA,NA,NA,NA,NA,NA,"usa, all JKP vw_cap factors; industries excluded; market series pooled in"
+"policy","direction",NA,NA,NA,NA,NA,NA,"JKP ret is already sign-adjusted upstream; direction recorded, never re-applied"
+"policy","min_history",NA,NA,NA,NA,NA,NA,"each key drops its first 2 months, then requires a complete HAR block"
+"policy","preprocessing",NA,NA,NA,NA,NA,NA,"expanding, within key; zscore winsorized 0.01/0.99, range 0.025/0.975, min_n=36"
+"policy","target_transform",NA,NA,NA,NA,NA,NA,"none; the Box-Cox transform is applied by the fit_models.R run specification"
+"policy","market_key",NA,NA,NA,NA,NA,NA,"spx_vw = CRSP vwretd, the series this repository labels S&P 500"
+"policy","feature_key",NA,NA,NA,NA,NA,NA,"`name` is a relational key only and must never enter the design matrix"
