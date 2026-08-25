@@ -1960,6 +1960,60 @@ make_hyper_objective <- function(inner, tunable_names, fixed = list(),
   objective
 }
 
+## Fallback for a hyperparameter search whose objective is flat.
+##
+## bayesOpt() fits a Gaussian process to the sampled points, and normalises the
+## scores with zeroOneScale() before it does. When every sampled point scores
+## identically there is nothing to scale, the GP cannot be built, and the whole
+## walk-forward run dies at that rebalance date.
+##
+## An objective can be flat for an honest reason. It happens here when the
+## validation optimum of the glmnet path is the intercept-only solution: the
+## prediction is then the constant mean of the training target no matter what
+## the searched parameters are, so the score cannot depend on them. On the
+## 1986 SPX sample that is the case at the first two rebalance dates, where
+## 119 monthly observations against 44 features leave nothing that beats the
+## unconditional mean, and it stops being the case from 2005-06 onward. That
+## is a fact about the estimation window, not an error to be papered over.
+##
+## By the stated criterion every point of a flat objective is optimal, so one
+## deterministic point is evaluated and returned: the midpoint of each bound,
+## in SEARCH units, which the objective converts to engine units exactly as it
+## would any other point. A freshly drawn random point would be just as
+## optimal but would not be reproducible.
+##
+## The returned value carries only what hyper_tune() reads off a bayesOpt
+## object, plus flat_objective_pars, which is what marks it as this case.
+flat_objective_fallback <- function(objective, bounds){
+
+  ### Search units; the objective applies any log10 or integer handling
+  midpoint <- lapply(bounds, function(b) mean(as.numeric(b)))
+
+  metrics <- do.call(objective, midpoint)
+
+  ### A flat objective still has to be a FINITE one. An all-NA score reaches
+  ### zeroOneScale() the same way, and silently adopting it would record a
+  ### hyperparameter choice backed by no evaluation at all.
+  if (!is.numeric(metrics$Score) || !is.finite(metrics$Score)){
+    stop("hyperparameter objective returned a non-finite Score (",
+         format(metrics$Score), ") at the midpoint of the search domain. ",
+         "The search cannot be reduced to a degenerate case.")
+  }
+
+  warning("hyperparameter objective has zero variance across the sampled ",
+          "points, so no Gaussian process can be fitted: every point in the ",
+          "domain scores identically (Score = ", format(metrics$Score),
+          "). Falling back to the midpoint of each bound: ",
+          paste(names(midpoint), unlist(midpoint), sep = " = ",
+                collapse = ", "),
+          call. = FALSE, immediate. = TRUE)
+
+  list(
+    scoreSummary        = as.data.frame(c(midpoint, metrics)),
+    flat_objective_pars = midpoint
+  )
+}
+
 create_expanded_hyper_grid_list <- function(hyper_grid_domain_list, tuning_method, n_iter, model){
   
   #Set Hyperparameters grid
@@ -3179,130 +3233,107 @@ hyper_tune <- function(
     ##Bayes Opt
     if (tuning_method == "bayesian_optimization") {
       
-      if (parallel){
-        #### Bayesian Optimization
-        bayes_opt <- doFuture::withDoRNG(
+      #### Built once, outside the parallel branch, because the degenerate
+      #### objective fallback below has to evaluate exactly the function that
+      #### bayesOpt() was handed. The two copies of this call previously
+      #### differed only in the verbosity of the inner fit.
+      hyper_objective <- make_hyper_objective(
+        #The inner fit() has hard-coded formals covering every engine
+        #argument. Wrapping it is what lets `bounds` carry only the
+        #searched names while the constants are spliced in internally.
+        inner = eval_fun(
+
+          #Data
+          full_data_train_clean = full_data_train_clean, #full_data_train
+          covariates_val = covariates_val, #Pass feat_val
+          target_val = target_val, #Pass target_val
+
+          #General Parameters
+          model = model,
+
+          #Eval Function Parameters
+          eval_metric = eval_metric, #Chosen Eval
+          eval_metric_trans = eval_metric_trans,
+          huber_delta = huber_delta, #Huber delta for pseudo huber loss
+          quantile_tau = quantile_tau, #Quantile tau for pinball loss
+
+          #Early Stop
+          early_stop = early_stop, #Halting criteria
+
+          #Custom Loss
+          obj_fun_trans = obj_fun_trans, #Custom objective
+
+          #Keras Network Parameters
+          keras_architecture_pars = keras_architecture_pars,
+
+          #Progress printing from inside a worker goes nowhere, so it stays
+          #off exactly when the search is parallel, as it did before
+          verbose = !isTRUE(parallel)
+
+          #Future Implementation:
+          #Functions for custom eval and loss - XGB
+          #mpe_xgb <- mpe_xgb, #Custom mpe
+          #rss_xgb = rss_xgb, #Custom rss
+          #cp_xgb = cp_xgb, #custom cp
+          #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
+
+        ),
+        tunable_names = names(hyper_parts$tunable),
+        fixed         = hyper_parts$fixed,
+        int_params    = hyper_parts$int_params,
+        log10_params  = hyper_parts$log10_params
+      )
+
+      #### Bayesian Optimization
+      run_bayes_opt <- function(){
+        if (parallel){
+          doFuture::withDoRNG(
+            ParBayesianOptimization::bayesOpt(
+              FUN = hyper_objective,
+              bounds = hyper_parts$tunable, #Boundaries (searched names only)
+              initPoints = init_points, #Number of randomly chosen points to
+              #sample the target function before B.O.
+              acq = acq, #Acquisition function to be used
+              iters.n = n_iter, #Number of times BO is to be repeated
+              iters.k = k_iter, #Number of times to sample the scoring function
+              #at each epoch. If running in parallel,
+              #set iters.k to some multiple of the number of
+              #cores designated for the process
+              verbose = verbose, #Display msgs?
+              parallel = if (model %in% c("nn", "lstm")) FALSE else parallel
+            )
+          )
+        } else {
           ParBayesianOptimization::bayesOpt(
-            #Passing variables to set_eval_fun
-            FUN = make_hyper_objective(
-              #The inner fit() has hard-coded formals covering every engine
-              #argument. Wrapping it is what lets `bounds` carry only the
-              #searched names while the constants are spliced in internally.
-              inner = eval_fun(
-              
-              #Data
-              full_data_train_clean = full_data_train_clean, #full_data_train
-              covariates_val = covariates_val, #Pass feat_val
-              target_val = target_val, #Pass target_val
-              
-              #General Parameters
-              model = model,
-              
-              #Eval Function Parameters
-              eval_metric = eval_metric, #Chosen Eval
-              eval_metric_trans = eval_metric_trans,
-              huber_delta = huber_delta, #Huber delta for pseudo huber loss
-              quantile_tau = quantile_tau, #Quantile tau for pinball loss
-              
-              #Early Stop
-              early_stop = early_stop, #Halting criteria
-              
-              #Custom Loss
-              obj_fun_trans = obj_fun_trans, #Custom objective
-              
-              #Keras Network Parameters
-              keras_architecture_pars = keras_architecture_pars,
-              
-              verbose = FALSE
-
-              #Future Implementation:
-              #Functions for custom eval and loss - XGB
-              #mpe_xgb <- mpe_xgb, #Custom mpe
-              #rss_xgb = rss_xgb, #Custom rss
-              #cp_xgb = cp_xgb, #custom cp
-              #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-
-              ),
-              tunable_names = names(hyper_parts$tunable),
-              fixed         = hyper_parts$fixed,
-              int_params    = hyper_parts$int_params,
-              log10_params  = hyper_parts$log10_params
-            ),
+            FUN = hyper_objective,
             bounds = hyper_parts$tunable, #Boundaries (searched names only)
-            initPoints = init_points, #Number of randomly chosen points to 
+            initPoints = init_points, #Number of randomly chosen points to
             #sample the target function before B.O.
             acq = acq, #Acquisition function to be used
             iters.n = n_iter, #Number of times BO is to be repeated
             iters.k = k_iter, #Number of times to sample the scoring function
             #at each epoch. If running in parallel,
-            #set iters.k to some multiple of the number of 
-            #cores designated for the process
-            verbose = verbose, #Display msgs?
-            parallel = if (model %in% c("nn", "lstm")) FALSE else parallel #Parallel?
-          )
-        )
-      } else {
-        bayes_opt <-
-          ParBayesianOptimization::bayesOpt(
-            #Passing variables to set_eval_fun
-            FUN = make_hyper_objective(
-              #The inner fit() has hard-coded formals covering every engine
-              #argument. Wrapping it is what lets `bounds` carry only the
-              #searched names while the constants are spliced in internally.
-              inner = eval_fun(
-              
-              #Data
-              full_data_train_clean = full_data_train_clean, #full_data_train
-              covariates_val = covariates_val, #Pass feat_val
-              target_val = target_val, #Pass target_val
-              
-              #General Parameters
-              model = model,
-              
-              #Eval Function Parameters
-              eval_metric = eval_metric, #Chosen Eval
-              eval_metric_trans = eval_metric_trans,
-              huber_delta = huber_delta, #Huber delta for pseudo huber loss
-              quantile_tau = quantile_tau, #Quantile tau for pinball loss
-              
-              #Early Stop
-              early_stop = early_stop, #Halting criteria
-              
-              #Custom Loss
-              obj_fun_trans = obj_fun_trans, #Custom objective
-              
-              #Keras Network Parameters
-              keras_architecture_pars = keras_architecture_pars,
-              
-              verbose = TRUE
-
-              #Future Implementation:
-              #Functions for custom eval and loss - XGB
-              #mpe_xgb <- mpe_xgb, #Custom mpe
-              #rss_xgb = rss_xgb, #Custom rss
-              #cp_xgb = cp_xgb, #custom cp
-              #pinball_loss_xgb = pinball_loss_xgb #Custom pinball loss
-
-              ),
-              tunable_names = names(hyper_parts$tunable),
-              fixed         = hyper_parts$fixed,
-              int_params    = hyper_parts$int_params,
-              log10_params  = hyper_parts$log10_params
-            ),
-            bounds = hyper_parts$tunable, #Boundaries (searched names only)
-            initPoints = init_points, #Number of randomly chosen points to 
-            #sample the target function before B.O.
-            acq = acq, #Acquisition function to be used
-            iters.n = n_iter, #Number of times BO is to be repeated
-            iters.k = k_iter, #Number of times to sample the scoring function
-            #at each epoch. If running in parallel, 
-            #set iters.k to some multiple of the number of 
+            #set iters.k to some multiple of the number of
             #cores designated for the process
             verbose = verbose, #Display msgs?
             parallel = parallel #Parallel?
           )
-        
+        }
       }
+
+      #### A flat objective is a statement about the estimation window, not a
+      #### failure, so it must not take the whole backtest down. Only the
+      #### zero-variance abort is intercepted; every other error still stops
+      #### the run, because anything else is a genuine defect.
+      bayes_opt <- tryCatch(
+        run_bayes_opt(),
+        error = function(e){
+          if (!grepl("0 variance", conditionMessage(e), fixed = TRUE)){
+            stop(e)
+          }
+          flat_objective_fallback(hyper_objective, hyper_parts$tunable)
+        }
+      )
         
       ### Store results
       #### Hyperparameters
@@ -3335,9 +3366,16 @@ hyper_tune <- function(
       ##### optimal_hyper by name, so the constants are re-attached and the
       ##### log-scaled values converted back to engine units here.
       optimal_hyper <- unlist(resolve_hyper_values(
-        searched     = as.list(
-          unlist(ParBayesianOptimization::getBestPars(bayes_opt))
-        ),
+        searched     = if (is.null(bayes_opt$flat_objective_pars)){
+          as.list(
+            unlist(ParBayesianOptimization::getBestPars(bayes_opt))
+          )
+        } else {
+          ##### A flat objective has no single best point, and getBestPars()
+          ##### cannot read a synthetic summary. The fallback already chose
+          ##### the point, in the same SEARCH units getBestPars() returns.
+          bayes_opt$flat_objective_pars
+        },
         fixed        = hyper_parts$fixed,
         int_params   = hyper_parts$int_params,
         log10_params = hyper_parts$log10_params
