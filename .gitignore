@@ -25,3 +25,19 @@ data/*_v3.rds
 
 # Exploratory figure renders written to the project root
 fig_*.png
+
+# LaTeX build artifacts. manuscript.tex, references.bib and the class files are
+# tracked; everything the compiler regenerates from them is not.
+latex_paper/*.aux
+latex_paper/*.bbl
+latex_paper/*.blg
+latex_paper/*.log
+latex_paper/*.out
+latex_paper/*.pdf
+latex_paper/*.spl
+latex_paper/*.synctex.gz
+latex_paper/*.toc
+
+# Figures mirrored into the LaTeX tree by R/lit_review_outputs.R. The sources
+# live in figures/ and are tracked there.
+latex_paper/figures/

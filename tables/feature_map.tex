@@ -1,0 +1,43 @@
+\begin{table}[pt]
+\centering
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.15}
+\caption[From the systematic review to the feature universe]{\footnotesize \textbf{: From the systematic review to the feature universe.} Each row is a predictor family identified in the 271-document review corpus. `Variables' lists the names of the series constructed in this paper, and `From' reports the earliest monthly panel that carries the whole family. Panel~B lists families the review identified that this paper does not implement, with the reason. The complete inventory of 83 predictors catalogued in the review is reported in Table~\ref{tab:litpredictors}.}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}m{3.5cm}>{\raggedright\arraybackslash}m{3.9cm}>{\raggedright\arraybackslash}X>{\raggedleft\arraybackslash}m{0.9cm}}
+\hline
+\multicolumn{4}{l}{\textit{Panel A: families implemented}} \\
+\hline
+Predictor family & Representative sources & Variables & From \\
+\hline
+Lagged realized variance (HAR) & \citet{corsi2009,andersenbollerslev1998} & \texttt{rv\_td\_lag1, rv\_tw\_lag1, rv\_month\_lag1} & 1927 \\
+Realized quarticity & \citet{bollerslevpattonquaedvlieg2016} & \texttt{rq\_td\_lag1, rq\_tw\_lag1, rq\_month\_lag1} & 1927 \\
+Jump and continuous components & \citet{andersenbollerslevdiebold2007} & \texttt{jump\_td\_lag1, jump\_tw\_lag1, jump\_month\_lag1, cont\_td\_lag1, cont\_tw\_lag1, cont\_month\_lag1} & 1927 \\
+Leverage effect & \citet{campbellhentschel1992,corsireno2012} & \texttt{negret\_td\_lag1, negret\_tw\_lag1, negret\_month\_lag1} & 1927 \\
+Policy uncertainty & \citet{liuzhang2015} & \texttt{log\_epu\_diff\_lag1} & 1927 \\
+Producer price volatility & \citet{schwert1989,paye2012} & \texttt{ppi\_vol} & 1927 \\
+Industrial production volatility & \citet{schwert1989} & \texttt{ip\_vol} & 1927 \\
+Equity valuation ratios & \citet{welchgoyal2008,audrinosigristballinari2020} & \texttt{dy\_lag1, ey\_lag1} & 1927 \\
+Geopolitical risk & \citet{caldaraiacoviello2022} & \texttt{gpr\_lag1} & 1927 \\
+Calendar effects & \citet{schwert1989,mcaleermedeiros2008} & \texttt{month, sqrt\_days} & 1927 \\
+Credit spreads & \citet{schwert1989,paye2012,welchgoyal2008} & \texttt{dfr\_lag1, dfy\_lag1} & 1986 \\
+Term structure & \citet{paye2012,welchgoyal2008} & \texttt{tms\_lag1, tbill\_lag1} & 1986 \\
+Monetary base volatility & \citet{schwert1989} & \texttt{mbas\_vol} & 1986 \\
+Survey sentiment & \citet{audrinosigristballinari2020} & \texttt{log\_cons\_sent\_diff\_lag1} & 1986 \\
+Cross-asset realized variance & \citet{degiannakisfilis2017} & \texttt{oil\_rv\_td\_lag1, oil\_rv\_tw\_lag1, oil\_rv\_month\_lag1} & 1986 \\
+Option-implied volatility & \citet{christensenprabhala1998,blairpoontaylor2001,bekaerthoerova2014} & \texttt{vix\_lag1} & 1986 \\
+\hline
+\multicolumn{4}{l}{\textit{Panel B: families identified but not implemented}} \\
+\hline
+Predictor family & Representative sources & \multicolumn{2}{l}{Reason} \\
+\hline
+Limit order book measures & \citet{rahimikiapoon2026} & \multicolumn{2}{p{5.2cm}}{Not available at monthly frequency over the sample} \\
+News and social media sentiment & \citet{audrinosigristballinari2020} & \multicolumn{2}{p{5.2cm}}{Series begin in the 2010s} \\
+Search-engine attention & \citet{dimpfljank2016} & \multicolumn{2}{p{5.2cm}}{Series begin in 2004} \\
+International volatility spillovers & \citet{zhangmaliao2020,liangweizhang2020} & \multicolumn{2}{p{5.2cm}}{Reserved for the factor panel rather than the market series} \\
+Topological and decomposition features & \citet{souto2023} & \multicolumn{2}{p{5.2cm}}{Requires intraday cross-sections unavailable before 1993} \\
+\hline
+\end{tabularx}
+\label{tab:featuremap}
+\end{table}

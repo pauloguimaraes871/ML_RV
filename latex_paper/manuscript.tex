@@ -1,0 +1,366 @@
+%% ML_RV -- manuscript
+%% Structure mirrors Doutorado/Man vs Machine/latex_paper/manuscript.tex.
+%% All floats are defined in ../tables and ../figures and pulled into the
+%% appendices. Do not place a table or figure environment in the body.
+
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{subcaption}
+\usepackage{chngcntr}
+\usepackage{hyperref}
+\hypersetup{colorlinks,citecolor=blue}
+\usepackage[title]{appendix}
+\usepackage{appendix}
+\usepackage{pdfpages}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathtools}
+\usepackage{float}
+
+\titleformat{\paragraph}[display]{\normalfont\normalsize\itshape}{\theparagraph}{1pt}{}
+\titlespacing{\paragraph}{0pt}{6pt}{6pt}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\graphicspath{ {./images/} }
+
+\DeclareCaptionLabelFormat{boldlabel}{\textbf{#1 #2}}
+
+\journal{}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Machine Learning Forecasts of Realized Variance and the Value of Volatility Management}
+
+\author[unb]{Paulo Roberto Fonteles Guimarães\corref{cor1}}
+\ead{pauloguimaraes871@gmail.com}
+\author[unb]{Herbert Kimura}
+\ead{herbert.kimura@gmail.com}
+
+\begin{abstract}
+%% TO BE WRITTEN once the results are final. Do not draft numbers here
+%% before they exist in tables/ and figures/.
+\end{abstract}
+
+\begin{keyword}
+realized variance \sep volatility forecasting \sep machine learning \sep volatility-managed portfolios \sep systematic review
+\end{keyword}
+
+\end{frontmatter}
+
+%% =====================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+%% TO BE WRITTEN LAST. Required content, in order: setting; question;
+%% contribution stated against the closest competing papers (Rahimikia and
+%% Poon, 2026; Branco et al., 2024; Cederburg et al., 2020); evaluation
+%% strategy and what it rules out; axes of analysis; main and secondary
+%% objectives; headline results with magnitudes; limitations; roadmap.
+
+%% =====================================================================
+\section{Related Literature}
+\label{sec:literature}
+
+Aggregate stock market volatility moves far more than the macroeconomic
+quantities that plausibly drive it. \citet{schwert1989} established this in the
+form that still organizes the literature. Modelling monthly returns as an
+autoregression and treating the absolute residuals as a volatility proxy, he
+related that proxy to interest rate volatility, the corporate yield spread,
+growth in the monetary base, producer price and industrial production growth,
+bond market volatility, aggregate leverage, the number of trading days, trading
+volume, and month dummies. The macroeconomic variables carried detectable but
+small explanatory power, and volatility remained high relative to what the
+fundamentals implied. Two features of that design have persisted. Volatility is
+predicted from a mixed set of financial and macroeconomic conditioning
+variables, and the resulting forecast is judged against a univariate benchmark
+built from the volatility series itself.
+
+Both features reappear in \citet{paye2012}, who asks directly whether
+conditioning on macroeconomic variables improves monthly and quarterly forecasts
+of aggregate volatility. His predictor set extends the Schwert specification
+along the dimensions the intervening literature had proposed, and includes the
+consumption-wealth ratio of \citet{lettauludvigson2001} alongside credit
+spreads, the term structure and measures of real activity. Several variables
+related to macroeconomic uncertainty, time-varying expected returns and credit
+conditions Granger cause volatility, but forecasts exploiting them rarely
+outperform a univariate benchmark out of sample. The specifications that do help
+are simple combinations of individual forecasts, and their advantage
+concentrates around the onset of recessions.
+\citet{nonejad2017} reaches a similar position from a Bayesian direction. Using
+monthly S\&P 500 volatility from 1926 to 2010 and averaging over
+autoregressions with constant and with time-varying coefficients, augmented with
+risk premium, leverage, bond rate and credit risk predictors, he reports
+competitive density forecasts and modest gains in point forecasts. Across three
+decades the conclusion has been stable. Macroeconomic information is visible in
+sample and fragile out of sample, and the fragility is usually attributed to
+parameter instability rather than to the absence of a relation.
+
+The measurement side of the problem developed separately and more decisively.
+\citet{andersenbollerslev1998} showed that squared intraday returns aggregate
+into a volatility measure accurate enough to overturn the view that standard
+conditional volatility models forecast poorly. This shifted the object of study
+from a latent variance, modelled by the conditional heteroskedasticity family
+that follows \citet{bollerslev1986}, to an observable realized variance that can
+be treated as a dependent variable in an ordinary regression. \citet{corsi2009}
+proposed the heterogeneous autoregressive model, in which daily, weekly and
+monthly averages of past realized variance enter a single linear regression, and
+that specification became a benchmark model for predicting realized variance.
+The extensions address specific features of the data.
+\citet{andersenbollerslevdiebold2007} separate the continuous and jump
+components of realized variance. \citet{bollerslevpattonquaedvlieg2016} correct
+the attenuation induced by measurement error by interacting lagged realized
+variance with realized quarticity. \citet{corsireno2012} model the leverage
+effect with its own heterogeneous structure, and \citet{mcaleermedeiros2008}
+allow multiple regimes and add dummies for scheduled macroeconomic
+announcements. \citet{hansenlunde2005} address the treatment of the overnight
+period.
+
+Evaluation conventions tightened in parallel: \citet{patton2011} shows
+which loss functions remain robust when the volatility proxy is noisy, and
+\citet{hansenlundenason2011} provide the model confidence set for comparing many
+candidate models at once.
+
+Option-implied volatility entered the predictor set early and remains a
+strong addition. \citet{christensenprabhala1998} found that implied volatility from S\&P 100
+options dominates past volatility in forecasting future volatility.
+\citet{blairpoontaylor2001} argued that the VIX index rather than individual
+option quotes should carry this information, since the index attenuates
+measurement error and smile effects, and reported more accurate out-of-sample
+forecasts at every horizon they consider. \citet{bekaerthoerova2014} decompose
+the squared VIX into a conditional variance component and a variance premium
+component, and show that the two carry different information about future
+volatility and about economic uncertainty. The practical cost of these
+predictors is their short history, since the VIX methodology and its back-history do
+not extend to the pre-war period, so any specification built on implied
+volatility restricts the estimation sample by several decades.
+
+A fourth group of predictors is more recent and more heterogeneous.
+\citet{liuzhang2015} add the economic policy uncertainty index to a
+heterogeneous autoregressive specification and report improved out-of-sample
+accuracy. \citet{dimpfljank2016} document comovement and Granger causality
+between internet search queries and subsequent realized volatility of the Dow
+Jones index. \citet{audrinosigristballinari2020} assemble social media, news,
+information consumption and search engine data, and identify Google search
+volume on financial keywords and the daily volume of company-specific messages
+posted on StockTwits as the most relevant variables in a penalized regression.
+Their assessment of the size of the gain deserves emphasis, because it is
+unusual in this literature: the improvements are statistically significant but
+relatively small from an economic point of view. Cross-market channels form a
+further group. \citet{zhangmaliao2020} extract global factors from a large panel
+of national market volatilities, and \citet{liangweizhang2020} evaluate whether
+a market's own implied volatility or an international aggregate is more
+informative. A related line replaces individual macroeconomic series with
+factors extracted from large panels, using the diffusion indices of
+\citet{ludvigsonng2009} or the uncertainty measures of
+\citet{juradoludvigsonng2015}, on the argument that a small number of common
+components carries the conditioning information without the degrees-of-freedom
+cost of the full panel.
+
+Machine learning arrived in this literature with the same motivation that
+supports its use in the cross-section of returns \citep{gukellyxiu2020}. The
+predictor set is high-dimensional, the leverage effect and the quarticity
+correction are explicit nonlinearities, and hyperparameter selection on
+validation data offers a way to trade bias against variance.
+\citet{bucci2020} compares feedforward and recurrent architectures with
+econometric benchmarks for monthly realized volatility and finds that recurrent
+networks, in particular long short-term memory and nonlinear autoregressive
+networks with exogenous inputs, outperform the traditional methods, with the
+advantage widening in the most volatile part of his sample.
+\citet{christensensiggaardveliyev2023} evaluate regularization, regression trees
+and neural networks on the realized variance of Dow Jones constituents.
+\citet{carrwuzhang2020} treat variance prediction as the objective when choosing
+option weights, testing ridge regression, feedforward networks and random
+forests on S\&P 500 index options, and report that a machine learning weighting
+achieves higher predictability of future return variance using fewer options.
+\citet{ribeiro2021} combine an echo state network with heterogeneous
+autoregressive inputs and particle swarm optimization, and \citet{souto2023}
+constructs predictors from persistent homology of related equity baskets.
+
+The most comprehensive treatment is \citet{rahimikiapoon2026}, who forecast the
+realized volatility of 23 NASDAQ tickers between 2007 and 2022 using 147
+predictors drawn from the heterogeneous autoregressive family, limit order book
+data and news sentiment. Their machine learning models outperform the
+heterogeneous autoregressive family over 90 per cent of the out-of-sample
+period, and the exception is informative: on days when realized volatility is
+extreme, the parsimonious specifications generally win. They also report that a
+simple ensemble of the two model classes performs well across market conditions.
+ \citet{brancorubesamzevallos2024} evaluate linear and
+nonlinear machine learning models on ten global equity indices from 2000 to
+2021, using lagged realized volatility together with returns, implied
+volatility, macroeconomic and sentiment predictors. They find that the
+additional predictors improve daily and weekly forecasts, that nonlinear models
+do not statistically outperform linear models in general, and that for the
+economic value an investor derives from monthly forecasts in volatility-timing
+portfolios, simpler models without additional predictors work better. Taken with
+the sample-composition argument of \citet{rahimikiapoon2026}, the reasonable
+reading is that relative performance in this literature depends on the asset
+universe, the forecast horizon, the frequency of extreme volatility days in the
+evaluation window, and the evaluation criterion, and that no ordering of model
+classes has been established across those dimensions.
+
+That dependence is what motivates the systematic review reported here. Rather
+than assemble a predictor set from the studies closest to our own priors, we
+identified candidate predictors through a reproducible protocol. Following the
+PRISMA guidelines, we queried Scopus for documents whose title, abstract or
+keywords combine forecasting terms, realized variance or volatility terms,
+equity terms, and an aggregate market identifier, without geographic
+restriction. Following \citet{harveyliuzhu2016} in the concern that publication
+incentives shape which results are available to a reviewer, we restricted the
+corpus to journals ranked in Economics, Econometrics and Finance, Business,
+Management and Accounting, and Computer Science by the 2024 SCImago Journal Rank
+indicator, retaining Computer Science so that machine learning contributions
+would not be excluded by construction. The resulting corpus contains 271
+articles published between 1998 and 2025. Table~\ref{tab:litcorpus} reports the
+most cited studies in the corpus and the predictor families each contributes.
+Figure~\ref{fig:litgrowth} shows the growth of the corpus and the rising share
+of machine learning contributions within it. The complete query, the descriptive
+statistics of the corpus, the historical direct citation network, the
+co-citation and keyword co-occurrence networks, and the multiple correspondence
+analysis of abstracts are reported in the Internet Appendix.
+
+The review produced 83 distinct predictors proposed in the corpus, which are
+catalogued in the Internet Appendix. Their availability is very uneven.
+Predictors constructed from limit order books, social media message volume,
+search engine indices or news sentiment exist only for the most recent two
+decades, and option-implied measures only from the mid-1980s. Predictors built
+from returns, from interest rates and credit spreads, and from the national
+accounts extend much further back. Table~\ref{tab:featuremap} maps the predictor
+families identified in the review onto the variables constructed in this paper
+and records the earliest sample each one supports. The mapping is the operational
+contribution of the review: the feature universe of our models is determined by
+an auditable rule applied to a defined corpus, together with a data availability
+constraint that is stated rather than left implicit.
+
+The final strand concerns what a volatility forecast is worth.
+\citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the
+realized variance of its returns in the previous month, and report that the
+managed versions of the market, value, momentum, profitability and investment
+factors earn positive alphas against their unmanaged counterparts.
+\citet{barrososantaclara2015} apply a related scaling to momentum and
+substantially reduce its crash risk. The subsequent literature has been
+critical. \citet{cederburg2020} examine 103 equity strategies and show that,
+although volatility-managed portfolios display positive alphas in spanning
+regressions, the strategies those regressions imply are not implementable in
+real time, and reasonable out-of-sample versions generally earn lower certainty
+equivalent returns and Sharpe ratios than the unmanaged portfolios. They
+attribute this to structural instability in the underlying spanning regressions.
+\citet{barrosodetzel2021} relate the benefits that survive to limits to
+arbitrage, and \citet{demiguelmartinutrerauppal2024} reassess the evidence in a
+multifactor setting.
+
+What this literature has held fixed is the forecast itself. In the
+volatility-managed construction the conditioning variable is the realized
+variance of the preceding month, which is a one-parameter forecast of next
+month's variance and, in the terms of the forecasting literature, a random walk
+benchmark. The forecasting literature reviewed above has spent three decades
+establishing that this benchmark can be improved upon, and the criticism of
+\citet{cederburg2020} is specifically that the managed strategies fail when they
+must be formed from information available in real time, which is a statement
+about forecast quality under a real-time constraint. The two literatures
+therefore meet at a point neither has examined. This paper asks whether
+replacing the lagged realized variance in the volatility-managed construction
+with an out-of-sample machine learning forecast changes the conclusion, and it
+asks that question both for the aggregate market and for a large cross-section
+of factors. Relative to \citet{rahimikiapoon2026} the difference is the object
+of prediction and the evaluation criterion: aggregate and factor-level variance
+over a long macroeconomic history, judged by realized portfolio outcomes rather
+than by loss functions alone. Relative to \citet{brancorubesamzevallos2024},
+who do evaluate the economic value of machine learning forecasts through
+volatility-timing portfolios at the index level, the differences are the
+cross-section of factors, the managed-portfolio construction of
+\citet{moreiramuir2017} rather than a mean-variance timing rule, and a sample
+that begins well before the period in which the two literatures were formed.
+
+%% =====================================================================
+\section{Methods and Data}
+\label{sec:methods}
+
+%% TO BE WRITTEN.
+
+%% =====================================================================
+\section{Results}
+\label{sec:results}
+
+%% TO BE WRITTEN.
+
+%% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+%% TO BE WRITTEN.
+
+%% =====================================================================
+\section*{Data availability}
+
+\section*{Funding}
+This research received no specific funding.
+
+\section*{Declaration of competing interest}
+The authors declare no competing interests.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+
+During the preparation of this work, the authors used Claude (Anthropic) to
+assist with language editing, manuscript organization, and code review. The
+authors reviewed and edited the outputs as needed and take full responsibility
+for the content of the published article.
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references.bib}
+
+\pagebreak
+\begin{appendices}
+\label{appendices}
+
+\section{Figures and Tables}
+\suppressfloats[t]
+
+\input{../tables/literature_corpus.tex}
+
+\input{../tables/feature_map.tex}
+
+\input{../figures/literature_growth_figure.tex}
+
+\clearpage
+
+\section{Internet Appendix}
+
+\setcounter{table}{0}
+\renewcommand{\thetable}{IA.\arabic{table}}
+\renewcommand{\theHtable}{IA.\arabic{table}}
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{IA.\arabic{figure}}
+\renewcommand{\theHfigure}{IA.\arabic{figure}}
+\setcounter{equation}{0}
+\renewcommand{\theequation}{IA.\arabic{equation}}
+\renewcommand{\theHequation}{IA.\arabic{equation}}
+
+\subsection{Systematic Review Protocol}\label{app:protocol}
+
+%% TO BE WRITTEN: the full Scopus query, the journal filter, the exclusion
+%% list, and the PRISMA counts.
+
+\subsection{Additional Tables}
+
+\input{../tables/literature_predictors.tex}
+
+\subsection{Additional Figures}
+
+\input{../figures/literature_networks_figure.tex}
+
+\end{appendices}
+
+\end{document}

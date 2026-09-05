@@ -1,0 +1,100 @@
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{>{\raggedright\arraybackslash}m{0.8cm}>{\raggedright\arraybackslash}m{6.7cm}>{\raggedright\arraybackslash}m{5.55cm}}
+\caption[Predictors of realized variance identified in the review]{\footnotesize \textbf{: Predictors of realized variance identified in the review.} Every distinct predictor proposed in the 271-document corpus, with the study it is taken from. Families implemented in this paper are mapped in Table~\ref{tab:featuremap}.} \label{tab:litpredictors} \\
+\hline
+ID & Predictor & Source \\
+\hline
+\endfirsthead
+\hline
+ID & Predictor & Source \\
+\hline
+\endhead
+\hline
+\endfoot
+F01 & Lagged HAR-RV components & Corsi (2009) \\
+F02 & Realized quarticity (RQ) & Bollerslev et al. (2016) \\
+F03 & Jump variation (total) & Andersen et al. (2007) \\
+F04 & Continuous component of RV & Andersen et al. (2007) \\
+F05 & Signed jump variation & Pu et al. (2016) \\
+F06 & Implied volatility index (VIX) & Blair et al. (2001); Bekaert and Hoerova (2014); Christensen and Prabhala (1998) \\
+F07 & Crude oil volatility index (OVX) & Liang et al. (2022) \\
+F08 & Other countries' implied volatility (PCA) & Liang et al. (2020) \\
+F09 & Economic policy uncertainty (EPU) & Liu and Zhang (2015) \\
+F10 & Consumption-wealth ratio (CAY) & Paye (2012); Lettau and Ludvigson (2001) \\
+F11 & Changes in bank leverage & Paye (2012) \\
+F12 & Commercial paper-treasury spread & Paye (2012) \\
+F13 & Default spread & Schwert (1989); Paye (2012) \\
+F14 & Term spread & Schwert (1989); Paye (2012) \\
+F15 & Current and expected GDP growth & Paye (2012) \\
+F16 & Investment-capital ratio & Paye (2012) \\
+F17 & Net payout yield & Paye (2012) \\
+F18 & Volatility of inflation growth & Paye (2012) \\
+F19 & Interest rate volatility & Schwert (1989) \\
+F20 & Monetary base growth & Schwert (1989) \\
+F21 & PPI growth rate & Schwert (1989) \\
+F22 & Industrial production growth & Schwert (1989) \\
+F23 & Bond market volatility & Schwert (1989) \\
+F24 & Aggregate leverage & Schwert (1989) \\
+F25 & Number of trading days & Schwert (1989) \\
+F26 & Trading volume & Schwert (1989) \\
+F27 & Month dummies & Schwert (1989) \\
+F28 & Sentiment measures from news and social media & Audrino et al. (2020) \\
+F29 & Search engine query volume & Audrino et al. (2020); Dimpfl and Jank (2016) \\
+F30 & Equity valuation ratios & Audrino et al. (2020) \\
+F31 & Fama-French factors & Audrino et al. (2020) \\
+F32 & Interest rates (levels) & Audrino et al. (2020) \\
+F33 & Bond risk premia & Audrino et al. (2020) \\
+F34 & TED spread & Audrino et al. (2020) \\
+F35 & Turnover ratios & Audrino et al. (2020) \\
+F36 & Inflation & Audrino et al. (2020) \\
+F37 & Labor market variables & Audrino et al. (2020) \\
+F38 & Commodity prices & Audrino et al. (2020) \\
+F39 & Money supply & Audrino et al. (2020) \\
+F40 & Survey-based sentiment (consumer and producer) & Audrino et al. (2020) \\
+F41 & Uncertainty indices (IDEMV; EMV; GPR) & Fameliti and Skintzi (2024) \\
+F42 & Crude oil futures RV & Fameliti and Skintzi (2024) \\
+F43 & Investor attention (Baidu search index) & Lei et al. (2021) \\
+F44 & Macro principal component & Song et al. (2022); Ludvigson and Ng (2009) \\
+F45 & GARCH-MIDAS short-term volatility forecast & Song et al. (2022) \\
+F46 & Number of trades (deal volume) & Song et al. (2022) \\
+F47 & Bias = (close - 5-day average) / 5-day average & Song et al. (2022) \\
+F48 & DMA = 5-day MA - 10-day MA & Song et al. (2022) \\
+F49 & CDP pivot & Song et al. (2022) \\
+F50 & AR = (close - open) / (open - low) & Song et al. (2022) \\
+F51 & BR = (high - close) / (close - low) & Song et al. (2022) \\
+F52 & Percent change (price range measure) & Song et al. (2022) \\
+F53 & Overnight spread & Song et al. (2022) \\
+F54 & Lagged equity returns (levels) & Audrino et al. (2020); Song et al. (2022) \\
+F55 & FX returns (USD/EUR; USD/CHF; USD/GBP; USD/JPY) & Audrino et al. (2020) \\
+F56 & Carry trade factor & Audrino et al. (2020) \\
+F57 & Average bid-ask spread (FX liquidity) & Audrino et al. (2020) \\
+F58 & US RV spillover components & Buncic and Gisler (2016); Buncic and Gisler (2017) \\
+F59 & International jump factor (PCA across G7 jumps) & Ma et al. (2019) \\
+F60 & International jump factor (PLS across G7 jumps) & Ma et al. (2019) \\
+F61 & Cojump indicator & Ma et al. (2019) \\
+F62 & Global volatility factor (PCA across market RVs) & Zhang et al. (2020) \\
+F63 & Persistent homology features & Souto (2023) \\
+F64 & Variational mode decomposition intrinsic mode functions & Yu et al. (2023) \\
+F65 & Option prices across moneyness and maturities & Carr et al. (2020) \\
+F66 & News-based economic uncertainty index & Plakandaras et al. (2017) \\
+F67 & Realized semivariances (positive and negative) & Wang et al. (2016) \\
+F68 & HARQ interaction terms (lagged RV x RQ) & Bollerslev et al. (2016) \\
+F69 & Macro announcement dummies (FOMC; CPI; PPI; ESR) & McAleer and Medeiros (2008) \\
+F70 & Day-of-week dummies & McAleer and Medeiros (2008) \\
+F71 & Leverage effect measure (minimum non-positive return) & Campbell and Hentschel (1992); Bekaert and Hoerova (2014) \\
+F72 & Cross-asset RV (equity indices) & Degiannakis and Filis (2017) \\
+F73 & FX realized variances & Degiannakis and Filis (2017) \\
+F74 & Commodity realized variances & Degiannakis and Filis (2017) \\
+F75 & Breakeven inflation rate & Audrino et al. (2020) \\
+F76 & Housing starts (log-change) & Audrino et al. (2020) \\
+F77 & Capacity utilization (log-change) & Audrino et al. (2020) \\
+F78 & PMI and business activity diffusion indices & Audrino et al. (2020) \\
+F79 & Macroeconomic and financial uncertainty & Gupta et al. (2021); Jurado et al. (2015) \\
+F80 & US 10-year Treasury futures returns & Audrino et al. (2020) \\
+F81 & Short-term reversal factor (STR) & Bucci (2020); Nonejad (2017) \\
+F82 & HAR leverage interaction term & Wang et al. (2016) \\
+F83 & Cross-national capital flows principal component & Zhang et al. (2020) \\
+\end{longtable}
+}
