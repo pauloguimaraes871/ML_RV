@@ -1,14 +1,19 @@
-\begin{table}[pt]
-\centering
+{\scriptsize
 \captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
-\renewcommand{\arraystretch}{1.05}
-\caption[Predictor families identified by the systematic review]{\footnotesize \textbf{: Predictor families identified by the systematic review.} Each row is a family of predictors of realized variance proposed in the reviewed literature, with the study taken as its representative source. `Cited by' counts how many of the 271 reviewed articles cite that source, which places foundational work the reviewed articles build on, such as \citet{corsi2009} and \citet{schwert1989}, on the same scale as work inside the review set. The last column records whether the family enters the models estimated here; 15 of the 23 families do. Table~\ref{tab:litpredictors} lists the individual predictors within each family and repeats this classification at that level.}
-\scriptsize
 \setlength{\tabcolsep}{4pt}
-\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}m{3.9cm}>{\raggedleft\arraybackslash}m{0.9cm}>{\raggedleft\arraybackslash}m{1.15cm}}
+\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{>{\raggedright\arraybackslash}m{6.0cm}>{\raggedright\arraybackslash}m{3.9cm}>{\raggedleft\arraybackslash}m{1.0cm}>{\raggedleft\arraybackslash}m{1.4cm}}
+\caption[Predictor families identified by the systematic review]{\footnotesize \textbf{: Predictor families identified by the systematic review.} The 83 predictors of realized variance proposed in the reviewed literature and in the foundational work it builds on, grouped into 33 families. Each family is shown with the study taken as its representative source. `Cited by' counts how many of the 271 reviewed articles cite that source, which places foundational work the reviewed articles build on, such as \citet{corsi2009} and \citet{schwert1989}, on the same scale as work inside the review set. The last column records whether the family enters the models estimated here; 15 of the 33 families do. Families are ordered by that column and then by citations. Table~\ref{tab:litpredictors} lists the individual predictors and repeats this classification at that level.} \label{tab:litfamilies} \\
 \hline
 Predictor family & Representative source & Cited by & In this study \\
 \hline
+\endfirsthead
+\hline
+Predictor family & Representative source & Cited by & In this study \\
+\hline
+\endhead
+\hline
+\endfoot
 Daily, weekly and monthly lagged realized variance & \citet{corsi2009} & 129 & Yes \\
 Jump and continuous components of realized variance & \citet{andersenbollerslevdiebold2007} & 86 & Yes \\
 Term structure and the short rate & \citet{welchgoyal2008} & 55 & Yes \\
@@ -16,23 +21,31 @@ Equity valuation ratios & \citet{welchgoyal2008} & 55 & Yes \\
 Credit spreads & \citet{paye2012} & 40 & Yes \\
 Volatility of producer price and industrial production growth & \citet{schwert1989} & 36 & Yes \\
 Volatility of the monetary base & \citet{schwert1989} & 36 & Yes \\
+Calendar effects and trading-day count & \citet{schwert1989} & 36 & Yes \\
 Realized quarticity & \citet{bollerslevpattonquaedvlieg2016} & 34 & Yes \\
 Realized variance of crude oil & \citet{degiannakisfilis2017} & 33 & Yes \\
 Option-implied volatility & \citet{christensenprabhala1998} & 29 & Yes \\
 Economic policy uncertainty & \citet{liuzhang2015} & 17 & Yes \\
 Survey-based consumer sentiment & \citet{audrinosigristballinari2020} & 16 & Yes \\
 Leverage effect from non-positive returns & \citet{campbellhentschel1992} & 15 & Yes \\
-Calendar effects and trading-day count & \citet{mcaleermedeiros2008} & 13 & Yes \\
 Geopolitical risk & \citet{caldaraiacoviello2022} & 7 & Yes \\
 Realized semivariances and signed jumps & \citet{pattonsheppard2015} & 57 & No \\
-International volatility spillovers and jump factors & \citet{zhangmaliao2020} & 21 & No \\
-News and social media sentiment & \citet{audrinosigristballinari2020} & 16 & No \\
+Business-cycle, leverage and funding conditions & \citet{paye2012} & 40 & No \\
+Interest rate and bond market volatility and risk premia & \citet{schwert1989} & 36 & No \\
+Realized quarticity interacted with lagged variance & \citet{bollerslevpattonquaedvlieg2016} & 34 & No \\
+Realized variance of other asset classes & \citet{degiannakisfilis2017} & 33 & No \\
+International volatility spillovers, jump factors and capital flows & \citet{zhangmaliao2020} & 21 & No \\
+News, social media sentiment and text-based uncertainty & \citet{audrinosigristballinari2020} & 16 & No \\
+Foreign exchange returns, carry and liquidity & \citet{audrinosigristballinari2020} & 16 & No \\
+Macroeconomic activity and price indicators & \citet{audrinosigristballinari2020} & 16 & No \\
 Macroeconomic factors from large panels & \citet{juradoludvigsonng2015} & 15 & No \\
+Implied volatility of other markets and asset classes & \citet{liangweizhang2020} & 14 & No \\
+Scheduled macroeconomic announcements and day-of-week effects & \citet{mcaleermedeiros2008} & 13 & No \\
+Equity factor and lagged equity returns & \citet{nonejad2017} & 13 & No \\
 Search-engine attention & \citet{dimpfljank2016} & 7 & No \\
+Technical and price-range indicators & \citet{songtangwangma2023} & 2 & No \\
 Option prices across moneyness and maturity & \citet{carrwuzhang2020} & 2 & No \\
-Limit order book and intraday microstructure & \citet{rahimikiapoon2026} & 1 & No \\
+Trading volume, turnover and order book measures & \citet{rahimikiapoon2026} & 1 & No \\
 Topological and signal-decomposition features & \citet{souto2023} & 0 & No \\
-\hline
-\end{tabularx}
-\label{tab:litfamilies}
-\end{table}
+\end{longtable}
+}

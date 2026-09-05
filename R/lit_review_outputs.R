@@ -124,23 +124,50 @@
       "audrinosigristballinari2020", "sentiment and attention measures", TRUE, "F40",
     "Realized variance of crude oil",
       "degiannakisfilis2017", "information channels from other asset", TRUE, "F42",
+    ## The trading-day count and the month dummies are both Schwert's, not
+    ## McAleer and Medeiros's. The latter contribute the announcement and
+    ## day-of-week dummies, which form their own family below.
     "Calendar effects and trading-day count",
-      "mcaleermedeiros2008", "multiple regime smooth transition", TRUE, "F25, F27",
+      "schwert1989", "why does stock market volatility change", TRUE, "F25, F27",
 
     "Realized semivariances and signed jumps",
       "pattonsheppard2015", "good volatility, bad volatility", FALSE, "F05, F67, F82",
-    "News and social media sentiment",
-      "audrinosigristballinari2020", "sentiment and attention measures", FALSE, "F28",
+    "Scheduled macroeconomic announcements and day-of-week effects",
+      "mcaleermedeiros2008", "multiple regime smooth transition", FALSE, "F69, F70",
+    "Implied volatility of other markets and asset classes",
+      "liangweizhang2020", "implied volatility more informative", FALSE, "F07, F08",
+    "Realized quarticity interacted with lagged variance",
+      "bollerslevpattonquaedvlieg2016", "exploiting the errors", FALSE, "F68",
+    "News, social media sentiment and text-based uncertainty",
+      "audrinosigristballinari2020", "sentiment and attention measures", FALSE, "F28, F66",
     "Search-engine attention",
       "dimpfljank2016", "internet search queries", FALSE, "F29, F43",
-    "International volatility spillovers and jump factors",
-      "zhangmaliao2020", "forecasting global equity market", FALSE, "F08, F58, F59, F60, F61, F62",
-    "Limit order book and intraday microstructure",
-      "rahimikiapoon2026", "machine learning for realised", FALSE, "F35, F46, F53, F57",
+    "International volatility spillovers, jump factors and capital flows",
+      "zhangmaliao2020", "forecasting global equity market", FALSE, "F58, F59, F60, F61, F62, F83",
+    "Realized variance of other asset classes",
+      "degiannakisfilis2017", "information channels from other asset", FALSE, "F72, F73, F74",
+    "Foreign exchange returns, carry and liquidity",
+      "audrinosigristballinari2020", "sentiment and attention measures", FALSE, "F55, F56, F57",
+    "Trading volume, turnover and order book measures",
+      "rahimikiapoon2026", "machine learning for realised", FALSE, "F26, F35, F46, F53",
+    "Technical and price-range indicators",
+      "songtangwangma2023", "garch-midas and deep learning", FALSE,
+      "F45, F47, F48, F49, F50, F51, F52",
     "Option prices across moneyness and maturity",
       "carrwuzhang2020", "using machine learning to predict realized", FALSE, "F65",
     "Macroeconomic factors from large panels",
       "juradoludvigsonng2015", "measuring uncertainty", FALSE, "F44, F79",
+    "Business-cycle, leverage and funding conditions",
+      "paye2012", "predictive regressions for aggregate stock market", FALSE,
+      "F10, F11, F12, F15, F16, F17, F24",
+    "Interest rate and bond market volatility and risk premia",
+      "schwert1989", "why does stock market volatility change", FALSE,
+      "F19, F23, F33, F34, F80",
+    "Macroeconomic activity and price indicators",
+      "audrinosigristballinari2020", "sentiment and attention measures", FALSE,
+      "F36, F37, F38, F39, F75, F76, F77, F78",
+    "Equity factor and lagged equity returns",
+      "nonejad2017", "which models forecast best", FALSE, "F31, F54, F81",
     "Topological and signal-decomposition features",
       "souto2023", "topological tail dependence", FALSE, "F63, F64"
   )
@@ -160,6 +187,27 @@
                                 stringsAsFactors = FALSE)
 
   ids_of <- function(s) trimws(unlist(strsplit(s, ",", fixed = TRUE)))
+
+  ## Guard: the families must partition the inventory. Without this the table
+  ## silently classifies part of the review and reads as though it covered all
+  ## of it, which is how the crude oil index and the international implied
+  ## volatility measures went missing from an earlier version.
+  all_claimed <- unlist(lapply(families$ids, ids_of))
+  duplicated_ids <- unique(all_claimed[duplicated(all_claimed)])
+  if (length(duplicated_ids) > 0L) {
+    stop("Predictors claimed by more than one family: ",
+         paste(duplicated_ids, collapse = ", "))
+  }
+  unclaimed <- setdiff(predictors$id, all_claimed)
+  if (length(unclaimed) > 0L) {
+    stop("Predictors claimed by no family: ", paste(unclaimed, collapse = ", "))
+  }
+  unknown_ids <- setdiff(all_claimed, predictors$id)
+  if (length(unknown_ids) > 0L) {
+    stop("Families refer to predictors absent from the inventory: ",
+         paste(unknown_ids, collapse = ", "))
+  }
+
   ids_implemented_families <- sort(unique(unlist(
     lapply(families$ids[families$implemented], ids_of))))
   ids_implemented_inventory <- sort(predictors$id[predictors$implemented == "Yes"])
@@ -215,45 +263,50 @@
 
   n_impl <- sum(families$implemented)
 
+  ## The taxonomy partitions the whole inventory, so the table no longer fits
+  ## on one page. A longtable breaks across pages instead of overrunning the
+  ## bottom margin, which a table environment does without any warning.
   tbl1 <- c(
-    "\\begin{table}[pt]",
-    "\\centering",
+    "{\\scriptsize",
     "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-    ## 23 rows have to share one page with the caption. The row height is what
-    ## binds: a source column narrow enough to wrap every entry onto two lines
-    ## pushes the last rows off the bottom, and vertical overflow raises no
-    ## warning. Keep the source column wide and the body at script size.
+    "\\setlength{\\tabcolsep}{4pt}",
     "\\renewcommand{\\arraystretch}{1.05}",
+    paste0("\\begin{longtable}{",
+           ">{\\raggedright\\arraybackslash}m{6.0cm}",
+           ">{\\raggedright\\arraybackslash}m{3.9cm}",
+           ">{\\raggedleft\\arraybackslash}m{1.0cm}",
+           ">{\\raggedleft\\arraybackslash}m{1.4cm}}"),
     sprintf(paste0(
       "\\caption[Predictor families identified by the systematic review]{\\footnotesize ",
-      "\\textbf{: Predictor families identified by the systematic review.} Each ",
-      "row is a family of predictors of realized variance proposed in the ",
-      "reviewed literature, with the study taken as its representative source. ",
+      "\\textbf{: Predictor families identified by the systematic review.} The ",
+      "%d predictors of realized variance proposed in the reviewed literature ",
+      "and in the foundational work it builds on, grouped into %d families. ",
+      "Each family is shown with the study taken as its representative source. ",
       "`Cited by' counts how many of the %d reviewed articles cite that source, ",
       "which places foundational work the reviewed articles build on, such as ",
       "\\citet{corsi2009} and \\citet{schwert1989}, on the same scale as work ",
       "inside the review set. The last column records whether the family enters ",
-      "the models estimated here; %d of the %d families do. ",
-      "Table~\\ref{tab:litpredictors} lists the individual predictors within ",
-      "each family and repeats this classification at that level.}"),
-      corpus_stats$n_docs, n_impl, nrow(families)),
-    "\\scriptsize",
-    "\\setlength{\\tabcolsep}{4pt}",
-    paste0("\\begin{tabularx}{\\linewidth}{",
-           ">{\\raggedright\\arraybackslash}X",
-           ">{\\raggedright\\arraybackslash}m{3.9cm}",
-           ">{\\raggedleft\\arraybackslash}m{0.9cm}",
-           ">{\\raggedleft\\arraybackslash}m{1.15cm}}"),
+      "the models estimated here; %d of the %d families do. Families are ordered ",
+      "by that column and then by citations. Table~\\ref{tab:litpredictors} ",
+      "lists the individual predictors and repeats this classification at that ",
+      "level.} \\label{tab:litfamilies} \\\\"),
+      nrow(predictors), nrow(families), corpus_stats$n_docs, n_impl,
+      nrow(families)),
     "\\hline",
     "Predictor family & Representative source & Cited by & In this study \\\\",
     "\\hline",
+    "\\endfirsthead",
+    "\\hline",
+    "Predictor family & Representative source & Cited by & In this study \\\\",
+    "\\hline",
+    "\\endhead",
+    "\\hline",
+    "\\endfoot",
     sprintf("%s & %s & %d & %s \\\\",
             esc_tex(fam_tbl$family), cite_of(fam_tbl$bibkey),
             fam_tbl$cites, ifelse(fam_tbl$implemented, "Yes", "No")),
-    "\\hline",
-    "\\end{tabularx}",
-    "\\label{tab:litfamilies}",
-    "\\end{table}"
+    "\\end{longtable}",
+    "}"
   )
   writeLines(tbl1, file.path(tables_dir, "literature_families.tex"))
 
