@@ -223,25 +223,32 @@ corpus to journals ranked in Economics, Econometrics and Finance, Business,
 Management and Accounting, and Computer Science by the 2024 SCImago Journal Rank
 indicator, retaining Computer Science so that machine learning contributions
 would not be excluded by construction. The resulting corpus contains 271
-articles published between 1998 and 2025. Table~\ref{tab:litcorpus} reports the
-most cited studies in the corpus and the predictor families each contributes.
-Figure~\ref{fig:litgrowth} shows the growth of the corpus and the rising share
-of machine learning contributions within it. The complete query, the descriptive
-statistics of the corpus, the historical direct citation network, the
-co-citation and keyword co-occurrence networks, and the multiple correspondence
-analysis of abstracts are reported in the Internet Appendix.
+articles published between 1998 and 2025. Figure~\ref{fig:litgrowth} shows the
+growth of that literature and the rising share of machine learning contributions
+within it. The complete query, the descriptive statistics, the historical direct
+citation network, the co-citation and keyword co-occurrence networks, and the
+multiple correspondence analysis of abstracts are reported in the Internet
+Appendix.
 
-The review produced 83 distinct predictors proposed in the corpus, which are
-catalogued in the Internet Appendix. Their availability is very uneven.
-Predictors constructed from limit order books, social media message volume,
-search engine indices or news sentiment exist only for the most recent two
-decades, and option-implied measures only from the mid-1980s. Predictors built
-from returns, from interest rates and credit spreads, and from the national
-accounts extend much further back. Table~\ref{tab:featuremap} maps the predictor
-families identified in the review onto the variables constructed in this paper
-and records the earliest sample each one supports. The mapping is the operational
-contribution of the review: the feature universe of our models is determined by
-an auditable rule applied to a defined corpus, together with a data availability
+Reading the reviewed articles together with the foundational work they cite
+yields 83 distinct predictors of realized variance, which group into 23
+families. Table~\ref{tab:litfamilies} reports those families, the study taken as
+the representative source for each, and how many of the reviewed articles cite
+that source. Measuring the connection to the review this way places
+\citet{corsi2009} and \citet{schwert1989}, which the reviewed articles build on
+without themselves being retrieved by the query, on the same scale as work
+inside the review set. Table~\ref{tab:litpredictors} in the Internet Appendix
+lists the individual predictors.
+
+Availability across the families is very uneven. Predictors constructed from
+limit order books, social media message volume, search engine indices or news
+sentiment exist only for the most recent two decades, and option-implied
+measures only from the mid-1980s. Predictors built from returns, from interest
+rates and credit spreads, and from the national accounts extend much further
+back. Fifteen of the 23 families enter the models estimated here, and every one
+of them was identified by the review rather than added to it. This is the
+operational contribution of the review: the predictor set is determined by an
+auditable rule applied to a defined body of work, together with an availability
 constraint that is stated rather than left implicit.
 
 The final strand concerns what a volatility forecast is worth.
@@ -258,31 +265,56 @@ real time, and reasonable out-of-sample versions generally earn lower certainty
 equivalent returns and Sharpe ratios than the unmanaged portfolios. They
 attribute this to structural instability in the underlying spanning regressions.
 \citet{barrosodetzel2021} relate the benefits that survive to limits to
-arbitrage, and \citet{demiguelmartinutrerauppal2024} reassess the evidence in a
-multifactor setting.
+arbitrage, \citet{schwarz2025} extends the evidence to international equity
+factors, and \citet{demiguelmartinutrerauppal2024} reconsider the question in a
+multifactor setting, showing that a conditional multifactor portfolio survives
+out of sample and net of costs, and that factor risk prices generally fall as
+market volatility rises.
 
-What this literature has held fixed is the forecast itself. In the
-volatility-managed construction the conditioning variable is the realized
+What this literature has held almost entirely fixed is the forecast itself. In
+the volatility-managed construction the conditioning variable is the realized
 variance of the preceding month, which is a one-parameter forecast of next
 month's variance and, in the terms of the forecasting literature, a random walk
 benchmark. The forecasting literature reviewed above has spent three decades
 establishing that this benchmark can be improved upon, and the criticism of
 \citet{cederburg2020} is specifically that the managed strategies fail when they
 must be formed from information available in real time, which is a statement
-about forecast quality under a real-time constraint. The two literatures
-therefore meet at a point neither has examined. This paper asks whether
-replacing the lagged realized variance in the volatility-managed construction
-with an out-of-sample machine learning forecast changes the conclusion, and it
-asks that question both for the aggregate market and for a large cross-section
-of factors. Relative to \citet{rahimikiapoon2026} the difference is the object
-of prediction and the evaluation criterion: aggregate and factor-level variance
-over a long macroeconomic history, judged by realized portfolio outcomes rather
-than by loss functions alone. Relative to \citet{brancorubesamzevallos2024},
-who do evaluate the economic value of machine learning forecasts through
-volatility-timing portfolios at the index level, the differences are the
-cross-section of factors, the managed-portfolio construction of
-\citet{moreiramuir2017} rather than a mean-variance timing rule, and a sample
-that begins well before the period in which the two literatures were formed.
+about forecast quality under a real-time constraint.
+
+Three recent studies have connected the two literatures at the level of the
+aggregate market. \citet{brancorubesamzevallos2024} forecast the realized
+volatility of ten global indices with linear and nonlinear machine learning
+models and evaluate the forecasts through volatility-timing portfolios,
+concluding that simpler models without additional predictors deliver the greater
+economic value. \citet{diazhansencabrera2024} reach a more favourable assessment
+of the economic value of machine learning volatility forecasts for the United
+States market, and \citet{chunchoryu2025} report that volatility-timing
+portfolios built from machine learning forecasts of S\&P 500 realized volatility
+outperform the market portfolio, with penalized linear regression the strongest
+model. Whether machine learning improves a volatility-timed position in the
+aggregate market is therefore an open but actively contested question, and this
+paper treats the market series as a replication exercise against these results
+rather than as its contribution.
+
+The contribution lies in the cross-section. The volatility-managed literature is
+organized around equity factors, and the machine learning volatility literature
+is organized around indices and individual tickers; no study we are aware of
+forecasts factor-level realized variance with machine learning and uses those
+forecasts to manage the corresponding factor portfolios. This paper does so for
+a broad cross-section of factors alongside the market, which allows three
+questions that a single index cannot address. First, whether the gains from a
+better variance forecast are concentrated in the factors whose managed versions
+\citet{cederburg2020} and \citet{schwarz2025} find fragile. Second, whether
+pooling factors into one panel improves the forecast for any individual factor
+relative to estimating it in isolation. Third, whether the improvement survives
+aggregation into the conditional multifactor portfolio of
+\citet{demiguelmartinutrerauppal2024}, whose construction has so far been
+implemented with the conventional lagged-variance conditioning variable.
+Relative to \citet{rahimikiapoon2026}, whose predictor set and evaluation are
+the most comprehensive in this literature, the differences are the object of
+prediction, the horizon, and the criterion: factor-level and aggregate monthly
+variance over a long macroeconomic history, judged by realized portfolio
+outcomes rather than by loss functions alone.
 
 %% =====================================================================
 \section{Methods and Data}
@@ -328,9 +360,8 @@ for the content of the published article.
 \section{Figures and Tables}
 \suppressfloats[t]
 
-\input{../tables/literature_corpus.tex}
+\input{../tables/literature_families.tex}
 
-\input{../tables/feature_map.tex}
 
 \input{../figures/literature_growth_figure.tex}
 

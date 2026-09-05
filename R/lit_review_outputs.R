@@ -1,18 +1,22 @@
 # Literature review outputs (paper section 2)-----------------------------------
 
   ## This script produces every table and figure that Section 2 of the
-  ## manuscript refers to. It reads two sources and writes nothing else:
-  ##   - bibliometrics/scopus_final.csv : the systematic review corpus
-  ##   - data/*_v3.rds, data/manifest_v3.csv : the V3 feature artifacts
+  ## manuscript refers to. It reads three sources and writes nothing else:
+  ##   - bibliometrics/scopus_final.csv     : the systematic review corpus
+  ##   - bibliometrics/review_predictors.csv: the predictor inventory
+  ##   - data/covariates_panel_*_v3.rds     : the covariate panels
   ## It never fits a model and never alters an artifact under data/.
   ##
   ## Outputs
-  ##   tables/literature_corpus.tex      main paper, Table 1
-  ##   tables/feature_map.tex            main paper, Table 2
+  ##   tables/literature_families.tex    main paper, Table 1
   ##   tables/literature_predictors.tex  Internet Appendix
   ##   figures/literature_growth.png     main paper, Figure 1
   ##   figures/literature_growth_figure.tex
   ##   figures/literature_networks_figure.tex  Internet Appendix
+  ##
+  ## Nothing written here may name a file, a column, or a pipeline stage: the
+  ## reader of the paper has none of that context. Keep internal vocabulary in
+  ## comments, never in a caption.
 
   `%>%` <- dplyr::`%>%`
 
@@ -41,29 +45,7 @@
     x
   }
 
-  ## Scopus stores authors as "Surname A.B.; Surname C." Reduce to the
-  ## author-year label used in the manuscript prose.
-  short_cite <- function(authors, year) {
-    parts <- strsplit(authors, ";", fixed = TRUE)
-    vapply(seq_along(parts), function(i) {
-      a <- trimws(parts[[i]])
-      ## Scopus writes "Surname A.B." and "Trierweiler Ribeiro G.". The final
-      ## whitespace-separated token is always the initials, so dropping it
-      ## recovers compound surnames as well as simple ones.
-      surname <- function(s) {
-        tok <- strsplit(trimws(s), "\\s+")[[1]]
-        if (length(tok) <= 1L) trimws(s) else paste(tok[-length(tok)], collapse = " ")
-      }
-      lab <- if (length(a) == 1L) {
-        surname(a[1])
-      } else if (length(a) == 2L) {
-        paste(surname(a[1]), "and", surname(a[2]))
-      } else {
-        paste0(surname(a[1]), " et al.")
-      }
-      sprintf("%s (%s)", lab, year[i])
-    }, character(1))
-  }
+  cite_of <- function(x) sprintf("\\citet{%s}", gsub("; ", ",", x, fixed = TRUE))
 
 # Corpus--------------------------------------------------------------------
 
@@ -75,23 +57,20 @@
   corpus <- utils::read.csv(scopus_path, check.names = FALSE,
                             stringsAsFactors = FALSE)
 
-  ## Scopus writes the citation count as "Cited by" and leaves it empty for
-  ## uncited documents. Treat empty as zero rather than dropping the row.
+  corpus$py <- suppressWarnings(as.integer(corpus[["Year"]]))
   corpus$tc <- suppressWarnings(as.integer(corpus[["Cited by"]]))
   corpus$tc[is.na(corpus$tc)] <- 0L
-  corpus$py <- suppressWarnings(as.integer(corpus[["Year"]]))
 
   corpus_stats <- list(
     n_docs    = nrow(corpus),
     year_min  = min(corpus$py, na.rm = TRUE),
     year_max  = max(corpus$py, na.rm = TRUE),
-    n_sources = length(unique(corpus[["Source title"]])),
-    mean_tc   = mean(corpus$tc)
+    n_sources = length(unique(corpus[["Source title"]]))
   )
 
-  ## Machine-learning subset, flagged on the abstract with the keyword list
-  ## used in the exploratory bibliometric report. Kept identical so the two
-  ## documents cannot diverge.
+  ## Machine-learning subset, flagged on the abstract and author keywords with
+  ## the term list used in the exploratory bibliometric report. Kept identical
+  ## so the two documents cannot diverge.
   ml_keywords <- c("machine learning", "neural network", "deep learning",
                    "lstm", "gru", "svm", "lasso", "random forest", "boosting",
                    "ensemble", "recurrent", "transformer", "gradient boosting",
@@ -100,77 +79,183 @@
   corpus$is_ml <- Reduce(`|`, lapply(ml_keywords, function(k)
     grepl(k, abstracts, fixed = TRUE)))
 
-# Table 1: most cited studies in the corpus--------------------------------
+  ## Local citations: how many of the corpus articles cite a given source. This
+  ## is the metric that ties a predictor family back to the review, and it is
+  ## defined identically for sources inside the corpus and for the foundational
+  ## work that the corpus cites without containing.
+  corpus_refs <- tolower(corpus[["References"]])
+  local_cites <- function(pattern) {
+    sum(grepl(tolower(pattern), corpus_refs, fixed = TRUE))
+  }
 
-  ## The predictor family each study contributes to the feature universe.
-  ## Keyed on DOI so that a re-export of the corpus cannot silently reassign
-  ## a label to the wrong row.
-  family_by_doi <- c(
-    "10.1016/s0304-405x(98)00034-8"   = "Option-implied volatility",
-    "10.1016/j.jeconom.2014.05.008"   = "Implied volatility, variance premium",
-    "10.1016/j.frl.2015.08.009"       = "Policy uncertainty",
-    "10.1016/S0304-4076(01)00068-9"   = "Option-implied volatility",
-    "10.1016/j.jfineco.2012.06.005"   = "Macroeconomic and credit conditions",
-    "10.1016/j.jeconom.2015.10.007"   = "Realized quarticity",
-    "10.1111/eufm.12058"              = "Search-engine attention",
-    "10.1016/j.ijforecast.2019.05.010" = "Sentiment and attention",
-    "10.1093/jjfinec/nbi028"          = "Realized variance measurement",
-    "10.1016/j.jeconom.2008.09.032"   = "Regimes, announcements, calendar",
-    "10.1016/j.ijforecast.2020.02.007" = "Global volatility factors",
-    "10.1002/for.2686"                = "International implied volatility",
-    "10.1093/jjfinec/nbaa008"         = "Macro-financial predictors (ML)",
-    "10.1016/j.jempfin.2017.03.003"   = "Macro-financial predictors",
-    "10.1016/j.irfa.2020.101552"      = "Sentiment indices"
+# Table 1: predictor families identified by the review----------------------
+
+  ## One row per predictor family. `pattern` is a distinctive fragment of the
+  ## representative source's reference string, used to count local citations.
+  ## `ids` cross-references the predictor inventory in the Internet Appendix.
+  families <- tibble::tribble(
+    ~family, ~bibkey, ~pattern, ~implemented, ~ids,
+
+    "Daily, weekly and monthly lagged realized variance",
+      "corsi2009", "simple approximate long-memory", TRUE, "F01",
+    "Realized quarticity",
+      "bollerslevpattonquaedvlieg2016", "exploiting the errors", TRUE, "F02",
+    "Jump and continuous components of realized variance",
+      "andersenbollerslevdiebold2007", "roughing it up", TRUE, "F03, F04",
+    "Leverage effect from non-positive returns",
+      "campbellhentschel1992", "no news is good news", TRUE, "F71",
+    "Option-implied volatility",
+      "christensenprabhala1998", "relation between implied and realized", TRUE, "F06",
+    "Economic policy uncertainty",
+      "liuzhang2015", "economic policy uncertainty and stock market", TRUE, "F09",
+    "Geopolitical risk",
+      "caldaraiacoviello2022", "measuring geopolitical risk", TRUE, "F41",
+    "Volatility of producer price and industrial production growth",
+      "schwert1989", "why does stock market volatility change", TRUE, "F18, F21, F22",
+    "Volatility of the monetary base",
+      "schwert1989", "why does stock market volatility change", TRUE, "F20",
+    "Credit spreads",
+      "paye2012", "predictive regressions for aggregate stock market", TRUE, "F13",
+    "Term structure and the short rate",
+      "welchgoyal2008", "comprehensive look", TRUE, "F14, F32",
+    "Equity valuation ratios",
+      "welchgoyal2008", "comprehensive look", TRUE, "F30",
+    "Survey-based consumer sentiment",
+      "audrinosigristballinari2020", "sentiment and attention measures", TRUE, "F40",
+    "Realized variance of crude oil",
+      "degiannakisfilis2017", "information channels from other asset", TRUE, "F42",
+    "Calendar effects and trading-day count",
+      "mcaleermedeiros2008", "multiple regime smooth transition", TRUE, "F25, F27",
+
+    "Realized semivariances and signed jumps",
+      "pattonsheppard2015", "good volatility, bad volatility", FALSE, "F05, F67, F82",
+    "News and social media sentiment",
+      "audrinosigristballinari2020", "sentiment and attention measures", FALSE, "F28",
+    "Search-engine attention",
+      "dimpfljank2016", "internet search queries", FALSE, "F29, F43",
+    "International volatility spillovers and jump factors",
+      "zhangmaliao2020", "forecasting global equity market", FALSE, "F08, F58, F59, F60, F61, F62",
+    "Limit order book and intraday microstructure",
+      "rahimikiapoon2026", "machine learning for realised", FALSE, "F35, F46, F53, F57",
+    "Option prices across moneyness and maturity",
+      "carrwuzhang2020", "using machine learning to predict realized", FALSE, "F65",
+    "Macroeconomic factors from large panels",
+      "juradoludvigsonng2015", "measuring uncertainty", FALSE, "F44, F79",
+    "Topological and signal-decomposition features",
+      "souto2023", "topological tail dependence", FALSE, "F63, F64"
   )
 
-  top_n <- 12L
-  top_tbl <- corpus %>%
-    dplyr::arrange(dplyr::desc(.data$tc)) %>%
-    dplyr::slice_head(n = top_n) %>%
-    dplyr::transmute(
-      study   = short_cite(.data$Authors, .data$py),
-      journal = .data[["Source title"]],
-      tc      = .data$tc,
-      family  = unname(family_by_doi[.data$DOI])
+  families$cites <- vapply(families$pattern, local_cites, integer(1))
+
+  ## Guard: the families marked as implemented must correspond to the
+  ## predictors flagged as implemented in the inventory, and to variables that
+  ## actually reach the models. A mismatch means the paper would misdescribe
+  ## the estimation sample, so fail rather than emit a wrong table.
+  predictors_path <- file.path(project_dir, "bibliometrics",
+                               "review_predictors.csv")
+  if (!file.exists(predictors_path)) {
+    stop("Missing predictor inventory: ", predictors_path)
+  }
+  predictors <- utils::read.csv(predictors_path, check.names = FALSE,
+                                stringsAsFactors = FALSE)
+
+  ids_of <- function(s) trimws(unlist(strsplit(s, ",", fixed = TRUE)))
+  ids_implemented_families <- sort(unique(unlist(
+    lapply(families$ids[families$implemented], ids_of))))
+  ids_implemented_inventory <- sort(predictors$id[predictors$implemented == "Yes"])
+
+  only_in_families <- setdiff(ids_implemented_families, ids_implemented_inventory)
+  if (length(only_in_families) > 0L) {
+    stop("Predictors marked implemented in Table 1 but not in the inventory: ",
+         paste(only_in_families, collapse = ", "))
+  }
+  only_in_inventory <- setdiff(ids_implemented_inventory, ids_implemented_families)
+  if (length(only_in_inventory) > 0L) {
+    stop("Predictors marked implemented in the inventory but in no Table 1 family: ",
+         paste(only_in_inventory, collapse = ", "))
+  }
+
+  ## Guard: every covariate the models receive must belong to an implemented
+  ## family. The panels are read only to check this; nothing from them is
+  ## reported in the paper by this script.
+  panel_paths <- c(
+    file.path(project_dir, "data", "covariates_panel_1927_v3.rds"),
+    file.path(project_dir, "data", "covariates_panel_1986_v3.rds")
+  )
+  if (all(file.exists(panel_paths))) {
+    key_cols <- c("name", "month_id")
+    model_vars <- sort(unique(unlist(lapply(panel_paths, function(p)
+      setdiff(names(readRDS(p)), key_cols)))))
+    ## Prefix of each covariate block, mapped to the family it belongs to.
+    var_family <- c(
+      rv = "lagged realized variance", rq = "realized quarticity",
+      jump = "jump component", cont = "continuous component",
+      negret = "leverage", log_epu = "policy uncertainty",
+      ppi = "producer prices", ip = "industrial production",
+      mbas = "monetary base", dy = "valuation ratios", ey = "valuation ratios",
+      dfr = "credit spreads", dfy = "credit spreads", tms = "term structure",
+      tbill = "term structure", log_cons = "survey sentiment",
+      gpr = "geopolitical risk", oil = "crude oil variance",
+      month = "calendar", sqrt = "calendar", vix = "implied volatility"
     )
-  top_tbl$family[is.na(top_tbl$family)] <- "Not used in the feature universe"
+    unmatched <- model_vars[!vapply(model_vars, function(v)
+      any(startsWith(v, names(var_family))), logical(1))]
+    if (length(unmatched) > 0L) {
+      stop("Covariates that belong to no family in Table 1: ",
+           paste(unmatched, collapse = ", "))
+    }
+    n_model_vars <- length(model_vars)
+  } else {
+    warning("Covariate panels not found; the coverage guard did not run.")
+    n_model_vars <- NA_integer_
+  }
+
+  fam_tbl <- families %>%
+    dplyr::arrange(dplyr::desc(.data$implemented), dplyr::desc(.data$cites))
+
+  n_impl <- sum(families$implemented)
 
   tbl1 <- c(
     "\\begin{table}[pt]",
     "\\centering",
     "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-    "\\renewcommand{\\arraystretch}{1.15}",
+    ## 23 rows have to share one page with the caption. The row height is what
+    ## binds: a source column narrow enough to wrap every entry onto two lines
+    ## pushes the last rows off the bottom, and vertical overflow raises no
+    ## warning. Keep the source column wide and the body at script size.
+    "\\renewcommand{\\arraystretch}{1.05}",
     sprintf(paste0(
-      "\\caption[Most cited studies in the systematic review corpus]{\\footnotesize ",
-      "\\textbf{: Most cited studies in the systematic review corpus.} The corpus ",
-      "contains %d articles published between %d and %d across %d sources, ",
-      "retrieved from Scopus under the protocol described in Section~\\ref{sec:literature} ",
-      "and detailed in the Internet Appendix. Studies are ordered by total ",
-      "citations recorded in Scopus at the export date. The last column reports ",
-      "the predictor family the study contributes to the feature universe of this ",
-      "paper, and Table~\\ref{tab:featuremap} maps those families onto the ",
-      "variables actually constructed.}"),
-      corpus_stats$n_docs, corpus_stats$year_min, corpus_stats$year_max,
-      corpus_stats$n_sources),
-    "\\footnotesize",
-    "\\setlength{\\tabcolsep}{3pt}",
+      "\\caption[Predictor families identified by the systematic review]{\\footnotesize ",
+      "\\textbf{: Predictor families identified by the systematic review.} Each ",
+      "row is a family of predictors of realized variance proposed in the ",
+      "reviewed literature, with the study taken as its representative source. ",
+      "`Cited by' counts how many of the %d reviewed articles cite that source, ",
+      "which places foundational work the reviewed articles build on, such as ",
+      "\\citet{corsi2009} and \\citet{schwert1989}, on the same scale as work ",
+      "inside the review set. The last column records whether the family enters ",
+      "the models estimated here; %d of the %d families do. ",
+      "Table~\\ref{tab:litpredictors} lists the individual predictors within ",
+      "each family and repeats this classification at that level.}"),
+      corpus_stats$n_docs, n_impl, nrow(families)),
+    "\\scriptsize",
+    "\\setlength{\\tabcolsep}{4pt}",
     paste0("\\begin{tabularx}{\\linewidth}{",
-           ">{\\raggedright\\arraybackslash}m{3.6cm}",
            ">{\\raggedright\\arraybackslash}X",
-           ">{\\raggedleft\\arraybackslash}m{1.1cm}",
-           ">{\\raggedright\\arraybackslash}m{4.1cm}}"),
+           ">{\\raggedright\\arraybackslash}m{3.9cm}",
+           ">{\\raggedleft\\arraybackslash}m{0.9cm}",
+           ">{\\raggedleft\\arraybackslash}m{1.15cm}}"),
     "\\hline",
-    "Study & Journal & Cites & Predictor family contributed \\\\",
+    "Predictor family & Representative source & Cited by & In this study \\\\",
     "\\hline",
     sprintf("%s & %s & %d & %s \\\\",
-            esc_tex(top_tbl$study), esc_tex(top_tbl$journal),
-            top_tbl$tc, esc_tex(top_tbl$family)),
+            esc_tex(fam_tbl$family), cite_of(fam_tbl$bibkey),
+            fam_tbl$cites, ifelse(fam_tbl$implemented, "Yes", "No")),
     "\\hline",
     "\\end{tabularx}",
-    "\\label{tab:litcorpus}",
+    "\\label{tab:litfamilies}",
     "\\end{table}"
   )
-  writeLines(tbl1, file.path(tables_dir, "literature_corpus.tex"))
+  writeLines(tbl1, file.path(tables_dir, "literature_families.tex"))
 
 # Figure 1: corpus growth and the machine-learning share-------------------
 
@@ -208,13 +293,13 @@
     "\\centering",
     "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
     sprintf(paste0(
-      "\\caption[Annual production of the systematic review corpus]{\\footnotesize ",
-      "\\textbf{: Annual production of the systematic review corpus.} Number of ",
-      "articles per publication year in the %d-document corpus, split by whether ",
-      "the abstract or author keywords contain a machine-learning term. The ",
-      "keyword list is reported in the Internet Appendix. Machine-learning ",
-      "studies represent %.1f\\%% of the corpus overall and %.1f\\%% of the ",
-      "articles published from 2020 onwards.}"),
+      "\\caption[Annual production of the reviewed literature]{\\footnotesize ",
+      "\\textbf{: Annual production of the reviewed literature.} Number of ",
+      "articles per publication year among the %d reviewed studies, split by ",
+      "whether the abstract or author keywords contain a machine-learning term. ",
+      "The term list is reported in the Internet Appendix. Machine-learning ",
+      "studies are %.1f\\%% of the reviewed literature overall and %.1f\\%% of ",
+      "the articles published from 2020 onwards.}"),
       corpus_stats$n_docs, ml_share, ml_share_recent),
     "\\includegraphics[width=\\linewidth]{figures/literature_growth.png}",
     "\\label{fig:litgrowth}",
@@ -222,178 +307,51 @@
   )
   writeLines(fig1, file.path(figures_dir, "literature_growth_figure.tex"))
 
-# Table 2: from the review to the feature universe-------------------------
-
-  ## Availability tiers are read from the V3 artifacts rather than asserted,
-  ## so the table cannot drift away from what the models actually receive.
-  panel_paths <- c(
-    "1927" = file.path(project_dir, "data", "covariates_panel_1927_v3.rds"),
-    "1986" = file.path(project_dir, "data", "covariates_panel_1986_v3.rds")
-  )
-  missing_panels <- panel_paths[!file.exists(panel_paths)]
-  if (length(missing_panels) > 0L) {
-    stop("Missing V3 covariate panel(s):\n", paste(missing_panels, collapse = "\n"))
-  }
-
-  key_cols <- c("name", "month_id")
-  feat_1927 <- setdiff(names(readRDS(panel_paths[["1927"]])), key_cols)
-  feat_1986 <- setdiff(names(readRDS(panel_paths[["1986"]])), key_cols)
-
-  ## Curated mapping from the predictor families identified in the review to
-  ## the variables constructed in this paper. Families the review identified
-  ## but that this paper does not implement are retained with an explicit
-  ## reason, because their absence is itself a design choice a referee will
-  ## want to see justified.
-  feature_map <- tibble::tribble(
-    ~family,                              ~sources,                                          ~vars,
-    "Lagged realized variance (HAR)",     "corsi2009; andersenbollerslev1998",               "rv_td_lag1, rv_tw_lag1, rv_month_lag1",
-    "Realized quarticity",                "bollerslevpattonquaedvlieg2016",                  "rq_td_lag1, rq_tw_lag1, rq_month_lag1",
-    "Jump and continuous components",     "andersenbollerslevdiebold2007",                   "jump_td_lag1, jump_tw_lag1, jump_month_lag1, cont_td_lag1, cont_tw_lag1, cont_month_lag1",
-    "Leverage effect",                    "campbellhentschel1992; corsireno2012",            "negret_td_lag1, negret_tw_lag1, negret_month_lag1",
-    "Policy uncertainty",                 "liuzhang2015",                                    "log_epu_diff_lag1",
-    "Producer price volatility",          "schwert1989; paye2012",                           "ppi_vol",
-    "Industrial production volatility",   "schwert1989",                                     "ip_vol",
-    "Equity valuation ratios",            "welchgoyal2008; audrinosigristballinari2020",     "dy_lag1, ey_lag1",
-    "Geopolitical risk",                  "caldaraiacoviello2022",                           "gpr_lag1",
-    "Calendar effects",                   "schwert1989; mcaleermedeiros2008",                "month, sqrt_days",
-    "Credit spreads",                     "schwert1989; paye2012; welchgoyal2008",           "dfr_lag1, dfy_lag1",
-    "Term structure",                     "paye2012; welchgoyal2008",                        "tms_lag1, tbill_lag1",
-    "Monetary base volatility",           "schwert1989",                                     "mbas_vol",
-    "Survey sentiment",                   "audrinosigristballinari2020",                     "log_cons_sent_diff_lag1",
-    "Cross-asset realized variance",      "degiannakisfilis2017",                            "oil_rv_td_lag1, oil_rv_tw_lag1, oil_rv_month_lag1",
-    "Option-implied volatility",          "christensenprabhala1998; blairpoontaylor2001; bekaerthoerova2014", "vix_lag1"
-  )
-
-  ## Assign each family to the earliest panel that carries all of its
-  ## variables, and fail loudly if a mapped variable exists in neither.
-  classify_tier <- function(vars_string) {
-    v <- trimws(strsplit(vars_string, ",", fixed = TRUE)[[1]])
-    unknown <- setdiff(v, union(feat_1927, feat_1986))
-    if (length(unknown) > 0L) {
-      stop("feature_map refers to variables absent from every V3 panel: ",
-           paste(unknown, collapse = ", "))
-    }
-    if (all(v %in% feat_1927)) "1927" else "1986"
-  }
-  feature_map$tier <- vapply(feature_map$vars, classify_tier, character(1))
-
-  ## Families present in the review but deliberately not implemented.
-  not_implemented <- tibble::tribble(
-    ~family,                            ~sources,                          ~reason,
-    "Limit order book measures",        "rahimikiapoon2026",               "Not available at monthly frequency over the sample",
-    "News and social media sentiment",  "audrinosigristballinari2020",     "Series begin in the 2010s",
-    "Search-engine attention",          "dimpfljank2016",                  "Series begin in 2004",
-    "International volatility spillovers", "zhangmaliao2020; liangweizhang2020", "Reserved for the factor panel rather than the market series",
-    "Topological and decomposition features", "souto2023",                 "Requires intraday cross-sections unavailable before 1993"
-  )
-
-  ## Every mapped variable must be accounted for, otherwise the table
-  ## understates the feature universe.
-  mapped_vars <- unlist(lapply(feature_map$vars, function(s)
-    trimws(strsplit(s, ",", fixed = TRUE)[[1]])), use.names = FALSE)
-  unmapped <- setdiff(union(feat_1927, feat_1986), mapped_vars)
-  if (length(unmapped) > 0L) {
-    warning("V3 variables absent from feature_map: ", paste(unmapped, collapse = ", "))
-  }
-
-  cite_of <- function(x) {
-    sprintf("\\citet{%s}", gsub("; ", ",", x, fixed = TRUE))
-  }
-
-  tbl2 <- c(
-    "\\begin{table}[pt]",
-    "\\centering",
-    "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-    "\\renewcommand{\\arraystretch}{1.15}",
-    sprintf(paste0(
-      "\\caption[From the systematic review to the feature universe]{\\footnotesize ",
-      "\\textbf{: From the systematic review to the feature universe.} Each row is ",
-      "a predictor family identified in the %d-document review corpus. `Variables' ",
-      "lists the names of the series constructed in this paper, and `From' reports ",
-      "the earliest monthly panel that carries the whole family, read directly from ",
-      "the V3 covariate artifacts rather than asserted. Panel~B lists families the ",
-      "review identified that this paper does not implement, with the reason. The ",
-      "complete inventory of %d predictors catalogued in the review is reported in ",
-      "Table~\\ref{tab:litpredictors}.}"),
-      corpus_stats$n_docs, 83L),
-    "\\footnotesize",
-    "\\setlength{\\tabcolsep}{3pt}",
-    paste0("\\begin{tabularx}{\\linewidth}{",
-           ">{\\raggedright\\arraybackslash}m{3.5cm}",
-           ">{\\raggedright\\arraybackslash}m{3.9cm}",
-           ">{\\raggedright\\arraybackslash}X",
-           ">{\\raggedleft\\arraybackslash}m{0.9cm}}"),
-    "\\hline",
-    "\\multicolumn{4}{l}{\\textit{Panel A: families implemented}} \\\\",
-    "\\hline",
-    "Predictor family & Representative sources & Variables & From \\\\",
-    "\\hline",
-    sprintf("%s & %s & \\texttt{%s} & %s \\\\",
-            esc_tex(feature_map$family),
-            cite_of(feature_map$sources),
-            esc_tex(feature_map$vars),
-            feature_map$tier),
-    "\\hline",
-    "\\multicolumn{4}{l}{\\textit{Panel B: families identified but not implemented}} \\\\",
-    "\\hline",
-    "Predictor family & Representative sources & \\multicolumn{2}{l}{Reason} \\\\",
-    "\\hline",
-    sprintf("%s & %s & \\multicolumn{2}{p{5.2cm}}{%s} \\\\",
-            esc_tex(not_implemented$family),
-            cite_of(not_implemented$sources),
-            esc_tex(not_implemented$reason)),
-    "\\hline",
-    "\\end{tabularx}",
-    "\\label{tab:featuremap}",
-    "\\end{table}"
-  )
-  writeLines(tbl2, file.path(tables_dir, "feature_map.tex"))
-
 # Internet Appendix: full predictor inventory------------------------------
 
-  ## The 83 predictors catalogued during the review, with the study each was
-  ## taken from. Sources are given as author-year labels rather than \citet
-  ## keys, because most of these studies are not otherwise cited in the paper
-  ## and adding them to references.bib would leave unused entries.
-  predictors_path <- file.path(project_dir, "bibliometrics",
-                               "review_predictors.csv")
-  if (!file.exists(predictors_path)) {
-    stop("Missing predictor inventory: ", predictors_path,
-         "\nGenerate it from the bibliometric report before running this script.")
-  }
-  predictors <- utils::read.csv(predictors_path, check.names = FALSE,
-                                stringsAsFactors = FALSE)
-
+  ## The predictors catalogued during the review, with the study each was taken
+  ## from and whether it enters the models. Sources are author-year labels
+  ## rather than citation keys, because most of these studies are not otherwise
+  ## cited in the paper and adding them would leave unused bibliography entries.
   tbl_ia <- c(
     "{\\footnotesize",
+    ## longtable is not a float and so does not inherit the caption setup the
+    ## table environments carry. Without this the label prints its own colon
+    ## and the caption opens with a doubled separator.
+    "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
     "\\setlength{\\tabcolsep}{3pt}",
     "\\renewcommand{\\arraystretch}{1.1}",
-    ## Column widths sum to 13.1cm, which keeps the longtable inside the
-    ## elsarticle preprint text block. Widening any column overfulls the row.
+    ## Column widths sum to 12.8cm which, with eight inter-column gaps of 3pt,
+    ## fits the text block. Widening any column overfulls every row.
     paste0("\\begin{longtable}{",
-           ">{\\raggedright\\arraybackslash}m{0.8cm}",
-           ">{\\raggedright\\arraybackslash}m{6.7cm}",
-           ">{\\raggedright\\arraybackslash}m{5.55cm}}"),
-    paste0("\\caption[Predictors of realized variance identified in the review]",
-           "{\\footnotesize \\textbf{: Predictors of realized variance identified ",
-           "in the review.} Every distinct predictor proposed in the ",
-           sprintf("%d-document ", corpus_stats$n_docs),
-           "corpus, with the study it is taken from. Families implemented in this ",
-           "paper are mapped in Table~\\ref{tab:featuremap}.}",
+           ">{\\raggedright\\arraybackslash}m{0.7cm}",
+           ">{\\raggedright\\arraybackslash}m{5.5cm}",
+           ">{\\raggedright\\arraybackslash}m{5.1cm}",
+           ">{\\raggedleft\\arraybackslash}m{1.5cm}}"),
+    paste0("\\caption[Predictors of realized variance identified by the review]",
+           "{\\footnotesize \\textbf{: Predictors of realized variance ",
+           "identified by the review.} Every distinct predictor proposed in the ",
+           sprintf("%d reviewed articles ", corpus_stats$n_docs),
+           "and in the foundational work they build on, with the study it is ",
+           "taken from and whether it enters the models estimated here. ",
+           "Predictors are grouped into families in ",
+           "Table~\\ref{tab:litfamilies}. Several entries map onto a single ",
+           "constructed series, and the predictors marked absent are either ",
+           "unavailable over the sample period or require intraday data.}",
            " \\label{tab:litpredictors} \\\\"),
     "\\hline",
-    "ID & Predictor & Source \\\\",
+    "ID & Predictor & Source & In this study \\\\",
     "\\hline",
     "\\endfirsthead",
     "\\hline",
-    "ID & Predictor & Source \\\\",
+    "ID & Predictor & Source & In this study \\\\",
     "\\hline",
     "\\endhead",
     "\\hline",
     "\\endfoot",
-    sprintf("%s & %s & %s \\\\",
-            esc_tex(predictors[[1]]), esc_tex(predictors[[2]]),
-            esc_tex(predictors[[3]])),
+    sprintf("%s & %s & %s & %s \\\\",
+            esc_tex(predictors$id), esc_tex(predictors$predictor),
+            esc_tex(predictors$source), esc_tex(predictors$implemented)),
     "\\end{longtable}",
     "}"
   )
@@ -436,11 +394,11 @@
       "\\begin{figure}[htbp]",
       "\\centering",
       "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-      paste0("\\caption[Bibliographic networks of the review corpus]{\\footnotesize ",
-             "\\textbf{: Bibliographic networks of the review corpus.} Panel (a) is ",
+      paste0("\\caption[Bibliographic networks of the reviewed literature]{\\footnotesize ",
+             "\\textbf{: Bibliographic networks of the reviewed literature.} Panel (a) is ",
              "the co-citation network of the 25 most co-cited references, which ",
-             "identifies the knowledge base the corpus draws on. Panel (b) is the ",
-             "keyword co-occurrence network of the 25 most frequent terms. Both use ",
+             "identifies the knowledge base the reviewed articles draw on. Panel (b) is ",
+             "the keyword co-occurrence network of the 25 most frequent terms. Both use ",
              "the Fruchterman-Reingold layout with Salton normalization; node size ",
              "is weighted degree and edge width is tie strength.}"),
       "\\begin{subfigure}{\\linewidth}\\centering",
@@ -465,8 +423,8 @@
 # Mirror the figures into the LaTeX tree-----------------------------------
 
   ## manuscript.tex resolves \includegraphics relative to latex_paper/, so the
-  ## rendered PNGs are copied there. figures/ remains the single place they are
-  ## produced; latex_paper/figures is a build artifact.
+  ## rendered images are copied there. figures/ remains the single place they
+  ## are produced; latex_paper/figures is a build artifact.
   latex_fig_dir <- file.path(project_dir, "latex_paper", "figures")
   dir.create(latex_fig_dir, recursive = TRUE, showWarnings = FALSE)
   pngs <- list.files(figures_dir, pattern = "\\.png$", full.names = TRUE)
@@ -478,9 +436,11 @@
 
 # Report--------------------------------------------------------------------
 
-  message(sprintf(
-    "Corpus: %d documents, %d-%d, %d sources, mean citations %.1f, ML share %.1f%%.",
-    corpus_stats$n_docs, corpus_stats$year_min, corpus_stats$year_max,
-    corpus_stats$n_sources, corpus_stats$mean_tc, ml_share))
-  message(sprintf("Feature universe: %d variables from 1927, %d from 1986.",
-                  length(feat_1927), length(feat_1986)))
+  message(sprintf("Reviewed literature: %d articles, %d-%d, %d sources, ML share %.1f%%.",
+                  corpus_stats$n_docs, corpus_stats$year_min,
+                  corpus_stats$year_max, corpus_stats$n_sources, ml_share))
+  message(sprintf("Families: %d of %d implemented. Predictors: %d of %d implemented.",
+                  n_impl, nrow(families),
+                  sum(predictors$implemented == "Yes"), nrow(predictors)))
+  message(sprintf("Covariates reaching the models: %d, all matched to a family.",
+                  n_model_vars))
