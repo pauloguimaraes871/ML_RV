@@ -284,9 +284,11 @@ about forecast quality under a real-time constraint.
 Three recent studies have connected the two literatures at the level of the
 aggregate market. \citet{brancorubesamzevallos2024} forecast the realized
 volatility of ten global indices with linear and nonlinear machine learning
-models and evaluate the forecasts through volatility-timing portfolios,
-concluding that simpler models without additional predictors deliver the greater
-economic value. \citet{diazhansencabrera2024} reach a more favourable assessment
+models and evaluate the monthly forecasts through the realized utility of
+volatility-timing strategies, reporting that heterogeneous autoregressive
+specifications without additional predictors are among the best performers and
+that the best models recover between 3.30 and 3.72 per cent of the 4 per cent
+utility available under perfect foresight. \citet{diazhansencabrera2024} reach a more favourable assessment
 of the economic value of machine learning volatility forecasts for the United
 States market, and \citet{chunchoryu2025} report that volatility-timing
 portfolios built from machine learning forecasts of S\&P 500 realized volatility
@@ -296,17 +298,27 @@ aggregate market is therefore an open but actively contested question, and this
 paper treats the market series as a replication exercise against these results
 rather than as its contribution.
 
-These three studies share a construction that should be distinguished from the
-one used here. Each allocates between a single risky index and the risk-free
-asset in proportion to a forecast of variance, and each evaluates the result
-through the utility of a mean-variance investor, in the tradition of the
-volatility-timing literature. The managed portfolios of \citet{moreiramuir2017}
-are a different object: the scaled series is an equity factor rather than an
-index, and the evidence is an alpha in a spanning regression of the managed
-factor on its unmanaged counterpart, which is what makes the construction a
-statement about asset pricing rather than about one investor's allocation. The
-questions this paper asks about the cross-section do not arise in the timing
-framework.
+These studies share a construction that has to be distinguished from the one
+used here, because the difference is not one of degree. Each follows the
+volatility-targeting framework of \citet{bollerslevhoodhusspedersen2018}: the
+investor holds one risky index and the risk-free asset, the weight is set to
+$w_t = \overline{SR} / \hat{\sigma}_{t+1}$, and performance is the realized
+utility of a mean-variance investor. Two features of that design matter here.
+The position scales with the inverse of predicted volatility rather than
+predicted variance, and the conditional Sharpe ratio $\overline{SR}$ is held
+constant by assumption.
+
+The second feature forecloses the question \citet{moreiramuir2017} ask. Their
+result rests on the observation that expected returns do not rise in proportion
+to variance, so that the conditional Sharpe ratio varies and a position scaled
+by the inverse of predicted variance earns an alpha against its unmanaged
+counterpart. Imposing a constant Sharpe ratio assumes that variation away.
+A volatility-targeting exercise can therefore report that a better variance
+forecast is worth little to a timing investor while leaving open whether it
+changes the managed-portfolio alpha, which is a statement about asset pricing
+rather than about one investor's allocation. The object being scaled also
+differs: an equity factor rather than a market index, evaluated in a spanning
+regression rather than through a certainty equivalent.
 
 The contribution lies in the cross-section. The volatility-managed literature is
 organized around equity factors, and the machine learning volatility literature
