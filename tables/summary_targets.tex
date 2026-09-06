@@ -1,0 +1,17 @@
+\begin{table}[pt]
+\centering
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.15}
+\caption[The forecasting targets]{\footnotesize \textbf{: The forecasting targets.} Monthly realized variance, defined as the sum of squared daily returns within the month, in basis points. The market row is the value-weighted market portfolio. The factor row pools the 153 long-short factors, whose histories begin at different dates, so the panel is unbalanced and the pooled statistics weight each month by the number of factors available. Per-factor detail is in the Internet Appendix.}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X*{2}{>{\raggedleft\arraybackslash}m{1.5cm}}*{2}{>{\raggedleft\arraybackslash}m{0.9cm}}*{5}{>{\raggedleft\arraybackslash}m{1.1cm}}}
+\hline
+Target & Series & Obs. & From & To & Mean & S.D. & P10 & Median & P90 \\
+\hline
+Market & 1 & 1,188 & 1926 & 2024 & 25.28 & 52.09 & 3.84 & 10.50 & 51.70 \\
+Factors, pooled & 153 & 146,439 & 1926 & 2025 & 7.06 & 21.93 & 0.49 & 1.89 & 13.48 \\
+\hline
+\end{tabularx}
+\label{tab:sumtgt}
+\end{table}

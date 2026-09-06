@@ -1,0 +1,52 @@
+{\footnotesize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\emergencystretch}{3em}
+\begin{longtable}{>{\raggedright\arraybackslash}m{3.3cm}>{\raggedright\arraybackslash}m{6.2cm}>{\raggedright\arraybackslash}m{2.9cm}}
+\caption[Variable definitions and sources]{\footnotesize \textbf{: Variable definitions and sources.} Every predictor constructed for the models, with its definition and the series it is built from. Predictors marked as available from 1927 enter the long sample; the remainder are available only from 1986. Series identifiers refer to the Federal Reserve Economic Data repository.} \label{tab:vardefs} \\
+\hline
+Predictor & Definition & Source \\
+\hline
+\endfirsthead
+\hline
+Predictor & Definition & Source \\
+\hline
+\endhead
+\hline
+\endfoot
+Realized variance, daily & Squared return on the last trading day of the previous month & CRSP; JKP \\
+Realized variance, weekly & Mean daily realized variance over the last five trading days of the previous month & CRSP; JKP \\
+Realized variance, monthly & Mean daily realized variance over the previous month & CRSP; JKP \\
+Realized quarticity, daily & Daily fourth power of returns scaled by three, last trading day & CRSP; JKP \\
+Realized quarticity, weekly & Five-day mean of the daily quarticity measure & CRSP; JKP \\
+Realized quarticity, monthly & Monthly mean of the daily quarticity measure & CRSP; JKP \\
+Jump variation, daily & Realized variance in excess of the truncated local variance, last trading day & CRSP; JKP \\
+Jump variation, weekly & Five-day mean of daily jump variation & CRSP; JKP \\
+Jump variation, monthly & Monthly mean of daily jump variation & CRSP; JKP \\
+Continuous variation, daily & Realized variance net of the jump component, last trading day & CRSP; JKP \\
+Continuous variation, weekly & Five-day mean of daily continuous variation & CRSP; JKP \\
+Continuous variation, monthly & Monthly mean of daily continuous variation & CRSP; JKP \\
+Negative return, daily & Minimum of the last daily return and zero & CRSP; JKP \\
+Negative return, weekly & Minimum of the five-day return and zero & CRSP; JKP \\
+Negative return, monthly & Minimum of the monthly return and zero & CRSP; JKP \\
+Policy uncertainty growth & Log change in the news-based economic policy uncertainty index & Baker, Bloom and Davis (2016) \\
+Producer price volatility & Schwert (1989) out-of-sample volatility of producer price growth & FRED PPIACO \\
+Industrial production volatility & Schwert (1989) out-of-sample volatility of industrial production growth & FRED IPB50001N \\
+Monetary base volatility & Schwert (1989) out-of-sample volatility of monetary base growth & FRED BOGMBASE \\
+Dividend yield & Trailing dividend yield of the S\&P 500 & Multpl \\
+Earnings yield & Trailing earnings yield of the S\&P 500 & Multpl \\
+Default return spread & Aaa corporate yield less the ten-year Treasury yield & FRED AAA10YM \\
+Default yield spread & Baa corporate yield less the ten-year Treasury yield & FRED BAA10YM \\
+Term spread & Ten-year Treasury yield less the federal funds rate & FRED T10YFFM \\
+Treasury bill rate & Three-month Treasury bill secondary market rate & FRED TB3MS \\
+Consumer sentiment growth & Log change in the index of consumer sentiment & University of Michigan \\
+Geopolitical risk & News-based geopolitical risk index & Caldara and Iacoviello (2022) \\
+Crude oil variance, daily & Squared daily return of West Texas Intermediate, last trading day & FRED DCOILWTICO \\
+Crude oil variance, weekly & Five-day mean of daily crude oil realized variance & FRED DCOILWTICO \\
+Crude oil variance, monthly & Monthly mean of daily crude oil realized variance & FRED DCOILWTICO \\
+Implied volatility & Closing level of the volatility index, extended before 1990 with its predecessor & CBOE \\
+Calendar month & Month of the year, entering as twelve indicators & Calendar \\
+Trading days & Square root of the number of trading days in the month & CRSP \\
+\end{longtable}
+}
