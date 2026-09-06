@@ -410,68 +410,239 @@
   )
   writeLines(tbl_ia, file.path(tables_dir, "literature_predictors.tex"))
 
-# Internet Appendix: bibliometric networks---------------------------------
+# Internet Appendix: bibliometric description------------------------------
 
-  ## bibliometrix is heavy and is not part of the modelling dependency set.
-  ## When it is absent the script still writes a valid .tex so the manuscript
-  ## compiles, and reports what could not be produced.
-  network_pngs <- c(
+  ## The standard descriptive apparatus of a bibliometric study: productivity by
+  ## source and by country, the knowledge base measured by local citations, the
+  ## co-citation and co-word networks, the conceptual structure, and the
+  ## historical citation network. bibliometrix is heavy and is not part of the
+  ## modelling dependency set, so when it is absent the script still writes
+  ## valid .tex files and reports what could not be produced.
+  bib_pngs <- c(
+    sources    = file.path(figures_dir, "lit_sources.png"),
+    countries  = file.path(figures_dir, "lit_countries.png"),
+    localcited = file.path(figures_dir, "lit_localcited.png"),
+    conceptual = file.path(figures_dir, "lit_conceptual.png"),
     cocitation = file.path(figures_dir, "lit_cocitation.png"),
-    keywords   = file.path(figures_dir, "lit_keywords.png")
+    keywords   = file.path(figures_dir, "lit_keywords.png"),
+    histnet    = file.path(figures_dir, "lit_histnetwork.png")
   )
 
+  ## Shared look for the bar charts, so the appendix figures match Figure 1.
+  bar_theme <- ggplot2::theme_minimal(base_size = 10, base_family = "Helvetica") +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   panel.grid.major.y = ggplot2::element_blank())
+
+  ## Truncate long labels so the horizontal bars stay readable.
+  clip <- function(x, n = 44) ifelse(nchar(x) > n, paste0(substr(x, 1, n - 1), "."), x)
+
+  bar_plot <- function(labels, values, xlab) {
+    ## Truncation can collapse two long labels onto the same string, and a
+    ## factor cannot carry a duplicated level, so disambiguate before ordering.
+    d <- data.frame(lab = make.unique(clip(labels), sep = " "), val = values)
+    d$lab <- factor(d$lab, levels = rev(d$lab))
+    ggplot2::ggplot(d, ggplot2::aes(x = .data$val, y = .data$lab)) +
+      ggplot2::geom_col(fill = "#1f4e79", width = 0.75) +
+      ggplot2::labs(x = xlab, y = NULL) +
+      bar_theme
+  }
+
+  ## Any single panel can fail on a re-export without taking the rest with it.
+  try_panel <- function(label, expr) {
+    tryCatch(force(expr), error = function(e) {
+      warning("Bibliometric panel '", label, "' failed: ", conditionMessage(e))
+      NULL
+    })
+  }
+
+  ## Most productive sources: a plain count, so no parsing package is needed.
+  src <- sort(table(corpus[["Source title"]]), decreasing = TRUE)[1:15]
+  ggplot2::ggsave(bib_pngs[["sources"]],
+                  bar_plot(names(src), as.integer(src), "Articles"),
+                  width = 7.2, height = 4.4, dpi = 300)
+
   if (requireNamespace("bibliometrix", quietly = TRUE)) {
+    ## Attach rather than call through `::`. Several bibliometrix routines load
+    ## their own reference tables with data(countries), data(stopwords) and
+    ## data(logo), which resolve only when the package is on the search path.
+    suppressPackageStartupMessages(library("bibliometrix"))
+
     M <- bibliometrix::convert2df(scopus_path, dbsource = "scopus", format = "csv")
 
-    grDevices::png(network_pngs[["cocitation"]], width = 2400, height = 1800, res = 300)
-    cocit <- bibliometrix::biblioNetwork(M, analysis = "co-citation",
-                                         network = "references", sep = ";")
-    bibliometrix::networkPlot(cocit, n = 25, Title = "", type = "fruchterman",
-                              size = TRUE, remove.multiple = FALSE,
-                              normalize = "salton", labelsize = 0.7, edgesize = 5)
-    grDevices::dev.off()
+    ## Corresponding-author country.
+    try_panel("countries", {
+      Mc <- bibliometrix::metaTagExtraction(M, Field = "AU1_CO", sep = ";")
+      cty <- sort(table(trimws(Mc$AU1_CO)), decreasing = TRUE)
+      cty <- cty[!is.na(names(cty)) & names(cty) != "NA"][1:15]
+      cty_lab <- tools::toTitleCase(tolower(names(cty)))
+      ## Title case mangles the country codes that are acronyms.
+      cty_lab <- sub("^Usa$", "USA", cty_lab)
+      cty_lab <- sub("^United Kingdom$", "United Kingdom", cty_lab)
+      ggplot2::ggsave(bib_pngs[["countries"]],
+                      bar_plot(cty_lab, as.integer(cty), "Articles"),
+                      width = 7.2, height = 4.4, dpi = 300)
+    })
 
-    grDevices::png(network_pngs[["keywords"]], width = 2400, height = 1800, res = 300)
-    kw <- bibliometrix::biblioNetwork(M, analysis = "co-occurrences",
-                                      network = "keywords", sep = ";")
-    bibliometrix::networkPlot(kw, weighted = TRUE, n = 25, normalize = "salton",
-                              Title = "", type = "fruchterman", size = TRUE,
-                              edgesize = 5, labelsize = 0.7)
-    grDevices::dev.off()
+    ## Knowledge base: references most cited by the reviewed articles. Scopus
+    ## stores the same reference with small string variations, so the raw counts
+    ## split one work across several rows. Collapse on a normalized key built
+    ## from the leading authors and title words before ranking, otherwise the
+    ## figure reports Corsi (2009) twice and understates every entry.
+    try_panel("local citations", {
+      cr  <- as.data.frame(bibliometrix::citations(M, field = "article", sep = ";"))
+      ref <- as.character(cr[[1]])
+      cnt <- as.integer(cr[[2]])
+      key <- substr(gsub("[^A-Z]", "", toupper(ref)), 1, 38)
+
+      agg <- stats::aggregate(list(n = cnt), by = list(key = key), FUN = sum)
+      agg <- agg[order(-agg$n), ][1:15, ]
+      ## Show the shortest surviving variant of each collapsed group.
+      agg$label <- vapply(agg$key, function(k) {
+        v <- ref[key == k]
+        v[which.min(nchar(v))]
+      }, character(1))
+      agg$label <- sub(",\\s*\\(\\d{4}\\).*$", "", agg$label)   # drop year and outlet
+      agg$label <- tools::toTitleCase(tolower(sub("\\.$", "", agg$label)))
+
+      ggplot2::ggsave(bib_pngs[["localcited"]],
+                      bar_plot(agg$label, agg$n,
+                               "Citations from within the review set"),
+                      width = 7.2, height = 4.6, dpi = 300)
+    })
+
+    ## Conceptual structure of the abstracts.
+    try_panel("conceptual structure", {
+      syns <- c("realized volatility;realised volatility;rv",
+                "garch;egarch;arch",
+                "implied volatility;iv;vix",
+                "jump;cojump;signed jump",
+                "machine learning;ml")
+      cs <- bibliometrix::conceptualStructure(
+        M, field = "AB", method = "MCA", ngrams = 2, minDegree = 2,
+        clust = "auto", stemming = TRUE, documents = 100,
+        remove.terms = c("model", "models", "analysis", "approach", "evidence"),
+        synonyms = syns, graph = FALSE)
+      ## conceptualStructure stamps the package logo onto the plot with a
+      ## custom annotation. Strip it: a manuscript figure carries no software
+      ## branding.
+      g <- cs$graph_terms
+      g$layers <- Filter(function(l) !inherits(l$geom, "GeomCustomAnn"), g$layers)
+      ggplot2::ggsave(bib_pngs[["conceptual"]], g,
+                      width = 7.6, height = 5.6, dpi = 300)
+    })
+
+    ## Co-citation and co-word networks.
+    try_panel("co-citation network", {
+      grDevices::png(bib_pngs[["cocitation"]], width = 2400, height = 1800, res = 300)
+      cocit <- bibliometrix::biblioNetwork(M, analysis = "co-citation",
+                                           network = "references", sep = ";")
+      bibliometrix::networkPlot(cocit, n = 25, Title = "", type = "fruchterman",
+                                size = TRUE, remove.multiple = FALSE,
+                                normalize = "salton", labelsize = 0.7, edgesize = 5)
+      grDevices::dev.off()
+    })
+
+    try_panel("keyword network", {
+      grDevices::png(bib_pngs[["keywords"]], width = 2400, height = 1800, res = 300)
+      kw <- bibliometrix::biblioNetwork(M, analysis = "co-occurrences",
+                                        network = "keywords", sep = ";")
+      bibliometrix::networkPlot(kw, weighted = TRUE, n = 25, normalize = "salton",
+                                Title = "", type = "fruchterman", size = TRUE,
+                                edgesize = 5, labelsize = 0.7)
+      grDevices::dev.off()
+    })
+
+    ## Historical direct citation network: how the field developed in time.
+    ## histPlot returns a ggplot object rather than drawing to the open device,
+    ## so it has to be saved explicitly. Writing it to a png device produces an
+    ## almost empty file.
+    try_panel("historical citation network", {
+      hs <- bibliometrix::histNetwork(M, sep = ";", verbose = FALSE)
+      hp <- bibliometrix::histPlot(hs, n = 15, size = 6, labelsize = 3,
+                                   verbose = FALSE)
+      g  <- if (inherits(hp, "ggplot")) hp else hp$g
+      ggplot2::ggsave(bib_pngs[["histnet"]], g, width = 9.5, height = 6.4,
+                      dpi = 300)
+    })
   } else {
-    message("bibliometrix not installed: network figures were not regenerated.")
+    message("bibliometrix not installed: appendix network figures were not regenerated.")
   }
 
-  if (all(file.exists(network_pngs))) {
-    fig_net <- c(
-      "\\begin{figure}[htbp]",
-      "\\centering",
-      "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-      paste0("\\caption[Bibliographic networks of the reviewed literature]{\\footnotesize ",
-             "\\textbf{: Bibliographic networks of the reviewed literature.} Panel (a) is ",
-             "the co-citation network of the 25 most co-cited references, which ",
-             "identifies the knowledge base the reviewed articles draw on. Panel (b) is ",
-             "the keyword co-occurrence network of the 25 most frequent terms. Both use ",
-             "the Fruchterman-Reingold layout with Salton normalization; node size ",
-             "is weighted degree and edge width is tie strength.}"),
-      "\\begin{subfigure}{\\linewidth}\\centering",
-      "\\includegraphics[width=0.86\\linewidth]{figures/lit_cocitation.png}",
-      "\\caption{Co-citation network}",
-      "\\end{subfigure}",
-      "\\begin{subfigure}{\\linewidth}\\centering",
-      "\\includegraphics[width=0.86\\linewidth]{figures/lit_keywords.png}",
-      "\\caption{Keyword co-occurrence network}",
-      "\\end{subfigure}",
-      "\\label{fig:litnetworks}",
-      "\\end{figure}"
-    )
-  } else {
-    fig_net <- c(
-      "%% Network figures not yet generated: install bibliometrix and re-run",
-      "%% R/lit_review_outputs.R."
-    )
+  ## Figure builders. Each writes a valid .tex whether or not its images were
+  ## produced, so the manuscript always compiles.
+  cap_head <- c(
+    "\\begin{figure}[htbp]",
+    "\\centering",
+    "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}")
+
+  panel <- function(file, caption, width = "0.86") c(
+    "\\begin{subfigure}{\\linewidth}\\centering",
+    sprintf("\\includegraphics[width=%s\\linewidth]{figures/%s}", width, file),
+    sprintf("\\caption{%s}", caption),
+    "\\end{subfigure}")
+
+  write_fig <- function(out, keys, caption, label, panels) {
+    if (all(file.exists(bib_pngs[keys]))) {
+      writeLines(c(cap_head, caption, panels, sprintf("\\label{%s}", label),
+                   "\\end{figure}"), file.path(figures_dir, out))
+    } else {
+      writeLines(c(sprintf("%%%% %s not generated: install bibliometrix and re-run", out),
+                   "%% R/lit_review_outputs.R."), file.path(figures_dir, out))
+    }
   }
-  writeLines(fig_net, file.path(figures_dir, "literature_networks_figure.tex"))
+
+  write_fig(
+    "literature_production_figure.tex", c("sources", "countries"),
+    paste0("\\caption[Productivity of the reviewed literature]{\\footnotesize ",
+           "\\textbf{: Productivity of the reviewed literature.} Panel (a) reports the ",
+           "fifteen sources publishing the most articles in the review set. Panel (b) ",
+           "reports the fifteen most frequent corresponding-author countries. Long ",
+           "source names are truncated.}"),
+    "fig:litproduction",
+    c(panel("lit_sources.png", "Most productive sources"),
+      panel("lit_countries.png", "Corresponding-author country")))
+
+  write_fig(
+    "literature_networks_figure.tex", c("cocitation", "keywords"),
+    paste0("\\caption[Bibliographic networks of the reviewed literature]{\\footnotesize ",
+           "\\textbf{: Bibliographic networks of the reviewed literature.} Panel (a) is ",
+           "the co-citation network of the 25 most co-cited references, which ",
+           "identifies the knowledge base the reviewed articles draw on. Panel (b) is ",
+           "the keyword co-occurrence network of the 25 most frequent terms. Both use ",
+           "the Fruchterman-Reingold layout with Salton normalization; node size ",
+           "is weighted degree and edge width is tie strength.}"),
+    "fig:litnetworks",
+    c(panel("lit_cocitation.png", "Co-citation network"),
+      panel("lit_keywords.png", "Keyword co-occurrence network")))
+
+  write_fig(
+    "literature_structure_figure.tex", c("localcited", "conceptual"),
+    paste0("\\caption[Intellectual and conceptual structure of the reviewed literature]",
+           "{\\footnotesize \\textbf{: Intellectual and conceptual structure of the ",
+           "reviewed literature.} Panel (a) reports the fifteen references most often ",
+           "cited by the articles in the review set, which is the measure used in ",
+           "Table~\\ref{tab:litfamilies}. The bibliographic database records the same ",
+           "reference with small variations in spelling, so entries are merged on a ",
+           "normalized key before counting; residual duplication across very similar ",
+           "titles by the same authors cannot be ruled out. Panel (b) is the ",
+           "conceptual structure map ",
+           "obtained by multiple correspondence analysis of the abstracts, with terms ",
+           "stemmed and grouped into two-word phrases and clusters assigned by ",
+           "$k$-means.}"),
+    "fig:litstructure",
+    c(panel("lit_localcited.png", "Most locally cited references"),
+      panel("lit_conceptual.png", "Conceptual structure map", "0.95")))
+
+  write_fig(
+    "literature_histnetwork_figure.tex", "histnet",
+    paste0("\\caption[Historical direct citation network]{\\footnotesize ",
+           "\\textbf{: Historical direct citation network.} Chronological map of the ",
+           "direct citations among the fifteen most locally cited articles in the ",
+           "review set. Arrows run from the citing article to the cited one, so the ",
+           "figure traces how the field developed in time.}"),
+    "fig:lithistnet",
+    ## Single panel, so no subfigure wrapper and no stray "(a)" label.
+    "\\includegraphics[width=0.98\\linewidth]{figures/lit_histnetwork.png}")
 
 # Mirror the figures into the LaTeX tree-----------------------------------
 

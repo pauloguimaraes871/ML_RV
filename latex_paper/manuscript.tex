@@ -203,10 +203,8 @@ simple ensemble of the two model classes performs well across market conditions.
 nonlinear machine learning models on ten global equity indices from 2000 to
 2021, using lagged realized volatility together with returns, implied
 volatility, macroeconomic and sentiment predictors. They find that the
-additional predictors improve daily and weekly forecasts, that nonlinear models
-do not statistically outperform linear models in general, and that for the
-economic value an investor derives from monthly forecasts in volatility-timing
-portfolios, simpler models without additional predictors work better. Taken with
+additional predictors improve daily and weekly forecasts, and that nonlinear models
+do not statistically outperform linear models in general. Taken with
 the sample-composition argument of \citet{rahimikiapoon2026}, the reasonable
 reading is that relative performance in this literature depends on the asset
 universe, the forecast horizon, the frequency of extreme volatility days in the
@@ -215,8 +213,12 @@ classes has been established across those dimensions.
 
 That dependence is what motivates the systematic review reported here. Rather
 than assemble a predictor set from the studies closest to our own priors, we
-identified candidate predictors through a reproducible protocol. Following the
-PRISMA guidelines, we queried Scopus for documents whose title, abstract or
+identified candidate predictors through a reproducible protocol, and we then
+described the resulting corpus using bibliometric analysis, the quantitative
+study of a body of publications and of the citation and co-word structures that
+connect it, which makes the composition of a literature an object of measurement
+rather than of impression \citep{donthu2021}. Following the PRISMA guidelines
+\citep{page2021}, we queried Scopus for documents whose title, abstract or
 keywords combine forecasting terms, realized variance or volatility terms,
 equity terms, and an aggregate market identifier, without geographic
 restriction. Following \citet{harveyliuzhu2016} in the concern that publication
@@ -227,10 +229,11 @@ indicator, retaining Computer Science so that machine learning contributions
 would not be excluded by construction. The resulting corpus contains 271
 articles published between 1998 and 2025. Figure~\ref{fig:litgrowth} shows the
 growth of that literature and the rising share of machine learning contributions
-within it. The complete query, the descriptive statistics, the historical direct
-citation network, the co-citation and keyword co-occurrence networks, and the
+within it. The complete query, the descriptive statistics, the most productive
+sources and countries, the most locally cited references, the co-citation and
+keyword co-occurrence networks, and the conceptual structure obtained by
 multiple correspondence analysis of abstracts are reported in the Internet
-Appendix.
+Appendix, computed with the software of \citet{ariacuccurullo2017}.
 
 Reading the reviewed articles together with the foundational work they cite
 yields 83 distinct predictors of realized variance, which group into 33
@@ -242,19 +245,16 @@ without themselves being retrieved by the query, on the same scale as work
 inside the review set. Table~\ref{tab:litpredictors} in the Internet Appendix
 lists the individual predictors.
 
-Availability across the families is very uneven. Predictors constructed from
-limit order books, social media message volume, search engine indices or news
-sentiment exist only for the most recent two decades, and option-implied
-measures only from the mid-1980s. Predictors built from returns, from interest
-rates and credit spreads, and from the national accounts extend much further
-back. Fifteen of the 33 families enter the models estimated here, and every one
-of them was identified by the review rather than added to it. This is the
-operational contribution of the review: the predictor set is determined by an
-auditable rule applied to a defined body of work.
+ Fifteen of the 33 families enter the models estimated here, and every one of them was identified by the review. This is the operational contribution of the review: the predictor set is determined by an auditable rule applied to a defined body of work.
 
-\subsection{Volatility Management}
+ Besides identification in the systematic review, our final selection considered the variables with longer availability, which is very uneven across families. Predictors constructed from limit order books, social media message volume, search engine indices or news sentiment exist only for the most recent two decades, and option-implied measures only from the mid-1980s. Predictors built from returns, from interest
+rates and credit spreads, and from the national accounts extend much further back. Additionally, predictors that are high-frequency in nature have also not be considered, since we have a monthly setting.
 
-Accurate volatility forecasts have direct economic value for portfolio construction because they improve risk allocation across assets and over time. Better forecasts can reduce unintended risk concentration, support more effective volatility targeting and timing, and ultimately improve risk-adjusted performance. \citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the realized variance of its returns in the previous month, and report that the
+\subsection{Portfolio Applications}
+
+Accurate volatility forecasts have direct economic value for portfolio construction because they improve risk allocation across assets and over time. Better forecasts can reduce unintended risk concentration, support more effective volatility targeting and timing, and ultimately improve risk-adjusted performance.
+
+ \citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the realized variance of its returns in the previous month, and report that the
 managed versions of the market, value, momentum, profitability and investment
 factors earn positive alphas against their unmanaged counterparts.
 \citet{barrososantaclara2015} apply a related scaling to momentum and
@@ -281,64 +281,85 @@ establishing that this benchmark can be improved upon, and the criticism of
 must be formed from information available in real time, which is a statement
 about forecast quality under a real-time constraint.
 
-Three recent studies have connected the two literatures at the level of the
+\citet{moreiramuir2017} anticipate the point in an appendix. Replacing the
+lagged realized variance with the fitted value of a regression on three lags of
+log realized variance raises both the significance of the alphas and the
+appraisal ratios, and they retain the simpler measure because it requires no
+first-stage estimation and is implementable without assuming that the
+forecasting relation was available in real time. That caveat is the opening. The
+exercise reported here is the out-of-sample counterpart: forecasts formed only
+from information available at the formation date, drawn from a predictor set
+selected by the review rather than from three lags of the dependent variable,
+and applied to a cross-section of factors rather than to a handful.
+
+Three recent studies have connected the ML RV forecasting literature to volatility-timing portfolio construction at the level of the
 aggregate market. \citet{brancorubesamzevallos2024} forecast the realized
 volatility of ten global indices with linear and nonlinear machine learning
 models and evaluate the monthly forecasts through the realized utility of
 volatility-timing strategies, reporting that heterogeneous autoregressive
 specifications without additional predictors are among the best performers and
 that the best models recover between 3.30 and 3.72 per cent of the 4 per cent
-utility available under perfect foresight. \citet{diazhansencabrera2024} reach a more favourable assessment
-of the economic value of machine learning volatility forecasts for the United
-States market, and \citet{chunchoryu2025} report that volatility-timing
-portfolios built from machine learning forecasts of S\&P 500 realized volatility
-outperform the market portfolio, with penalized linear regression the strongest
-model. Whether machine learning improves a volatility-timed position in the
-aggregate market is therefore an open but actively contested question, and this
-paper treats the market series as a replication exercise against these results
-rather than as its contribution.
+utility available under perfect foresight. \citet{diazhansencabrera2024} apply
+regularized regressions, tree ensembles and neural networks to United States
+market volatility at horizons of one, six and twelve months and evaluate them
+with the same realized utility measure, reporting that the machine learning
+methods beat the heterogeneous autoregressive benchmark at the shortest horizon
+but not at the longer ones. \citet{chunchoryu2025} allocate between the S\&P 500
+and the three-month Treasury bill using daily, weekly and monthly forecasts, and
+report that portfolios timed with penalized linear forecasts attain Sharpe
+ratios between 24 and 42 per cent above the static market portfolio. Whether
+machine learning improves a volatility-timed position in the aggregate market is
+therefore an open but actively contested question.
 
 These studies share a construction that has to be distinguished from the one
-used here, because the difference is not one of degree. Each follows the
-volatility-targeting framework of \citet{bollerslevhoodhusspedersen2018}: the
-investor holds one risky index and the risk-free asset, the weight is set to
-$w_t = \overline{SR} / \hat{\sigma}_{t+1}$, and performance is the realized
-utility of a mean-variance investor. Two features of that design matter here.
-The position scales with the inverse of predicted volatility rather than
-predicted variance, and the conditional Sharpe ratio $\overline{SR}$ is held
-constant by assumption.
+used here, because the difference is not one of degree. In all three the
+investor holds a single risky index together with the risk-free asset, and the
+position is scaled by the inverse of predicted \emph{volatility}.
+\citet{brancorubesamzevallos2024} and \citet{diazhansencabrera2024} adopt the
+realized utility measure of \citet{bollerslevhoodhusspedersen2018} directly,
+setting $w_t = \sigma^{*} / \hat{\sigma}_{t+1}$ with an annualized target
+$\sigma^{*}$ of 20 per cent, a relative risk aversion of two and a conditional
+Sharpe ratio fixed at 0.40. \citet{chunchoryu2025} use a target-volatility rule
+of the same form alongside the mean-variance rule of
+\citet{bollerslevhoodhusspedersen2018}. Performance is measured throughout by
+the Sharpe ratio, the certainty equivalent, or the realized utility of a
+mean-variance investor. \citet{chunchoryu2025} cite \citet{moreiramuir2017} and
+\citet{cederburg2020} when motivating the exercise, but the portfolios they form
+are index-level timing rules rather than managed factor portfolios.
 
-The second feature forecloses the question \citet{moreiramuir2017} ask. Their
-result rests on the observation that expected returns do not rise in proportion
-to variance, so that the conditional Sharpe ratio varies and a position scaled
-by the inverse of predicted variance earns an alpha against its unmanaged
-counterpart. Imposing a constant Sharpe ratio assumes that variation away.
+Holding the conditional Sharpe ratio constant forecloses the question
+\citet{moreiramuir2017} ask. Their finding is that volatility timing raises
+Sharpe ratios precisely because changes in factor volatilities are not offset by
+proportional changes in expected returns, so that the conditional Sharpe ratio
+varies and a position scaled by the inverse of predicted variance earns an alpha
+against its unmanaged counterpart. That variation is an empirical result in
+their setting, not an assumption; imposing a constant Sharpe ratio assumes it
+away.
 A volatility-targeting exercise can therefore report that a better variance
 forecast is worth little to a timing investor while leaving open whether it
 changes the managed-portfolio alpha, which is a statement about asset pricing
-rather than about one investor's allocation. The object being scaled also
-differs: an equity factor rather than a market index, evaluated in a spanning
-regression rather than through a certainty equivalent.
+rather than about one investor's allocation. Therefore, we differentiate from the above studies in terms of the volatility-timing framework.
 
-The contribution lies in the cross-section. The volatility-managed literature is
+Besides the portfolio exercise, our contribution also lies in the cross-section. The volatility-managed literature is
 organized around equity factors, and the machine learning volatility literature
-is organized around indices and individual tickers; no study we are aware of
+is organized around indices and individual tickers. For instance, \citet{rahimikiapoon2026}, which is one of the most comprehensive ML applications to RV forecast, use a sample of NASDAQ tickers from 2007 to 2022, while we focus on factor-level over a long macroeconomic history, judged by realized portfolio
+outcomes rather than by loss functions alone.
+
+No study we are aware of
 forecasts factor-level realized variance with machine learning and uses those
 forecasts to manage the corresponding factor portfolios. This paper does so for
 a broad cross-section of factors alongside the market, which allows three
 questions that a single index cannot address. First, whether the gains from a
 better variance forecast are concentrated in the factors whose managed versions
 \citet{cederburg2020} and \citet{schwarz2025} find fragile. Second, whether
-pooling factors into one panel improves the forecast for any individual factor
-relative to estimating it in isolation. Third, whether the improvement survives
+pooling the cross-section into a single panel improves the forecast for the
+market itself, relative to estimating the market series on its own, which is the
+comparison our design identifies. Third, whether the improvement survives
 aggregation into the conditional multifactor portfolio of
 \citet{demiguelmartinutrerauppal2024}, whose construction has so far been
 implemented with the conventional lagged-variance conditioning variable.
-Relative to \citet{rahimikiapoon2026}, whose predictor set and evaluation are
-the most comprehensive in this literature, the differences are the object of
-prediction, the horizon, and the criterion: factor-level and aggregate monthly
-variance over a long macroeconomic history, judged by realized portfolio
-outcomes rather than by loss functions alone.
+
+
 
 %% =====================================================================
 \section{Methods and Data}
@@ -414,7 +435,13 @@ for the content of the published article.
 
 \subsection{Additional Figures}
 
+\input{../figures/literature_production_figure.tex}
+
+\input{../figures/literature_structure_figure.tex}
+
 \input{../figures/literature_networks_figure.tex}
+
+\input{../figures/literature_histnetwork_figure.tex}
 
 \end{appendices}
 
