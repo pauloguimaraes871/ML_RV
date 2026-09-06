@@ -74,6 +74,8 @@ realized variance \sep volatility forecasting \sep machine learning \sep volatil
 \section{Related Literature}
 \label{sec:literature}
 
+\subsection{Volatility Forecasting}
+
 Aggregate stock market volatility moves far more than the macroeconomic
 quantities that plausibly drive it. \citet{schwert1989} established this in the
 form that still organizes the literature. Modelling monthly returns as an
@@ -248,17 +250,15 @@ rates and credit spreads, and from the national accounts extend much further
 back. Fifteen of the 33 families enter the models estimated here, and every one
 of them was identified by the review rather than added to it. This is the
 operational contribution of the review: the predictor set is determined by an
-auditable rule applied to a defined body of work, together with an availability
-constraint that is stated rather than left implicit.
+auditable rule applied to a defined body of work.
 
-The final strand concerns what a volatility forecast is worth.
-\citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the
-realized variance of its returns in the previous month, and report that the
+\subsection{Volatility Management}
+
+Accurate volatility forecasts have direct economic value for portfolio construction because they improve risk allocation across assets and over time. Better forecasts can reduce unintended risk concentration, support more effective volatility targeting and timing, and ultimately improve risk-adjusted performance. \citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the realized variance of its returns in the previous month, and report that the
 managed versions of the market, value, momentum, profitability and investment
 factors earn positive alphas against their unmanaged counterparts.
 \citet{barrososantaclara2015} apply a related scaling to momentum and
-substantially reduce its crash risk. The subsequent literature has been
-critical. \citet{cederburg2020} examine 103 equity strategies and show that,
+substantially reduce its crash risk.  \citet{cederburg2020} examine 103 equity strategies and show that,
 although volatility-managed portfolios display positive alphas in spanning
 regressions, the strategies those regressions imply are not implementable in
 real time, and reasonable out-of-sample versions generally earn lower certainty
@@ -271,7 +271,7 @@ multifactor setting, showing that a conditional multifactor portfolio survives
 out of sample and net of costs, and that factor risk prices generally fall as
 market volatility rises.
 
-What this literature has held almost entirely fixed is the forecast itself. In
+This literature has held the forecast itself almost entirely fixed. In
 the volatility-managed construction the conditioning variable is the realized
 variance of the preceding month, which is a one-parameter forecast of next
 month's variance and, in the terms of the forecasting literature, a random walk
@@ -295,6 +295,18 @@ model. Whether machine learning improves a volatility-timed position in the
 aggregate market is therefore an open but actively contested question, and this
 paper treats the market series as a replication exercise against these results
 rather than as its contribution.
+
+These three studies share a construction that should be distinguished from the
+one used here. Each allocates between a single risky index and the risk-free
+asset in proportion to a forecast of variance, and each evaluates the result
+through the utility of a mean-variance investor, in the tradition of the
+volatility-timing literature. The managed portfolios of \citet{moreiramuir2017}
+are a different object: the scaled series is an equity factor rather than an
+index, and the evidence is an alpha in a spanning regression of the managed
+factor on its unmanaged counterpart, which is what makes the construction a
+statement about asset pricing rather than about one investor's allocation. The
+questions this paper asks about the cross-section do not arise in the timing
+framework.
 
 The contribution lies in the cross-section. The volatility-managed literature is
 organized around equity factors, and the machine learning volatility literature
