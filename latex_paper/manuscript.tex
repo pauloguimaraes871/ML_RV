@@ -76,270 +76,85 @@ realized variance \sep volatility forecasting \sep machine learning \sep volatil
 
 \subsection{Volatility Forecasting}
 
-Aggregate stock market volatility moves far more than the macroeconomic
-quantities that plausibly drive it. \citet{schwert1989} established this in the
-form that still organizes the literature. Modelling monthly returns as an
-autoregression and treating the absolute residuals as a volatility proxy, he
-related that proxy to interest rate volatility, the corporate yield spread,
-growth in the monetary base, producer price and industrial production growth,
-bond market volatility, aggregate leverage, the number of trading days, trading
-volume, and month dummies. The macroeconomic variables carried detectable but
-small explanatory power, and volatility remained high relative to what the
-fundamentals implied. Two features of that design have persisted. Volatility is
-predicted from a mixed set of financial and macroeconomic conditioning
-variables, and the resulting forecast is judged against a univariate benchmark
-built from the volatility series itself.
+Aggregate stock market volatility moves far more than the macroeconomic quantities that plausibly drive it. \citet{schwert1989} established this in a seminal paper that still impacts the literature. Modelling monthly returns as an
+autoregression and treating the absolute residuals as a volatility proxy, he related that proxy to interest rate volatility, the corporate yield spread, growth in the monetary base, producer price and industrial production growth, bond market volatility, aggregate leverage, the number of trading days, trading volume, and month dummies. The macroeconomic variables carried detectable but small explanatory power, and volatility remained high relative to what the fundamentals implied. Two features of his design have persisted: volatility is still predicted from a mixed set of financial and macroeconomic conditioning variables, and the resulting forecast is judged against a univariate benchmark built from the volatility series itself.
 
-Both features reappear in \citet{paye2012}, who asks directly whether
-conditioning on macroeconomic variables improves monthly and quarterly forecasts
-of aggregate volatility. His predictor set extends the Schwert specification
-along the dimensions the intervening literature had proposed, and includes the
-consumption-wealth ratio of \citet{lettauludvigson2001} alongside credit
-spreads, the term structure and measures of real activity. Several variables
-related to macroeconomic uncertainty, time-varying expected returns and credit
-conditions Granger cause volatility, but forecasts exploiting them rarely
-outperform a univariate benchmark out of sample. The specifications that do help
-are simple combinations of individual forecasts, and their advantage
-concentrates around the onset of recessions.
-\citet{nonejad2017} reaches a similar position from a Bayesian direction. Using
-monthly S\&P 500 volatility from 1926 to 2010 and averaging over
-autoregressions with constant and with time-varying coefficients, augmented with
-risk premium, leverage, bond rate and credit risk predictors, he reports
-competitive density forecasts and modest gains in point forecasts. Across three
-decades the conclusion has been stable. Macroeconomic information is visible in
-sample and fragile out of sample, and the fragility is usually attributed to
-parameter instability rather than to the absence of a relation.
+In fact, both features reappear in \citet{paye2012}, who asks directly whether conditioning on macroeconomic variables improves monthly and quarterly forecasts of aggregate volatility. His predictor set extends the Schwert specification
+along the dimensions the intervening literature had proposed, and includes the consumption-wealth ratio of \citet{lettauludvigson2001} alongside credit spreads, the term structure and measures of real activity. Several variables
+related to macroeconomic uncertainty, time-varying expected returns and credit conditions Granger cause volatility, but forecasts exploiting them rarely outperform a univariate benchmark out-of-sample. The specifications that do help
+are simple combinations of individual forecasts, and their advantage concentrates around the onset of recessions.
+\citet{nonejad2017} reaches a similar position from a Bayesian direction. Using monthly S\&P 500 volatility from 1926 to 2010 and averaging over autoregressions with constant and with time-varying coefficients, augmented with risk premium, leverage, bond rate and credit risk predictors, he reports
+competitive density forecasts and modest gains in point forecasts. Across three decades the conclusion has been stable. Macroeconomic information is visible in
+sample and fragile out of sample, and the fragility is usually attributed to parameter instability rather than to the absence of a relation.
 
-The measurement side of the problem developed separately and more decisively.
-\citet{andersenbollerslev1998} showed that squared intraday returns aggregate
-into a volatility measure accurate enough to overturn the view that standard
-conditional volatility models forecast poorly. This shifted the object of study
-from a latent variance, modelled by the conditional heteroskedasticity family
-that follows \citet{bollerslev1986}, to an observable realized variance that can
-be treated as a dependent variable in an ordinary regression.
+The measurement side of the problem developed separately and more decisively. \citet{andersenbollerslev1998} showed that squared intraday returns aggregate into a volatility measure accurate enough to overturn the view that standard conditional volatility models forecast poorly. This shifted the object of study from a latent variance, modelled by the conditional heteroskedasticity family that follows \citet{bollerslev1986}, to an observable realized variance (RV) that can be treated as a dependent variable in an ordinary regression.
 
- \citet{corsi2009}
-proposed the heterogeneous autoregressive model, in which daily, weekly and
-monthly averages of past realized variance enter a single linear regression, and
-that specification became a benchmark model for predicting realized variance.
-The extensions address specific features of the data.
-\citet{andersenbollerslevdiebold2007} separate the continuous and jump
-components of realized variance. \citet{bollerslevpattonquaedvlieg2016} correct
-the attenuation induced by measurement error by interacting lagged realized
-variance with realized quarticity. \citet{corsireno2012} model the leverage
-effect with its own heterogeneous structure, and \citet{mcaleermedeiros2008}
-allow multiple regimes and add dummies for scheduled macroeconomic
-announcements. \citet{hansenlunde2005} address the treatment of the overnight
+In this context, \citet{corsi2009} proposed the heterogeneous autoregressive model (HAR), in which daily, weekly and monthly averages of past RV enter a single linear regression, exploiting the variance clustering stylized fact.
+That specification became a benchmark model for predicting realized variance and some extensions were developed to address other empirical features of the data.
+\citet{andersenbollerslevdiebold2007} separate the continuous and jump components of RV. \citet{bollerslevpattonquaedvlieg2016} correct the attenuation induced by measurement error by interacting lagged realized variance with realized quarticity. \citet{corsireno2012} model the leverage effect with its own heterogeneous structure, and \citet{mcaleermedeiros2008} allow multiple regimes and add dummies for scheduled macroeconomic announcements. \citet{hansenlunde2005} address the treatment of the overnight
 period.
 
-Evaluation conventions tightened in parallel: \citet{patton2011} shows
-which loss functions remain robust when the volatility proxy is noisy, and
-\citet{hansenlundenason2011} provide the model confidence set for comparing many
-candidate models at once.
+Evaluation conventions tightened in parallel: \citet{patton2011} shows which loss functions remain robust when the volatility proxy is noisy, and \citet{hansenlundenason2011} provide the model confidence set for comparing many candidate models at once.
 
-Option-implied volatility entered the predictor set early and remains a
-strong addition. \citet{christensenprabhala1998} found that implied volatility from S\&P 100
-options dominates past volatility in forecasting future volatility.
-\citet{blairpoontaylor2001} argued that the VIX index rather than individual
-option quotes should carry this information, since the index attenuates
-measurement error and smile effects, and reported more accurate out-of-sample
-forecasts at every horizon they consider. \citet{bekaerthoerova2014} decompose
-the squared VIX into a conditional variance component and a variance premium
-component, and show that the two carry different information about future
-volatility and about economic uncertainty. The practical cost of these
-predictors is their short history, since the VIX methodology and its back-history do
-not extend to the pre-war period, so any specification built on implied
-volatility restricts the estimation sample by several decades.
+Option-implied volatility entered the predictor set early and remains a strong addition. \citet{christensenprabhala1998} found that implied volatility from S\&P 100 options dominates past volatility in forecasting future volatility.
+\citet{blairpoontaylor2001} argued that the VIX index rather than individual option quotes should carry this information, since the index attenuates measurement error and smile effects, and reported more accurate out-of-sample forecasts at every horizon they consider. \citet{bekaerthoerova2014} decompose the squared VIX into a conditional variance component and a variance premium component, and show that the two carry different information about future volatility and about economic uncertainty. The practical cost of these
+predictors is their short history, since the VIX methodology and its back-history do not extend to the pre-war period, so any specification built on implied volatility restricts the estimation sample by several decades.
 
-A fourth group of predictors is more recent and more heterogeneous.
-\citet{liuzhang2015} add the economic policy uncertainty index to a
-heterogeneous autoregressive specification and report improved out-of-sample
-accuracy. \citet{dimpfljank2016} document comovement and Granger causality
-between internet search queries and subsequent realized volatility of the Dow
-Jones index. \citet{audrinosigristballinari2020} assemble social media, news,
-information consumption and search engine data, and identify Google search
-volume on financial keywords and the daily volume of company-specific messages
-posted on StockTwits as the most relevant variables in a penalized regression.
-Their assessment of the size of the gain deserves emphasis, because it is
-unusual in this literature: the improvements are statistically significant but
-relatively small from an economic point of view. Cross-market channels form a
-further group. \citet{zhangmaliao2020} extract global factors from a large panel
-of national market volatilities, and \citet{liangweizhang2020} evaluate whether
-a market's own implied volatility or an international aggregate is more
-informative. A related line replaces individual macroeconomic series with
-factors extracted from large panels, using the diffusion indices of
-\citet{ludvigsonng2009} or the uncertainty measures of
-\citet{juradoludvigsonng2015}, on the argument that a small number of common
-components carries the conditioning information without the degrees-of-freedom
-cost of the full panel.
+A fourth group of predictors is more recent and more heterogeneous. \citet{liuzhang2015} add the economic policy uncertainty index to a heterogeneous autoregressive specification and report improved out-of-sample accuracy. \citet{dimpfljank2016} document comovement and Granger causality between internet search queries and subsequent realized volatility of the Dow Jones index. \citet{audrinosigristballinari2020} assemble social media, news, information consumption and search engine data, and identify Google search volume on financial keywords and the daily volume of company-specific messages posted on StockTwits as the most relevant variables in a penalized regression.
+Their assessment of the size of the gain deserves emphasis, because it is unusual in this literature: the improvements are statistically significant but relatively small from an economic point of view.
 
-Machine learning arrived in this literature with the same motivation that
-supports its use in the cross-section of returns \citep{gukellyxiu2020}. The
-predictor set is high-dimensional, the leverage effect and the quarticity
-correction are explicit nonlinearities, and hyperparameter selection on
-validation data offers a way to trade bias against variance.
-\citet{bucci2020} compares feedforward and recurrent architectures with
-econometric benchmarks for monthly realized volatility and finds that recurrent
-networks, in particular long short-term memory and nonlinear autoregressive
-networks with exogenous inputs, outperform the traditional methods, with the
-advantage widening in the most volatile part of his sample.
-\citet{christensensiggaardveliyev2023} evaluate regularization, regression trees
-and neural networks on the realized variance of Dow Jones constituents.
-\citet{carrwuzhang2020} treat variance prediction as the objective when choosing
-option weights, testing ridge regression, feedforward networks and random
-forests on S\&P 500 index options, and report that a machine learning weighting
+Cross-market channels form a further group. \citet{zhangmaliao2020} extract global factors from a large panel of national market volatilities, and \citet{liangweizhang2020} evaluate whether a market's own implied volatility or an international aggregate is more
+informative. A related line replaces individual macroeconomic series with factors extracted from large panels, using the diffusion indices of \citet{ludvigsonng2009} or the uncertainty measures of \citet{juradoludvigsonng2015}, on the argument that a small number of common components carries the conditioning information without the degrees-of-freedom cost of the full panel.
+
+Machine learning arrived in this literature with the same motivation that supports its use in the cross-section of returns \citep{gukellyxiu2020}. The predictor set is high-dimensional, the leverage effect and the quarticity
+correction are explicit nonlinearities, and hyperparameter selection on validation data offers a way to trade bias against variance.
+\citet{bucci2020} compares feedforward and recurrent architectures with econometric benchmarks for monthly realized volatility and finds that recurrent networks, in particular long short-term memory and nonlinear autoregressive networks with exogenous inputs, outperform the traditional methods, with the advantage widening in the most volatile part of his sample. \citet{christensensiggaardveliyev2023} evaluate regularization, regression trees and neural networks on the realized variance of Dow Jones constituents.
+\citet{carrwuzhang2020} treat variance prediction as the objective when choosing option weights, testing ridge regression, feedforward networks and random forests on S\&P 500 index options, and report that a machine learning weighting
 achieves higher predictability of future return variance using fewer options.
-\citet{ribeiro2021} combine an echo state network with heterogeneous
-autoregressive inputs and particle swarm optimization, and \citet{souto2023}
-constructs predictors from persistent homology of related equity baskets.
+\citet{ribeiro2021} combine an echo state network with heterogeneous autoregressive inputs and particle swarm optimization, and \citet{souto2023} constructs predictors from persistent homology of related equity baskets.
 
-The most comprehensive treatment is \citet{rahimikiapoon2026}, who forecast the
-realized volatility of 23 NASDAQ tickers between 2007 and 2022 using 147
-predictors drawn from the heterogeneous autoregressive family, limit order book
-data and news sentiment. Their machine learning models outperform the
-heterogeneous autoregressive family over 90 per cent of the out-of-sample
-period, and the exception is informative: on days when realized volatility is
-extreme, the parsimonious specifications generally win. They also report that a
+The most comprehensive treatment is \citet{rahimikiapoon2026}, who forecast the realized volatility of 23 NASDAQ tickers between 2007 and 2022 using 147 predictors drawn from the heterogeneous autoregressive family, limit order book data and news sentiment. Their machine learning models outperform the
+heterogeneous autoregressive family over 90 per cent of the out-of-sample period, and the exception is informative: on days when realized volatility is extreme, the parsimonious specifications generally win. They also report that a
 simple ensemble of the two model classes performs well across market conditions.
- \citet{brancorubesamzevallos2024} evaluate linear and
-nonlinear machine learning models on ten global equity indices from 2000 to
-2021, using lagged realized volatility together with returns, implied
-volatility, macroeconomic and sentiment predictors. They find that the
-additional predictors improve daily and weekly forecasts, and that nonlinear models do not statistically outperform linear models in general. Taken with
-the sample-composition argument of \citet{rahimikiapoon2026}, the reasonable
-reading is that relative performance in this literature depends on the asset
-universe, feature set, the forecast horizon, the frequency of extreme volatility days in the evaluation window, and the evaluation criterion.
+ \citet{brancorubesamzevallos2024} evaluate linear and nonlinear machine learning models on ten global equity indices from 2000 to 2021, using lagged realized volatility together with returns, implied volatility, macroeconomic and sentiment predictors. They find that the additional predictors improve daily and weekly forecasts, and that nonlinear models do not statistically outperform linear models in general. Taken with the sample-composition argument of \citet{rahimikiapoon2026}, the reasonable
+reading is that relative performance in this literature depends on the asset universe, the feature set, the forecast horizon, the frequency of extreme volatility days in the evaluation window, and the evaluation criterion.
 
-That dependence is what motivates the systematic review reported here. Rather
-than assemble a predictor set from the studies closest to our own priors, we
-identified candidate predictors through a reproducible protocol, and we then
-described the resulting corpus using bibliometric analysis, the quantitative
-study of a body of publications and of the citation and co-word structures that
-connect it, which makes the composition of a literature an object of measurement
-rather than of impression \citep{donthu2021}. Following the PRISMA guidelines
-\citep{page2021}, we queried Scopus for documents whose title, abstract or
-keywords combine forecasting terms, realized variance or volatility terms,
-equity terms, and an aggregate market identifier, without geographic
-restriction. Following \citet{harveyliuzhu2016} in the concern that publication
-incentives shape which results are available to a reviewer, we restricted the
-corpus to journals ranked in Economics, Econometrics and Finance, Business,
-Management and Accounting, and Computer Science by the 2024 SCImago Journal Rank
-indicator, retaining Computer Science so that machine learning contributions
-would not be excluded by construction. The resulting corpus contains 271
-articles published between 1998 and 2025. Figure~\ref{fig:litgrowth} shows the
-growth of that literature and the rising share of machine learning contributions
-within it. The complete query, the descriptive statistics, the most productive
-sources and countries, the most locally cited references, the co-citation and
-keyword co-occurrence networks, and the conceptual structure obtained by
-multiple correspondence analysis of abstracts are reported in the Internet
-Appendix, computed with the software of \citet{ariacuccurullo2017}.
+Such dependence of results on parameters makes it so that an auditable, transparent and reprodutible design is fundamental. The literature review can also be seen as part of the study design, since, in practice, it sets a context for the researcher in terms of features to use, methods to apply and parameters to tweak. Therefore, we conducted a systematic review in order to form a comprehensive corpus of knowledge regarding the problem of RV forecasting, which informed us on feature set constrution\footnote{Not to be confused with feature selection procedures applied by ML models via regularization hyperparameters. In our case, the systematic review establishes, transparently, what the corpus of knowledge uses as predictors, forcing us to be transparent regarding the features we collected beforing fitting any model.} and model training and validation.
 
-Reading the reviewed articles together with the foundational work they cite
-yields 83 distinct predictors of realized variance, which group into 33
-families. Table~\ref{tab:litfamilies} reports those families, the study taken as
-the representative source for each, and how many of the reviewed articles cite
-that source. Measuring the connection to the review this way places
-\citet{corsi2009} and \citet{schwert1989}, which the reviewed articles build on
-without themselves being retrieved by the query, on the same scale as work
-inside the review set. Table~\ref{tab:litpredictors} in the Internet Appendix
-lists the individual predictors.
+Following the PRISMA guidelines \citep{page2021}, we queried Scopus for documents whose title, abstract or keywords combine forecasting terms, realized variance or volatility terms, equity terms, and an aggregate market identifier, without geographic restriction. Following \citet{harveyliuzhu2016}, we restricted the corpus to journals ranked in Economics, Econometrics and Finance, Business, Management and Accounting, and Computer Science by the 2024 SCImago Journal Rank indicator, retaining Computer Science so that machine learning contributions would not be excluded by construction. The resulting corpus contains 271 articles published between 1998 and 2025.  
 
- Fifteen of the 33 families enter the models estimated here, and every one of them was identified by the review. This is the operational contribution of the review: the predictor set is determined by an auditable rule applied to a defined body of work.
+We describe this corpus using bibliometric analysis\footnote{The quantitative study of a body of publications and of the citation and co-word structures that connect it, which makes the composition of a literature an object of measurement rather than of impression \citep{donthu2021}}. Figure~\ref{fig:litgrowth} shows the growth of that literature and the rising share of machine learning contributions within it, which reinforces the timeliness of this study. In fact, machine-learning studies are 12.9\% of the reviewed literature overall and 20.0\% of the articles published from 2020 onwards.
 
- Besides identification in the systematic review, our final selection considered the variables with longer availability, which is very uneven across families. Predictors constructed from limit order books, social media message volume, search engine indices or news sentiment exist only for the most recent two decades, and option-implied measures only from the mid-1980s. Predictors built from returns, from interest rates and credit spreads, and from the national accounts extend much further back. Additionally, predictors that are high-frequency in nature have also not be considered, since we have a monthly setting.
+ The complete query, the descriptive statistics, the most productive sources and countries, the most locally cited references, the co-citation and keyword co-occurrence networks, and the conceptual structure obtained by multiple correspondence analysis of abstracts are reported in the Internet Appendix, computed with the software of \citet{ariacuccurullo2017}.
+
+Regarding the ML-based RV forecasting literature in general, besides rigorous feature set construction, our contribution  lies in the broad long-short factors cross-section of \citet{jensenkellypedersen2023}, as this literature is often organized around indices and individual tickers. For instance, \citet{rahimikiapoon2026}, \citet{brancorubesamzevallos2024}, \citet{diazhansencabrera2024}, \citet{chunchoryu2025} use tickers or indexes, while we focus on factor-level over a long macroeconomic history.
+
 
 \subsection{Portfolio Applications}
 
 Accurate volatility forecasts have direct economic value for portfolio construction because they improve risk allocation across assets and over time. Better forecasts can reduce unintended risk concentration, support more effective volatility targeting and timing, and ultimately improve risk-adjusted performance.
 
-\citet{moreiramuir2017} scale exposure to an equity factor by the inverse of the realized variance of its returns in the previous month, and report that the
-managed versions of the market, value, momentum, profitability and investment
-factors earn positive alphas against their unmanaged counterparts.
-\citet{barrososantaclara2015} apply a related scaling to momentum and
-substantially reduce its crash risk. 
+We focus on two particular portfolio applications that can be improved by having better forecasts: volatility-targeting and volatility-management portfolios (VTP and VMP).
 
-Conversely, \citet{cederburg2020} examine 103 equity strategies and show that, although volatility-managed portfolios display positive alphas in spanning
-regressions, the strategies those regressions imply are not implementable in
-real time, and reasonable out-of-sample versions generally earn lower certainty
-equivalent returns and Sharpe ratios than the unmanaged portfolios. They
-attribute this to structural instability in the underlying spanning regressions.
-\citet{barrosodetzel2021} relate the benefits that survive to limits to
-arbitrage, \citet{schwarz2025} extends the evidence to international equity
-factors, and \citet{demiguelmartinutrerauppal2024} reconsider the question in a
-multifactor setting, showing that a conditional multifactor portfolio survives
-out-of-sample and net of costs due to trading diversification and that factor risk prices generally fall as market volatility rises.
+Regarding the VTP application,   \citet{bollerslevhoodhusspedersen2018} sets $w_t = \sigma^{*} / \hat{\sigma}_{t+1}$ with an annualized target $\sigma^{*}$ of 20 per cent, a relative risk aversion of two and a conditional Sharpe ratio fixed at 0.40. They show that better forecasts lead to higher realized utility for investors.
 
-While the forecasting literature reviewed above has spent three decades improving volatility prediction, most studies in volatility-management use a random-walk benchmark (ie realized variance of the preceding month) or a parsimonious model\footnote{\citet{moreiramuir2017} anticipate the point in an appendix. Replacing the lagged realized variance with the fitted value of a regression on three lags of log realized variance raises both the significance of the alphas and the appraisal ratios, and they retain the simpler measure because it requires no first-stage estimation and is implementable without assuming that the forecasting relation was available in real time.} that do not try to model future RV as a non-linear function of not only recent past observations, but the whole high-dimensional set of possible covariates.
-	
-If estimation error is to blame for real time implementations not attaining outperformance observed from spanning regressions \citep{cederburg2020, schwarz2025}, if ML-based RV forecasting improves out-of-sample accuracy through non-linearities, interactions and bias-variance calibration, derived volatility-managed portfolios might be more promising than ones based on simple benchmarks.  
+As for machine-learning approaches in this realm that are focused on aggregate RV, we can cite three recent studies. \citet{brancorubesamzevallos2024} forecast the realized volatility of ten global indices with linear and nonlinear machine learning models and evaluate the monthly forecasts through the realized utility of volatility-timing strategies, reporting that heterogeneous autoregressive specifications without additional predictors are among the best performers and that the best models recover between 3.30 and 3.72 per cent of the 4 per cent utility available under perfect foresight. \citet{diazhansencabrera2024} apply regularized regressions, tree ensembles and neural networks to United States market volatility at horizons of one, six and twelve months and evaluate them with the same realized utility measure, reporting that the machine learning methods beat the heterogeneous autoregressive benchmark at the shortest horizon
+but not at the longer ones. \citet{chunchoryu2025} allocate between the S\&P 500 and the three-month Treasury bill using daily, weekly and monthly forecasts, and report that portfolios timed with penalized linear forecasts attain Sharpe
+ratios between 24 and 42 per cent above the static market portfolio. Therefore, whether machine learning improves a volatility-timed position in the aggregate market is an open but actively contested question. 
 
+In relation to such studies, our design contributes in two aspects, besides a simple replication of their findings. First of all, we consider richer cross-sectional and time-series settings, as we fit models on the value-weighted market index and also on the long-short factors dataset of \citet{jensenkellypedersen2023}, which dates back to 1920s and contemplates more than 150 factors. Secondly, explicitly following \citet{bollerslevhoodhusspedersen2018} and the expected returns ML literature, we fit common parameters in our models, stacking all target in a single panel, which tends to help ML models in the context of low signal-to-noise financial series. For the value-weighted index, we also fit a model based on its individual RV series, which allows us to compare both approaches.  
 
+The volatility-management application follows \citet{moreiramuir2017}, who scale exposure to an equity factor by the inverse of the realized variance of its returns in the previous month, and report that the
+managed versions of the market, value, momentum, profitability and investment factors earn positive alphas against their unmanaged counterparts. The rational is that expected returns do not rise as much as volatility, so we take more risk when conditional price of risk is more favorable, rather than tilting exposure to risk through time in an effort to smooth portfolio volatility towards its target level.
 
+\citet{barrososantaclara2015} apply a related scaling to momentum and substantially reduce its crash risk. Conversely, \citet{cederburg2020} examine 103 equity strategies and show that, although volatility-managed portfolios display positive alphas in spanning regressions, the strategies those regressions imply are not implementable in real time, and reasonable out-of-sample versions generally earn lower certainty equivalent returns and Sharpe ratios than the unmanaged portfolios. They attribute this to structural instability in the underlying spanning regressions.
+\citet{barrosodetzel2021} relate the benefits that survive to limits to arbitrage, \citet{schwarz2025} extends the evidence to international equity factors, and \citet{demiguelmartinutrerauppal2024} reconsider the question in a multifactor setting, showing that a conditional multifactor portfolio survives out-of-sample and net of costs due to trading diversification and that factor risk prices generally fall as market volatility rises.
 
-The exercise reported here is an out-of-sample point-in-time implementation of the ML-based RV forecasting toolkit to the volatility-management framework, in a context of a rich cross-section of factors. In comparison to \citet{cederburg2020}, we ask whether ML forecasting improves out-of-sample volatility-management. 
+Most studies in volatility-management use a random-walk benchmark or a parsimonious model. In an appendix, \citet{moreiramuir2017} replace the lagged realized variance with the fitted value of a regression on three lags of log realized variance. This raises both the significance of the alphas and the appraisal ratios. 
 
+If estimation error is to blame for real time implementations not attaining outperformance observed from spanning regressions \citep{cederburg2020, schwarz2025}, and if point-in-time ML-based RV forecasting improves out-of-sample accuracy through non-linearities, interactions and bias-variance calibration, derived volatility-managed portfolios (VMP) might be more promising than ones based on simple benchmarks. This is precisely our contribution: we compare out-of-sample performance of ML VMP portfolios against linear benchmarks.    
 
-Three recent studies have connected the ML RV forecasting literature to volatility-timing portfolio construction at the level of the
-aggregate market. \citet{brancorubesamzevallos2024} forecast the realized
-volatility of ten global indices with linear and nonlinear machine learning
-models and evaluate the monthly forecasts through the realized utility of
-volatility-timing strategies, reporting that heterogeneous autoregressive
-specifications without additional predictors are among the best performers and
-that the best models recover between 3.30 and 3.72 per cent of the 4 per cent
-utility available under perfect foresight. \citet{diazhansencabrera2024} apply
-regularized regressions, tree ensembles and neural networks to United States
-market volatility at horizons of one, six and twelve months and evaluate them
-with the same realized utility measure, reporting that the machine learning
-methods beat the heterogeneous autoregressive benchmark at the shortest horizon
-but not at the longer ones. \citet{chunchoryu2025} allocate between the S\&P 500
-and the three-month Treasury bill using daily, weekly and monthly forecasts, and
-report that portfolios timed with penalized linear forecasts attain Sharpe
-ratios between 24 and 42 per cent above the static market portfolio. Whether
-machine learning improves a volatility-timed position in the aggregate market is
-therefore an open but actively contested question.
-
-These studies share a construction that has to be distinguished from the one
-used here, because the difference is not one of degree. In all three the
-investor holds a single risky index together with the risk-free asset, and the
-position is scaled by the inverse of predicted \emph{volatility}.
-\citet{brancorubesamzevallos2024} and \citet{diazhansencabrera2024} adopt the
-realized utility measure of \citet{bollerslevhoodhusspedersen2018} directly,
-setting $w_t = \sigma^{*} / \hat{\sigma}_{t+1}$ with an annualized target
-$\sigma^{*}$ of 20 per cent, a relative risk aversion of two and a conditional
-Sharpe ratio fixed at 0.40. \citet{chunchoryu2025} use a target-volatility rule
-of the same form alongside the mean-variance rule of
-\citet{bollerslevhoodhusspedersen2018}. Performance is measured throughout by
-the Sharpe ratio, the certainty equivalent, or the realized utility of a
-mean-variance investor. \citet{chunchoryu2025} cite \citet{moreiramuir2017} and
-\citet{cederburg2020} when motivating the exercise, but the portfolios they form
-are index-level timing rules rather than managed factor portfolios.
-
-Holding the conditional Sharpe ratio constant forecloses the question
-\citet{moreiramuir2017} ask. Their finding is that volatility timing raises
-Sharpe ratios precisely because changes in factor volatilities are not offset by
-proportional changes in expected returns, so that the conditional Sharpe ratio
-varies and a position scaled by the inverse of predicted variance earns an alpha
-against its unmanaged counterpart. That variation is an empirical result in
-their setting, not an assumption; imposing a constant Sharpe ratio assumes it
-away.
-A volatility-targeting exercise can therefore report that a better variance
-forecast is worth little to a timing investor while leaving open whether it
-changes the managed-portfolio alpha, which is a statement about asset pricing
-rather than about one investor's allocation. Therefore, we differentiate from the above studies in terms of the volatility-timing framework.
-
-Besides the portfolio exercise, our contribution also lies in the cross-section. The volatility-managed literature is
-organized around equity factors, and the machine learning volatility literature
-is organized around indices and individual tickers. For instance, \citet{rahimikiapoon2026}, which is one of the most comprehensive ML applications to RV forecast, use a sample of NASDAQ tickers from 2007 to 2022, while we focus on factor-level over a long macroeconomic history, judged by realized portfolio
-outcomes rather than by loss functions alone.
-
-No study we are aware of forecasts factor-level realized variance with machine learning and uses those forecasts to manage the corresponding factor portfolios. This paper does so for a broad cross-section of factors alongside the market, which allows three questions that a single index cannot address. First, whether the gains from a better variance forecast are concentrated in the factors whose managed versions \citet{cederburg2020} and \citet{schwarz2025} find fragile. 
-
-Second, we pool the cross-section into a single panel when we estimate RV, instead of allowing our forecast to depend only on the single series, which improves coefficient estability. In the volatility-targeting framework, \citet{bollerslevhoodhusspedersen2018} find improved predictability in models with common parameterse. In out setting, we compare out-of-sample predictability from pooled and no-pooled models for the market factor.
-
- Third, whether the improvement survives aggregation into the conditional multifactor portfolio of
-\citet{demiguelmartinutrerauppal2024}, whose construction has so far been
-implemented with the conventional lagged-variance conditioning variable.
-
+To sum it up, in the economic value perspective, our design uses ML RV forecasts in a distinct and broad factor-level panel, alongside the market, to answer whether this non-linear approach improves the out-of-sample performance of VTP derived from single-index ML models and whether it can endorse the out-of-sample VMP exercises of \citet{cederburg2020} and \citet{schwarz2025} or the multifactor application of \citet{demiguelmartinutrerauppal2024}.
 
 
 %% =====================================================================
@@ -349,67 +164,39 @@ implemented with the conventional lagged-variance conditioning variable.
 \subsection{Data}
 \label{sec:data}
 
-The object of prediction is the monthly realized variance of an equity return
-series. For series $i$ in month $t$ containing $D_{i,t}$ trading days with daily
-returns $r_{i,d}$,
+The object of prediction is the monthly realized variance of  equity factors return series. For series $i$ in month $t$ containing $D_{i,t}$ trading days with daily returns $r_{i,d}$,
 \begin{equation}
 RV_{i,t} = \sum_{d=1}^{D_{i,t}} r_{i,d}^{2},
 \label{eq:rv}
 \end{equation}
-which is the discretely sampled analogue of integrated variance used throughout
-the literature that follows \citet{andersenbollerslev1998}. Daily rather than
-intraday sampling allows a century of history to be available, and it is the
-same choice \citet{schwert1989}, \citet{paye2012} and \citet{nonejad2017} make
+which is the discretely sampled analogue of integrated variance used throughout the literature that follows \citet{andersenbollerslev1998}. Daily rather than
+intraday sampling allows a century of history to be available, and it is the same choice \citet{schwert1989}, \citet{paye2012} and \citet{nonejad2017} make
 at this frequency.
 
-Two sets of series are predicted. The first is the market factor series, which is the value-weighted
-portfolio of all common shares from the Center for Research in Security Prices,
-running from 1926 to 2024. The second is cross-section set of United States
-long-short equity factors of \citet{jensenkellypedersen2023}, in their
-value-weighted capped-weight construction, from which we retain the 153
-non-industry factors. Industry portfolios are excluded because they are not
-characteristic-sorted long-short strategies and would not be volatility-managed
-in the sense of \citet{moreiramuir2017}. Table~\ref{tab:sumtgt} reports the targets and
-Figure~\ref{fig:targets} plots the market series against the cross-sectional
-distribution of factor realized variance, and the common movement in
-volatility across factors seems strong enough to motivate estimating them jointly.
+Our factors are the cross-section set of United States
+long-short equity factors of \citet{jensenkellypedersen2023}, in their value-weighted capped-weight construction, from which we retain the 153 non-industry factors, and the value-weighted
+portfolio of all common shares from the Center for Research in Security Prices, running from 1926 to 2024. 
 
-The predictors come from the systematic review of Section~\ref{sec:literature}.
-Fifteen families survive the availability constraint, and they resolve into 33
-constructed series.
+Table~\ref{tab:sumtgt} reports the targets and Figure~\ref{fig:targets} plots the market series against the cross-sectional distribution of long-short factors RV. The common movement in volatility across factors seems strong enough to motivate estimating them jointly.
 
-Five of those families are built from the return series itself, and each is
-expanded into three terms following the heterogeneous autoregressive
-decomposition of \citet{corsi2009}. For a daily quantity $x_{d}$, the daily term
-is its value on the last trading day of the previous month, the weekly term is
-its sum over the last five trading days of that month, and the monthly term is
-its sum over the whole month. The daily and weekly terms are rescaled by 22 and
-by $22/5$ so that all three are expressed in the same monthly units, and all
-three are lagged one month. The labels daily, weekly and monthly therefore refer
-to the horizon over which the quantity is accumulated, not to the frequency at
-which it is observed or at which the model is estimated. This construction is
-applied identically to realized variance, to realized quarticity, to the jump
-and continuous components, and to the non-positive return that carries the
-leverage effect, which yields fifteen of the 33 series.
+As mentioned before, predictors come from the systematic review of Section~\ref{sec:literature}. Therefore, rather
+than assemble a predictor set from the studies closest to our own priors, we identified candidate predictors through a reproducible protocol.
 
-Twenty-three series extend back to 1927 and define the
-long sample: the fifteen heterogeneous autoregressive terms just described; the
-policy uncertainty index of \citet{bakerbloomdavis2016}; the
-\citet{schwert1989} volatility estimates of producer price and industrial
-production growth; the dividend and earnings yields; the geopolitical risk index
-of \citet{caldaraiacoviello2022}; and the calendar terms. Ten further series
-begin in 1986 and define the short sample: the default return and default yield
-spreads, the term spread and the Treasury bill rate, the volatility of the
-monetary base, consumer sentiment, the realized variance of crude oil, and the
-implied volatility index. Table~\ref{tab:sumcov} reports summary statistics and
-Table~\ref{tab:vardefs} in the Internet Appendix gives definitions and sources.
+Reading the reviewed articles together with the foundational work they cite yields 83 distinct predictors of realized variance, which group into 33 families. Table~\ref{tab:litfamilies} reports those families, the study taken as the representative source for each, and how many of the reviewed articles cite that source.  Table~\ref{tab:litpredictors} in the Internet Appendix
+lists the individual predictors.
+
+Fifteen of the 33 families enter the models estimated here, with the most often reasons for exclusion the short availability, the daily format or poor performance in the original study. For instance, predictors constructed from limit order books, social media message volume, search engine indices or news sentiment exist only for the most recent two decades
+
+Five of those families are built from the return series itself, and each is expanded into three terms following the heterogeneous autoregressive decomposition of \citet{corsi2009}\footnote{For a daily quantity $x_{d}$, the daily term is its value on the last trading day of the previous month, the weekly term is its sum over the last five trading days of that month, and the monthly term is its sum over the whole month. The daily and weekly terms are rescaled by 22 and by $22/5$ so that all three are expressed in the same monthly units, and all three are lagged one month. The labels daily, weekly and monthly therefore refer to the horizon over which the quantity is accumulated, not to the frequency at which it is observed or at which the model is estimated. This construction is applied identically to realized variance, to realized quarticity, to the jump and continuous components, and to the non-positive return that carries the leverage effect, which yields fifteen of the 33 series.}. 
+
+Twenty-three series extend back to 1927: the fifteen heterogeneous autoregressive terms just described, the
+policy uncertainty index of \citet{bakerbloomdavis2016}, the
+\citet{schwert1989} volatility estimates of producer price and industrial production growth, the dividend and earnings yields, the geopolitical risk index of \citet{caldaraiacoviello2022}, and the calendar terms. Ten further series begin in 1986 and define our main sample: the default return and default yield spreads, the term spread and the Treasury bill rate, the volatility of the monetary base, consumer sentiment, the realized variance of crude oil, and the
+implied volatility index. Table~\ref{tab:sumcov} reports summary statistics and Table~\ref{tab:vardefs} in the Internet Appendix gives definitions and sources.
 Figure~\ref{fig:covgrid} plots each predictor over its own available window.
 
-Every predictor is lagged so that it is observable at the forecast origin, and
-the macroeconomic series are aligned on their release rather than their
-reference month, so that we mitigate forward-looking bias. The two samples  trade history against breadth, so we report both. The panel is unbalanced: a factor enters as soon as it can support the full lag structure and remains thereafter, so the number of series grows over time, as Figure~\ref{fig:coverage} in the Internet Appendix shows.
-Figure~\ref{fig:correlogram} reports the correlations among predictors, which
-are high within the variance families and low across them.
+Every predictor is lagged so that it is observable at the forecast origin, and the macroeconomic series are aligned on their release date. The panel is unbalanced: a factor enters as soon as it can support the full lag structure and remains thereafter, so the number of series grows over time, as Figure~\ref{fig:coverage} in the Internet Appendix shows.
+Figure~\ref{fig:correlogram} reports the correlations among predictors, which are high within the variance families and low across them.
 
 \subsection{Forecasting design}
 \label{sec:design}
@@ -420,144 +207,94 @@ end of month $t$. Models estimate
 \log RV_{i,t+1} = g(\mathbf{z}_{i,t}) + \varepsilon_{i,t+1},
 \label{eq:model}
 \end{equation}
-so the target is the logarithm of realized variance. Working in logs keeps the
-conditional distribution close to symmetric and prevents the few extreme months
-from dominating a squared-error criterion. Forecasts are returned to variance units before any portfolio is formed.
 
-Estimation is walk-forward and strictly out of sample. Training uses an
-expanding window beginning at the first month of the sample. Hyperparameters are
-selected on a validation block of the 90 months immediately preceding the
-forecast date, chosen once a year in June, and the selected configuration is
-then refitted on all data up to month $t$ before month $t+1$ is forecast. The
-heterogeneous autoregressive specifications have no hyperparameters and are
-refitted on the same expanding window without a validation block. Their training
-requirement is set to 210 months, which equals the 120 training and 90
-validation months the tuned models consume, so every specification produces its
-first forecast in the same month and the comparison is never contaminated by a
-difference in the evaluation window. Preprocessing
-is performed within series and on an expanding basis: predictors are winsorized
-and rescaled using only the history available at each date, so no quantile,
-centre or dispersion estimated on future data can reach a training sample.
+so the target is the logarithm of realized variance. Working in logs keeps the conditional distribution close to symmetric and prevents the few extreme months from dominating a squared-error criterion. Forecasts are returned to variance units before any portfolio is formed. Estimation is walk-forward and strictly out-of-sample and training uses an expanding window beginning at the first month of the sample, similar to \citet{gukellyxiu2020}.
 
-Three design choices admit more than one reasonable setting, and we fix a
-primary specification rather than reporting an average over them. The main
-results use the sample beginning in 1986, grid search, and rescaling of the
-predictors to a bounded interval. The 1986 sample is the period over which the
-largest number of predictors is available, and in particular the only one that
-contains option-implied volatility, which the review identifies as a strong
-addition to a variance forecast. Grid search and bounded rescaling are
-the more common pair in the machine learning literature on expected returns that
-this design borrows from. The sample beginning in 1927, Bayesian optimization,
-and standardization by centre and dispersion are reported as robustness checks.
-Every combination is estimated, so the robustness results are the same
-experiment under a different setting rather than a separate exercise.
+Eight specifications are estimated, spanning the range from the benchmark to flexible nonlinear learners. The heterogeneous autoregressive model of \citet{corsi2009} regresses the target on the daily, weekly and monthly lagged
+realized variance terms alone and is the benchmark every other model is measured against. The augmented version adds the full predictor set to the same linear estimator, and isolates the contribution of the predictors from the contribution of functional flexibility. The elastic net adds shrinkage over that predictor set, searching the mixing weight between the two penalties. Random forests and gradient-boosted trees introduce interactions and thresholds, searching the predictor subsampling fraction and tree depth in the first case and the learning rate, depth and a node-size control in the second. Three feedforward networks with one, two and three hidden layers complete the set, searching the learning rate, the dropout rate and an $L_1$ penalty, and each is refitted from ten random initializations whose predictions are averaged, following \citet{gukellyxiu2020}. Table~\ref{tab:hyper} reports every search space and every fixed setting.
 
-Two estimation universes are compared. The \emph{pooled} universe estimates one
-function $g$ on the panel of all 153 factors together with the market series,
-imposing common coefficients across series. The \emph{single-series} universe
-estimates $g$ on the market series alone. The comparison is the reason the
-market is retained inside the panel rather than modelled separately: the same
-walk-forward loop then produces two forecasts of the same quantity that differ
-only in the estimation sample. \citet{bollerslevhoodhusspedersen2018} document
-strong commonality in realized volatility across more than fifty instruments and
-show that panel estimation exploiting it reduces parameter uncertainty and
-improves out-of-sample forecasts, and they note that this requires the model to
-be centered so that its parameters do not depend on the level of risk, which is
-the role played here by within-series scaling. Whether pooling helps market RV predictability is an empirical
-question this design answers directly.
+All models are scored on the same set of six out-of-sample measures: root mean squared error, mean absolute error, mean pseudo-Huber error, mean absolute percentage error, mean pinball loss at the median, the coefficient of determination, computed against the mean of the target. Reporting the whole set matters because a ranking that rests on one of them can reverse under another \citep{patton2011}.
 
-\subsection{Prediction models}
-\label{sec:models}
+More details on the forecating design are in the Internet Appendix.
 
-Eight specifications are estimated, spanning the range from the benchmark to
-flexible nonlinear learners. The heterogeneous autoregressive model of
-\citet{corsi2009} regresses the target on the daily, weekly and monthly lagged
-realized variance terms alone and is the benchmark every other model is measured
-against. The augmented version adds the full predictor set to the same linear
-estimator, and isolates the contribution of the predictors from the contribution
-of functional flexibility. The elastic net adds shrinkage over that predictor
-set, searching the mixing weight between the two penalties. Random forests and
-gradient-boosted trees introduce interactions and thresholds, searching the
-predictor subsampling fraction and tree depth in the first case and the learning
-rate, depth and a node-size control in the second. Three feedforward networks
-with one, two and three hidden layers complete the set, searching the learning
-rate, the dropout rate and an $L_1$ penalty, and each is refitted from ten
-random initializations whose predictions are averaged, following
-\citet{gukellyxiu2020}. Table~\ref{tab:hyper} reports every search space and
-every fixed setting.
 
-Hyperparameters are selected in two ways. The first is an exhaustive grid. The
-second is Bayesian optimization, which allocates a comparable budget adaptively
-rather than uniformly \citep{bergstrabengio2012}. Comparing the two serves as a
-robustness check regarding the tuning approach. Both minimize root mean squared
-error on the validation block. The complete search spaces, the fixed settings
-and the per-refit budgets are reported in Table~\ref{tab:hyper}, and the
-functional forms in Appendix~\ref{app:algorithmic}.
-
-All models, the heterogeneous autoregressive benchmark included, are scored on
-the same set of nine out-of-sample measures. Four are loss functions: root mean
-squared error, mean absolute error, mean pseudo-Huber error and mean absolute
-percentage error. One is a quantile criterion, the mean pinball loss at the
-median. Two summarize the errors rather than their magnitude: the hit rate, the
-share of months in which forecast and realization share a sign, and the mean
-bias. The last two describe agreement with the realization: the coefficient of
-determination, computed against the mean of the target rather than against a
-rival model, and the mean cross-product of forecast and realization. Reporting
-the whole set matters because these functions disagree about which errors are
-costly, and a ranking that rests on one of them can reverse under another
-\citep{patton2011}.
-
-\subsection{Volatility-managed portfolios}
+\subsection{Portfolio Applications}
 \label{sec:portfolios}
 
-The economic evaluation replaces the conditioning variable in the construction
-of \citet{moreiramuir2017} with an out-of-sample forecast. For a factor with
-excess return $f_{i,t+1}$, the managed portfolio is
+We replace the conditioning variable in the construction of \citet{moreiramuir2017} with an out-of-sample forecast. For a factor (long-short or market) with excess return $f_{i,t+1}$, the managed portfolio is
 \begin{equation}
 \tilde{f}_{i,t+1} = \frac{c_i}{\hat{\sigma}^{2}_{i,t}} f_{i,t+1},
 \label{eq:managed}
 \end{equation}
-where $c_i$ is chosen so that the managed and unmanaged series have the same
-unconditional standard deviation, which leaves the Sharpe ratio unaffected. Two
-choices of $\hat{\sigma}^{2}_{i,t}$ are compared: the realized variance of the
-preceding month, which reproduces \citet{moreiramuir2017} exactly, and the
-forecast from each model of Section~\ref{sec:models}. The evidence is the
-intercept from the spanning regression
+where $c_i$ is chosen so that the managed and unmanaged series have the same unconditional standard deviation, which leaves the Sharpe ratio unaffected. Two choices of $\hat{\sigma}^{2}_{i,t}$ are compared: the realized variance of the preceding month, which reproduces \citet{moreiramuir2017} exactly, and the forecast from each model. Besides the intercept and appraisal ratio $\alpha_i / \sigma(u_i)$ from spanning regressions of the type 
+
 \begin{equation}
 \tilde{f}_{i,t+1} = \alpha_i + \beta_i f_{i,t+1} + u_{i,t+1},
 \label{eq:spanning}
 \end{equation}
-with the appraisal ratio $\alpha_i / \sigma(u_i)$ reported alongside, since a
-positive intercept is what expands the mean-variance frontier spanned by the
-original factor.
 
-The intercept is not the whole of the economic evidence, and reporting it alone
-would answer a narrower question than the one asked. For every managed series we
-also report the mean excess return, the standard deviation, the Sharpe ratio and
-its change relative to the unmanaged factor, the maximum drawdown, and the
-skewness and kurtosis of the managed return, since the construction is
-frequently defended on the ground that it reduces crash risk rather than that it
-raises average returns \citep{barrososantaclara2015}. Turnover and the leverage
-the scaling implies are reported as well, because a strategy whose weight is
-proportional to the inverse of a forecast variance can demand positions that a
-real investor would not hold, and this is one of the margins on which
-\citet{cederburg2020} find the managed portfolios fail outside a spanning
-regression.
+we also report the mean excess return, the standard deviation, the Sharpe ratio and its change relative to the unmanaged factor, the maximum drawdown, and the skewness and kurtosis of the managed return, since the construction is frequently defended on the ground that it reduces crash risk rather than that it raises average returns \citep{barrososantaclara2015}. Turnover and the leverage the scaling implies are reported as well, because a strategy whose weight is proportional to the inverse of a forecast variance can demand positions that a real investor would not hold, and this is one of the margins on which \citet{cederburg2020} find the managed portfolios fail outside a spanning regression.
 
-Our implementation has three main dimensions. The first runs equations~\eqref{eq:managed} and
-\eqref{eq:spanning} factor by factor, which places the results directly beside
-\citet{moreiramuir2017}, \citet{cederburg2020} and \citet{schwarz2025}. Every forecast is formed from information available at the formation date, which allows us to compare results with \citet{cederburg2020} and evaluate whether forecast quality changes conclusions.
+Our implementation has three main dimensions. The first runs equations~\eqref{eq:managed} and \eqref{eq:spanning} factor by factor, which places the results directly beside \citet{moreiramuir2017}, \citet{cederburg2020} and \citet{schwarz2025}, but with ML-based forecasts.
 
-The second aggregates the managed factors into the conditional multifactor
-portfolio of \citet{demiguelmartinutrerauppal2024}, whose construction has so far been implemented with the lagged realized variance, and asks whether a
-better forecast of the conditioning variable changes their conclusion.
+The second aggregates the managed factors into the conditional multifactor portfolio of \citet{demiguelmartinutrerauppal2024}, whose construction has so far been implemented with the lagged realized variance, and asks whether a better forecast of the conditioning variable changes their conclusion.
 
-The third reports, for the market series only, the volatility-targeting portfolio of
-\citet{bollerslevhoodhusspedersen2018} evaluated by realized utility, which is
-the exercise of \citet{brancorubesamzevallos2024},
-\citet{diazhansencabrera2024} and \citet{chunchoryu2025}, so that our results
-can be read against theirs on their own terms before the managed-portfolio
-evidence is introduced.
+The third reports, for the market series only, the volatility-targeting portfolio of \citet{bollerslevhoodhusspedersen2018} evaluated by realized utility, which is the exercise of \citet{brancorubesamzevallos2024},
+\citet{diazhansencabrera2024} and \citet{chunchoryu2025}, considering both the partial pooled and the non-pooled implementations.
+
+That third exercise is where our results meet those studies on their own terms.
+An investor allocates between the market portfolio and the risk-free asset and
+holds the mean-variance weight
+\begin{equation}
+w_t = \frac{\hat{\mu}_t}{\gamma\,\hat{\sigma}^{2}_{t+1}},
+\label{eq:vtp}
+\end{equation}
+with the expanding mean of past excess returns in the numerator and the model's
+variance forecast in the denominator, evaluated at relative risk aversion of
+one, two, five and ten. Two scaling rules of the managed form are reported
+beside it. The first replaces the numerator with the expanding mean of realized
+variance, which is equation~\eqref{eq:managed} applied to the market with a
+constant that uses only past information rather than the full sample. The second
+normalizes by the expanding mean of the forecasts, which separates the effect of
+the forecast from the effect of the normalizing constant. Three feasible
+benchmarks bound the comparison: a buy-and-hold position, a fixed sixty per cent
+allocation, and the same scaling rule conditioned on the previous month's
+realized variance, which is the conditioning variable of
+\citet{moreiramuir2017}. A fourth strategy conditions on the realized variance
+of the month being forecast. It is infeasible by construction and reports what
+perfect foresight would deliver, which bounds what any forecast can achieve. All
+weights are floored at zero and capped at one and a half, so no strategy shorts
+the market or levers beyond half again its capital, and every result is reported
+with and without that cap.
+
+This is also where the comparison that separates our design from those studies
+is made. Each of them estimates its forecasting model on a single index. Here
+the market series is forecast twice by the same walk-forward loop over the same
+months, once from the pooled panel in which it sits alongside the 153 long-short
+factors and once from the market series on its own, so the two forecasts differ
+only in the estimation sample. Feeding each into equation~\eqref{eq:vtp} turns
+the pooling question into a difference in realized utility rather than a
+difference in a loss function, which is the form in which it matters to an
+investor. If the commonality in volatility that
+\citet{bollerslevhoodhusspedersen2018} document across assets is strong enough
+to reduce estimation error at a monthly horizon, the pooled forecast should
+dominate; if the factor cross-section is too heterogeneous to support common
+coefficients, it should not. Either outcome speaks to why the machine learning
+evidence in this literature has been mixed, since the studies reporting gains
+have generally pooled their assets and those reporting none, including
+\citet{brancorubesamzevallos2024}, have estimated index by index.
+
+Transaction costs are charged on the change in the position. Turnover in month
+$t$ is the absolute difference between the weight held in month $t$ and the
+weight held in month $t-1$, with the first month measured from a zero position,
+and the cost is a proportional ten basis points per unit of turnover deducted
+from that month's return. Turnover is computed on the capped weights, which are
+the positions actually held. The same rate applies to every strategy and to both
+samples, so it favours no conditioning variable and the strategies differ only
+in how much they trade. Because the model is proportional and carries no
+bid-ask spread or price-impact term, it understates what an investor moving
+large positions quickly would pay, and every result is therefore reported gross
+and net so that the two bracket the effect.
 
 %% =====================================================================
 \section{Results}
@@ -629,55 +366,60 @@ for the content of the published article.
 %% TO BE WRITTEN: the full Scopus query, the journal filter, the exclusion
 %% list, and the PRISMA counts.
 
-\subsection{Algorithmic Details}\label{app:algorithmic}
+\subsection{Forecasting Design Details}\label{app:algorithmic}
 
-This appendix gives the functional forms and the complete search spaces for the
-models summarized in Section~\ref{sec:models}. Let $y_{i,t+1} = \log RV_{i,t+1}$
-and let $\mathbf{z}_{i,t}$ denote the predictor vector for series $i$ at month
-$t$. In the pooled universe the parameters are common to all series; in the
-single-series universe the same estimator is applied to the market alone.
+Let $y_{i,t+1} = \log RV_{i,t+1}$ and let $\mathbf{z}_{i,t}$ denote the predictor vector for series $i$ at month $t$. In the pooled universe the parameters are common to all series, and in the single-series universe the same estimator is applied to the market alone.
+
+The main results use the sample beginning in 1986, grid search, and rescaling of the predictors to a bounded interval during preprocessing. The 1986 sample is the period over which the largest number of predictors is available, and in particular the only one that contains option-implied volatility, which the review identifies as a strong addition to a variance forecast. Grid search and bounded rescaling are the more common pair in the machine learning literature on expected returns.
+
+The sample beginning in 1927, Bayesian optimization, and standardization by centre and dispersion are reported as robustness checks.
+
+\subsubsection{Preprocessing}
+
+Predictors are winsorized and rescaled within each series using only past observations in an expanding way. The primary variant maps each winsorized series onto a bounded interval, and the alternative standardizes it by the expanding median and median absolute deviation. Both require a minimum of 36 observations before any transformation is applied. 
+
+
+\subsubsection{Hyperparameter search}
+
+Hyperparameters are selected on a validation block of the 90 months immediately preceding the forecast date, chosen once a year in June, and the selected configuration is then refitted on all data up to month $t$ before month $t+1$ is forecast. The heterogeneous autoregressive specifications have no hyperparameters and are refitted on the same expanding window without a validation block. Their training requirement is set to 210 months, which equals the 120 training and 90 validation months the tuned models consume, so every specification produces its first forecast in the same month and the comparison is never contaminated by a difference in the evaluation window.
+
+Hyperparameters are selected in two ways. The first is an exhaustive grid. The second is Bayesian optimization, which allocates a comparable budget adaptively rather than uniformly \citep{bergstrabengio2012}. Comparing the two serves as a
+robustness check regarding the tuning approach. Both minimize root mean squared error on the validation block. The complete search spaces, the fixed settings and the per-refit budgets are reported in Table~\ref{tab:hyper}.
+
+Grid search evaluates every combination in Panel A of Table~\ref{tab:hyper}.
+Bayesian optimization places a Gaussian-process prior on the validation loss and selects each next configuration by an acquisition rule over the bounds in Panel B \citep{bergstrabengio2012}. Parameters that act multiplicatively, namely the boosting learning rate, the network learning rate and the network $L_1$ penalty, are searched on a logarithmic scale so that a uniform prior does not concentrate the budget on large values. Both protocols re-optimize at each annual refit.
+
+The models used are described as follows.
 
 \subsubsection{Linear models}
 
-The heterogeneous autoregressive benchmark of \citet{corsi2009} uses only the
-daily, weekly and monthly realized variance terms,
+The heterogeneous autoregressive benchmark of \citet{corsi2009} uses only the daily, weekly and monthly realized variance terms, 
 \begin{equation}
 g_{\mathrm{HAR}}(\mathbf{z}_{i,t}) = \beta_0 + \beta_d RV^{(d)}_{i,t}
  + \beta_w RV^{(w)}_{i,t} + \beta_m RV^{(m)}_{i,t}.
 \end{equation}
 The augmented specification applies ordinary least squares to the full predictor
 vector, $g_{\mathrm{HARX}}(\mathbf{z}_{i,t}) = \mathbf{z}_{i,t}^{\top}
-\boldsymbol{\theta}$. The elastic net minimizes squared error plus a mixture of
-the two penalties,
+\boldsymbol{\theta}$. The elastic net minimizes squared error plus a mixture of the two penalties,
 \begin{equation}
 \min_{\boldsymbol{\theta}} \; \sum_{i,t}
  \bigl(y_{i,t+1} - \mathbf{z}_{i,t}^{\top}\boldsymbol{\theta}\bigr)^{2}
  + \lambda \Bigl[ \alpha \lVert \boldsymbol{\theta} \rVert_1
  + \tfrac{1}{2}(1-\alpha) \lVert \boldsymbol{\theta} \rVert_2^{2} \Bigr],
 \end{equation}
-with $\alpha$ searched over $\{0, 0.25, 0.5, 0.75, 1\}$ and $\lambda$ chosen on
-the fitted regularization path with a minimum ratio of $10^{-4}$.
+with $\alpha$ searched over $\{0, 0.25, 0.5, 0.75, 1\}$ and $\lambda$ chosen on the fitted regularization path with a minimum ratio of $10^{-4}$.
 
 \subsubsection{Tree ensembles}
 
-A regression tree partitions the predictor space into terminal regions $C_l$ and
-assigns each observation the mean outcome in its region,
-\begin{equation}
+A regression tree partitions the predictor space into terminal regions $C_l$ and assigns each observation the mean outcome in its region, \begin{equation}
 g_{\mathrm{tree}}(\mathbf{z}_{i,t}) = \sum_{l=1}^{L} \theta_l
  \mathbf{1}\{\mathbf{z}_{i,t} \in C_l\}.
 \end{equation}
-The random forest averages trees grown on bootstrap resamples, with a random
-fraction of predictors considered at each split, which decorrelates the trees
-and reduces variance. Gradient boosting instead constructs an additive sequence,
-\begin{equation}
+The random forest averages trees grown on bootstrap resamples, with a random fraction of predictors considered at each split, which decorrelates the trees and reduces variance. Gradient boosting instead constructs an additive sequence, \begin{equation}
 g_{\mathrm{XGB}}(\mathbf{z}_{i,t}) = \sum_{f=1}^{F} T_f(\mathbf{z}_{i,t}),
 \end{equation}
-in which each new tree is fitted to the remaining loss from the preceding
-ensemble. Depth governs the order of interaction, the learning rate scales the
-contribution of each tree, and the regularized objective penalizes leaf
-complexity and leaf weights \citep{chenguestrin2016}. The number of rounds is
-set by early stopping after 30 rounds without validation improvement rather than
-tuned, so the round count in Table~\ref{tab:hyper} is a ceiling.
+in which each new tree is fitted to the remaining loss from the preceding ensemble. Depth governs the order of interaction, the learning rate scales the contribution of each tree, and the regularized objective penalizes leaf
+complexity and leaf weights \citep{chenguestrin2016}. The number of rounds is set by early stopping after 30 rounds without validation improvement rather than tuned, so the round count in Table~\ref{tab:hyper} is a ceiling.
 
 \subsubsection{Neural networks}
 
@@ -687,43 +429,16 @@ g_{\mathrm{NN}}(\mathbf{z}_{i,t}) = \mathbf{W}_{K}\operatorname{ReLU}
  \bigl(\cdots \operatorname{ReLU}(\mathbf{W}_{1}\mathbf{z}_{i,t} +
  \mathbf{b}_{1}) \cdots \bigr) + \mathbf{b}_{K},
 \end{equation}
-with batch normalization at each hidden layer. NN1 has one hidden layer of 32
-units, NN2 has layers of 32 and 16 units, and NN3 has layers of 32, 16 and 8
-units. Training uses Adam and minimizes squared error plus an $L_1$ penalty on
+with batch normalization at each hidden layer. NN1 has one hidden layer of 32 units, NN2 has layers of 32 and 16 units, and NN3 has layers of 32, 16 and 8 units. Training uses Adam and minimizes squared error plus an $L_1$ penalty on
 the weights,
 \begin{equation}
 \mathcal{L}_{\mathrm{NN}} = \sum_{i,t}
  \bigl[y_{i,t+1} - g_{\mathrm{NN}}(\mathbf{z}_{i,t})\bigr]^{2}
  + \lambda^{\omega} \sum_k \lVert \mathbf{W}_k \rVert_1,
 \end{equation}
-stopping after 10 epochs without validation improvement. After hyperparameters
-are selected, each architecture is refitted from ten independent random
-initializations and the predictions are averaged, following
-\citet{gukellyxiu2020}. Tuning itself uses a single fitted network, so the
-averaging reduces sensitivity to one initialization without enlarging the search
-budget.
+stopping after 10 epochs without validation improvement. After hyperparameters are selected, each architecture is refitted from ten independent random initializations and the predictions are averaged, following \citet{gukellyxiu2020}. Tuning itself uses a single fitted network, so the averaging reduces sensitivity to one initialization without enlarging the search budget.
 
-\subsubsection{Hyperparameter search}
 
-Grid search evaluates every combination in Panel A of Table~\ref{tab:hyper}.
-Bayesian optimization places a Gaussian-process prior on the validation loss and
-selects each next configuration by an acquisition rule over the bounds in Panel
-B \citep{bergstrabengio2012}. Parameters that act multiplicatively, namely the
-boosting learning rate, the network learning rate and the network $L_1$ penalty,
-are searched on a logarithmic scale so that a uniform prior does not concentrate
-the budget on large values. Both protocols re-optimize at each annual refit.
-
-\subsubsection{Preprocessing}
-
-Predictors are winsorized and rescaled within each series using only past
-observations. The primary variant maps each winsorized series onto a bounded
-interval; the alternative standardizes it by the expanding median and median
-absolute deviation. Both require a minimum of 36 observations before any
-transformation is applied. Because the transformation is expanding and applied
-within series, no statistic estimated on future observations enters a training
-sample, and the panel remains comparable across series with different levels of
-risk, which is the centering requirement of
-\citet{bollerslevhoodhusspedersen2018}.
 
 \subsection{Additional Tables}
 
