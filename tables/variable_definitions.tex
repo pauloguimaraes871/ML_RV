@@ -15,21 +15,21 @@ Predictor & Definition & Source \\
 \endhead
 \hline
 \endfoot
-Realized variance, daily & Squared return on the last trading day of the previous month & CRSP; JKP \\
-Realized variance, weekly & Mean daily realized variance over the last five trading days of the previous month & CRSP; JKP \\
-Realized variance, monthly & Mean daily realized variance over the previous month & CRSP; JKP \\
-Realized quarticity, daily & Daily fourth power of returns scaled by three, last trading day & CRSP; JKP \\
-Realized quarticity, weekly & Five-day mean of the daily quarticity measure & CRSP; JKP \\
-Realized quarticity, monthly & Monthly mean of the daily quarticity measure & CRSP; JKP \\
-Jump variation, daily & Realized variance in excess of the truncated local variance, last trading day & CRSP; JKP \\
-Jump variation, weekly & Five-day mean of daily jump variation & CRSP; JKP \\
-Jump variation, monthly & Monthly mean of daily jump variation & CRSP; JKP \\
-Continuous variation, daily & Realized variance net of the jump component, last trading day & CRSP; JKP \\
-Continuous variation, weekly & Five-day mean of daily continuous variation & CRSP; JKP \\
-Continuous variation, monthly & Monthly mean of daily continuous variation & CRSP; JKP \\
-Negative return, daily & Minimum of the last daily return and zero & CRSP; JKP \\
-Negative return, weekly & Minimum of the five-day return and zero & CRSP; JKP \\
-Negative return, monthly & Minimum of the monthly return and zero & CRSP; JKP \\
+Realized variance, daily term & Realized variance of the last trading day of the previous month, scaled to monthly units & CRSP; JKP \\
+Realized variance, weekly term & Realized variance summed over the last five trading days of the previous month, scaled to monthly units & CRSP; JKP \\
+Realized variance, monthly term & Realized variance summed over the previous month & CRSP; JKP \\
+Realized quarticity, daily term & Realized quarticity of the last trading day of the previous month, scaled to monthly units & CRSP; JKP \\
+Realized quarticity, weekly term & Realized quarticity summed over the last five trading days, scaled to monthly units & CRSP; JKP \\
+Realized quarticity, monthly term & Realized quarticity summed over the previous month & CRSP; JKP \\
+Jump variation, daily term & Jump component of the last trading day, scaled to monthly units & CRSP; JKP \\
+Jump variation, weekly term & Jump component summed over the last five trading days, scaled to monthly units & CRSP; JKP \\
+Jump variation, monthly term & Jump component summed over the previous month & CRSP; JKP \\
+Continuous variation, daily term & Continuous component of the last trading day, scaled to monthly units & CRSP; JKP \\
+Continuous variation, weekly term & Continuous component summed over the last five trading days, scaled to monthly units & CRSP; JKP \\
+Continuous variation, monthly term & Continuous component summed over the previous month & CRSP; JKP \\
+Negative return, daily term & Minimum of the last trading day return and zero, scaled to monthly units & CRSP; JKP \\
+Negative return, weekly term & Minimum of the five-day return and zero, scaled to monthly units & CRSP; JKP \\
+Negative return, monthly term & Minimum of the previous month return and zero & CRSP; JKP \\
 Policy uncertainty growth & Log change in the news-based economic policy uncertainty index & Baker, Bloom and Davis (2016) \\
 Producer price volatility & Schwert (1989) out-of-sample volatility of producer price growth & FRED PPIACO \\
 Industrial production volatility & Schwert (1989) out-of-sample volatility of industrial production growth & FRED IPB50001N \\
@@ -47,6 +47,6 @@ Crude oil variance, weekly & Five-day mean of daily crude oil realized variance 
 Crude oil variance, monthly & Monthly mean of daily crude oil realized variance & FRED DCOILWTICO \\
 Implied volatility & Closing level of the volatility index, extended before 1990 with its predecessor & CBOE \\
 Calendar month & Month of the year, entering as twelve indicators & Calendar \\
-Trading days & Square root of the number of trading days in the month & CRSP \\
+Trading days & Square root of the number of trading days in the month; the level falls once Saturday trading ends in 1952 & CRSP \\
 \end{longtable}
 }

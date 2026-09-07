@@ -358,33 +358,43 @@ RV_{i,t} = \sum_{d=1}^{D_{i,t}} r_{i,d}^{2},
 \end{equation}
 which is the discretely sampled analogue of integrated variance used throughout
 the literature that follows \citet{andersenbollerslev1998}. Daily rather than
-intraday sampling is what makes a century of history available, and it is the
+intraday sampling allows a century of history to be available, and it is the
 same choice \citet{schwert1989}, \citet{paye2012} and \citet{nonejad2017} make
-at this frequency. It costs precision relative to a five-minute estimator, and
-Section~\ref{sec:results} reports the consequences for the shorter sample where
-both are feasible.
+at this frequency.
 
-Two sets of series are predicted. The market series is the value-weighted
+Two sets of series are predicted. The first is the market factor series, which is the value-weighted
 portfolio of all common shares from the Center for Research in Security Prices,
-running from 1926 to 2024. The cross-section is the set of United States
+running from 1926 to 2024. The second is cross-section set of United States
 long-short equity factors of \citet{jensenkellypedersen2023}, in their
 value-weighted capped-weight construction, from which we retain the 153
 non-industry factors. Industry portfolios are excluded because they are not
 characteristic-sorted long-short strategies and would not be volatility-managed
-in the sense of \citet{moreiramuir2017}. The factor returns are already
-sign-adjusted at source, so the published direction is recorded but never
-applied a second time. Table~\ref{tab:sumtgt} reports the targets.
+in the sense of \citet{moreiramuir2017}. Table~\ref{tab:sumtgt} reports the targets and
 Figure~\ref{fig:targets} plots the market series against the cross-sectional
-distribution of factor realized variance, and shows that the common movement in
-volatility across factors is strong enough to motivate estimating them jointly.
+distribution of factor realized variance, and the common movement in
+volatility across factors seems strong enough to motivate estimating them jointly.
 
 The predictors come from the systematic review of Section~\ref{sec:literature}.
 Fifteen families survive the availability constraint, and they resolve into 33
-constructed series. Twenty-three of these extend back to 1927 and define the
-long sample: the heterogeneous autoregressive terms in realized variance,
-realized quarticity, the jump and continuous components, and the non-positive
-return that carries the leverage effect, each at daily, weekly and monthly
-aggregation; the policy uncertainty index of \citet{bakerbloomdavis2016}; the
+constructed series.
+
+Five of those families are built from the return series itself, and each is
+expanded into three terms following the heterogeneous autoregressive
+decomposition of \citet{corsi2009}. For a daily quantity $x_{d}$, the daily term
+is its value on the last trading day of the previous month, the weekly term is
+its sum over the last five trading days of that month, and the monthly term is
+its sum over the whole month. The daily and weekly terms are rescaled by 22 and
+by $22/5$ so that all three are expressed in the same monthly units, and all
+three are lagged one month. The labels daily, weekly and monthly therefore refer
+to the horizon over which the quantity is accumulated, not to the frequency at
+which it is observed or at which the model is estimated. This construction is
+applied identically to realized variance, to realized quarticity, to the jump
+and continuous components, and to the non-positive return that carries the
+leverage effect, which yields fifteen of the 33 series.
+
+Twenty-three series extend back to 1927 and define the
+long sample: the fifteen heterogeneous autoregressive terms just described; the
+policy uncertainty index of \citet{bakerbloomdavis2016}; the
 \citet{schwert1989} volatility estimates of producer price and industrial
 production growth; the dividend and earnings yields; the geopolitical risk index
 of \citet{caldaraiacoviello2022}; and the calendar terms. Ten further series
@@ -397,12 +407,7 @@ Figure~\ref{fig:covgrid} plots each predictor over its own available window.
 
 Every predictor is lagged so that it is observable at the forecast origin, and
 the macroeconomic series are aligned on their release rather than their
-reference month. The two samples are not nested robustness checks of one
-another. They trade history against breadth, and reporting both is the only way
-to separate a result that depends on the post-1986 period from one that does
-not. The panel is unbalanced: a factor enters as soon as it can support the full
-lag structure and remains thereafter, so the number of series grows over time,
-as Figure~\ref{fig:coverage} in the Internet Appendix shows.
+reference month, so that we mitigate forward-looking bias. The two samples  trade history against breadth, so we report both. The panel is unbalanced: a factor enters as soon as it can support the full lag structure and remains thereafter, so the number of series grows over time, as Figure~\ref{fig:coverage} in the Internet Appendix shows.
 Figure~\ref{fig:correlogram} reports the correlations among predictors, which
 are high within the variance families and low across them.
 
@@ -417,8 +422,7 @@ end of month $t$. Models estimate
 \end{equation}
 so the target is the logarithm of realized variance. Working in logs keeps the
 conditional distribution close to symmetric and prevents the few extreme months
-from dominating a squared-error criterion; forecasts are returned to variance
-units before any portfolio is formed.
+from dominating a squared-error criterion. Forecasts are returned to variance units before any portfolio is formed.
 
 Estimation is walk-forward and strictly out of sample. Training uses an
 expanding window beginning at the first month of the sample. Hyperparameters are
@@ -426,10 +430,27 @@ selected on a validation block of the 90 months immediately preceding the
 forecast date, chosen once a year in June, and the selected configuration is
 then refitted on all data up to month $t$ before month $t+1$ is forecast. The
 heterogeneous autoregressive specifications have no hyperparameters and are
-refitted on the same expanding window without a validation block. Preprocessing
-is performed within series and on an expanding basis: winsorization and scaling
-use only the history available at each date, so no quantile, mean or dispersion
-estimated on future data can reach a training sample.
+refitted on the same expanding window without a validation block. Their training
+requirement is set to 210 months, which equals the 120 training and 90
+validation months the tuned models consume, so every specification produces its
+first forecast in the same month and the comparison is never contaminated by a
+difference in the evaluation window. Preprocessing
+is performed within series and on an expanding basis: predictors are winsorized
+and rescaled using only the history available at each date, so no quantile,
+centre or dispersion estimated on future data can reach a training sample.
+
+Three design choices admit more than one reasonable setting, and we fix a
+primary specification rather than reporting an average over them. The main
+results use the sample beginning in 1986, grid search, and rescaling of the
+predictors to a bounded interval. The 1986 sample is the period over which the
+largest number of predictors is available, and in particular the only one that
+contains option-implied volatility, which the review identifies as a strong
+addition to a variance forecast. Grid search and bounded rescaling are
+the more common pair in the machine learning literature on expected returns that
+this design borrows from. The sample beginning in 1927, Bayesian optimization,
+and standardization by centre and dispersion are reported as robustness checks.
+Every combination is estimated, so the robustness results are the same
+experiment under a different setting rather than a separate exercise.
 
 Two estimation universes are compared. The \emph{pooled} universe estimates one
 function $g$ on the panel of all 153 factors together with the market series,
@@ -442,11 +463,7 @@ strong commonality in realized volatility across more than fifty instruments and
 show that panel estimation exploiting it reduces parameter uncertainty and
 improves out-of-sample forecasts, and they note that this requires the model to
 be centered so that its parameters do not depend on the level of risk, which is
-the role played here by within-series scaling. That mechanism has not been
-tested against the negative machine learning results in this literature.
-\citet{brancorubesamzevallos2024} estimate their models index by index, and
-report in their own review that the studies finding gains from machine learning
-are those that pool. Whether pooling accounts for the difference is an empirical
+the role played here by within-series scaling. Whether pooling helps market RV predictability is an empirical
 question this design answers directly.
 
 \subsection{Prediction models}
@@ -458,34 +475,37 @@ flexible nonlinear learners. The heterogeneous autoregressive model of
 realized variance terms alone and is the benchmark every other model is measured
 against. The augmented version adds the full predictor set to the same linear
 estimator, and isolates the contribution of the predictors from the contribution
-of functional flexibility. The elastic net of penalized linear regression adds
-shrinkage over that predictor set, with the mixing parameter searched over
-$\{0, 0.25, 0.5, 0.75, 1\}$ and the penalty chosen along the fitted path. Random
-forests and gradient-boosted trees introduce interactions and thresholds:
-forests search the predictor fraction over $\{0.15, 0.35, 0.50\}$ and depth over
-$\{2, 5, 8\}$ with a thousand trees; boosted trees search the learning rate over
-$\{0.01, 0.05, 0.10\}$, depth over $\{1, 2, 3\}$ and minimum child weight over
-$\{5, 20\}$, with the number of rounds set by early stopping. Three feedforward
-networks with one, two and three hidden layers of 32, 32 and 16, and 32, 16 and
-8 units complete the set, each averaged over ten random initializations to
-reduce the seed dependence documented by \citet{gukellyxiu2020}, searching the
-learning rate, the dropout rate and an $L_1$ penalty.
+of functional flexibility. The elastic net adds shrinkage over that predictor
+set, searching the mixing weight between the two penalties. Random forests and
+gradient-boosted trees introduce interactions and thresholds, searching the
+predictor subsampling fraction and tree depth in the first case and the learning
+rate, depth and a node-size control in the second. Three feedforward networks
+with one, two and three hidden layers complete the set, searching the learning
+rate, the dropout rate and an $L_1$ penalty, and each is refitted from ten
+random initializations whose predictions are averaged, following
+\citet{gukellyxiu2020}. Table~\ref{tab:hyper} reports every search space and
+every fixed setting.
 
-Hyperparameters are selected in two ways, so that the search protocol is itself
-one of the axes of the analysis. The first is an exhaustive grid over the values
-above. The second is Bayesian optimization, which allocates a comparable budget
-adaptively rather than uniformly \citep{bergstrabengio2012}. Comparing the two
-addresses the observation from the review that most applications in this
-literature leave the search design unreported. Functional forms, the complete
-search spaces and the fixed settings are given in
-Appendix~\ref{app:algorithmic}.
+Hyperparameters are selected in two ways. The first is an exhaustive grid. The
+second is Bayesian optimization, which allocates a comparable budget adaptively
+rather than uniformly \citep{bergstrabengio2012}. Comparing the two serves as a
+robustness check regarding the tuning approach. Both minimize root mean squared
+error on the validation block. The complete search spaces, the fixed settings
+and the per-refit budgets are reported in Table~\ref{tab:hyper}, and the
+functional forms in Appendix~\ref{app:algorithmic}.
 
-Forecasts are evaluated with mean squared error and the quasi-likelihood loss,
-the two functions \citet{patton2011} shows to be robust when the volatility
-proxy is noisy, together with the out-of-sample $R^{2}$ against the
-heterogeneous autoregressive benchmark. Sets of models that cannot be
-distinguished are identified with the model confidence set of
-\citet{hansenlundenason2011}.
+All models, the heterogeneous autoregressive benchmark included, are scored on
+the same set of nine out-of-sample measures. Four are loss functions: root mean
+squared error, mean absolute error, mean pseudo-Huber error and mean absolute
+percentage error. One is a quantile criterion, the mean pinball loss at the
+median. Two summarize the errors rather than their magnitude: the hit rate, the
+share of months in which forecast and realization share a sign, and the mean
+bias. The last two describe agreement with the realization: the coefficient of
+determination, computed against the mean of the target rather than against a
+rival model, and the mean cross-product of forecast and realization. Reporting
+the whole set matters because these functions disagree about which errors are
+costly, and a ranking that rests on one of them can reverse under another
+\citep{patton2011}.
 
 \subsection{Volatility-managed portfolios}
 \label{sec:portfolios}
@@ -511,18 +531,28 @@ with the appraisal ratio $\alpha_i / \sigma(u_i)$ reported alongside, since a
 positive intercept is what expands the mean-variance frontier spanned by the
 original factor.
 
-Three exercises follow. The first runs equations~\eqref{eq:managed} and
+The intercept is not the whole of the economic evidence, and reporting it alone
+would answer a narrower question than the one asked. For every managed series we
+also report the mean excess return, the standard deviation, the Sharpe ratio and
+its change relative to the unmanaged factor, the maximum drawdown, and the
+skewness and kurtosis of the managed return, since the construction is
+frequently defended on the ground that it reduces crash risk rather than that it
+raises average returns \citep{barrososantaclara2015}. Turnover and the leverage
+the scaling implies are reported as well, because a strategy whose weight is
+proportional to the inverse of a forecast variance can demand positions that a
+real investor would not hold, and this is one of the margins on which
+\citet{cederburg2020} find the managed portfolios fail outside a spanning
+regression.
+
+Our implementation has three main dimensions. The first runs equations~\eqref{eq:managed} and
 \eqref{eq:spanning} factor by factor, which places the results directly beside
-\citet{moreiramuir2017}, \citet{cederburg2020} and \citet{schwarz2025}. Because
-every forecast is formed from information available at the formation date, the
-implementability objection of \citet{cederburg2020} applies to the design rather
-than to the interpretation of the results, and their finding that managed
-portfolios fail in real time becomes a testable consequence of forecast quality.
+\citet{moreiramuir2017}, \citet{cederburg2020} and \citet{schwarz2025}. Every forecast is formed from information available at the formation date, which allows us to compare results with \citet{cederburg2020} and evaluate whether forecast quality changes conclusions.
+
 The second aggregates the managed factors into the conditional multifactor
-portfolio of \citet{demiguelmartinutrerauppal2024}, whose construction has so
-far been implemented with the lagged realized variance, and asks whether a
-better forecast of the conditioning variable changes their conclusion. The
-third reports, for the market series only, the volatility-targeting portfolio of
+portfolio of \citet{demiguelmartinutrerauppal2024}, whose construction has so far been implemented with the lagged realized variance, and asks whether a
+better forecast of the conditioning variable changes their conclusion.
+
+The third reports, for the market series only, the volatility-targeting portfolio of
 \citet{bollerslevhoodhusspedersen2018} evaluated by realized utility, which is
 the exercise of \citet{brancorubesamzevallos2024},
 \citet{diazhansencabrera2024} and \citet{chunchoryu2025}, so that our results
@@ -630,56 +660,65 @@ the fitted regularization path with a minimum ratio of $10^{-4}$.
 
 \subsubsection{Tree ensembles}
 
-Random forests average $B$ regression trees grown on bootstrap resamples, each
-split considering a random subset of predictors,
+A regression tree partitions the predictor space into terminal regions $C_l$ and
+assigns each observation the mean outcome in its region,
 \begin{equation}
-g_{\mathrm{RF}}(\mathbf{z}_{i,t}) = \frac{1}{B} \sum_{b=1}^{B}
- T_b(\mathbf{z}_{i,t}; \Theta_b).
+g_{\mathrm{tree}}(\mathbf{z}_{i,t}) = \sum_{l=1}^{L} \theta_l
+ \mathbf{1}\{\mathbf{z}_{i,t} \in C_l\}.
 \end{equation}
-The predictor fraction is searched over $\{0.15, 0.35, 0.50\}$ and the maximum
-depth over $\{2, 5, 8\}$, with $B = 1{,}000$ and a minimum bucket of five
-observations held fixed. Gradient boosting builds the fit additively,
-$g^{(k)} = g^{(k-1)} + \eta\, T_k$, where each tree is fitted to the gradient of
-the squared-error loss. The learning rate $\eta$ is searched over
-$\{0.01, 0.05, 0.10\}$, the depth over $\{1, 2, 3\}$ and the minimum child
-weight over $\{5, 20\}$, with row and column subsampling fixed at 0.8, no
-additional regularization, and a ceiling of 1{,}000 rounds at which early
-stopping after 30 rounds without validation improvement determines the number
-actually used.
+The random forest averages trees grown on bootstrap resamples, with a random
+fraction of predictors considered at each split, which decorrelates the trees
+and reduces variance. Gradient boosting instead constructs an additive sequence,
+\begin{equation}
+g_{\mathrm{XGB}}(\mathbf{z}_{i,t}) = \sum_{f=1}^{F} T_f(\mathbf{z}_{i,t}),
+\end{equation}
+in which each new tree is fitted to the remaining loss from the preceding
+ensemble. Depth governs the order of interaction, the learning rate scales the
+contribution of each tree, and the regularized objective penalizes leaf
+complexity and leaf weights \citep{chenguestrin2016}. The number of rounds is
+set by early stopping after 30 rounds without validation improvement rather than
+tuned, so the round count in Table~\ref{tab:hyper} is a ceiling.
 
 \subsubsection{Neural networks}
 
-Each network is a feedforward stack in which layer $\ell$ computes
-$h^{(\ell)} = \mathrm{ReLU}\bigl(W^{(\ell)} h^{(\ell-1)} + b^{(\ell)}\bigr)$,
-with batch normalization at every hidden layer and a linear output. The three
-architectures have hidden widths $(32)$, $(32,16)$ and $(32,16,8)$. Training
-minimizes squared error plus an $L_1$ penalty on the weights, using Adam with
-batches of 64 for at most 100 epochs and early stopping after 10 epochs without
-validation improvement. The learning rate is searched over
-$\{10^{-4}, 10^{-3}, 10^{-2}\}$, the dropout rate over $\{0, 0.1, 0.25\}$ and
-the $L_1$ penalty over $\{10^{-5}, 10^{-4}, 10^{-3}\}$. Each configuration is
-estimated ten times from different random initializations and the forecasts are
-averaged, which removes most of the seed dependence that otherwise dominates
-comparisons among small networks.
+The networks are feedforward with ReLU activations,
+\begin{equation}
+g_{\mathrm{NN}}(\mathbf{z}_{i,t}) = \mathbf{W}_{K}\operatorname{ReLU}
+ \bigl(\cdots \operatorname{ReLU}(\mathbf{W}_{1}\mathbf{z}_{i,t} +
+ \mathbf{b}_{1}) \cdots \bigr) + \mathbf{b}_{K},
+\end{equation}
+with batch normalization at each hidden layer. NN1 has one hidden layer of 32
+units, NN2 has layers of 32 and 16 units, and NN3 has layers of 32, 16 and 8
+units. Training uses Adam and minimizes squared error plus an $L_1$ penalty on
+the weights,
+\begin{equation}
+\mathcal{L}_{\mathrm{NN}} = \sum_{i,t}
+ \bigl[y_{i,t+1} - g_{\mathrm{NN}}(\mathbf{z}_{i,t})\bigr]^{2}
+ + \lambda^{\omega} \sum_k \lVert \mathbf{W}_k \rVert_1,
+\end{equation}
+stopping after 10 epochs without validation improvement. After hyperparameters
+are selected, each architecture is refitted from ten independent random
+initializations and the predictions are averaged, following
+\citet{gukellyxiu2020}. Tuning itself uses a single fitted network, so the
+averaging reduces sensitivity to one initialization without enlarging the search
+budget.
 
 \subsubsection{Hyperparameter search}
 
-Two protocols are compared. Grid search evaluates every combination above.
+Grid search evaluates every combination in Panel A of Table~\ref{tab:hyper}.
 Bayesian optimization places a Gaussian-process prior on the validation loss and
-selects the next configuration by an acquisition rule, with budgets of six to
-twelve iterations after an initialization of six to ten points, depending on the
-dimension of the search space \citep{bergstrabengio2012}. Parameters that act
-multiplicatively, namely the boosting learning rate, the network learning rate
-and the $L_1$ penalty, are searched on a logarithmic scale, so that a uniform
-prior does not concentrate the budget on large values.
+selects each next configuration by an acquisition rule over the bounds in Panel
+B \citep{bergstrabengio2012}. Parameters that act multiplicatively, namely the
+boosting learning rate, the network learning rate and the network $L_1$ penalty,
+are searched on a logarithmic scale so that a uniform prior does not concentrate
+the budget on large values. Both protocols re-optimize at each annual refit.
 
 \subsubsection{Preprocessing}
 
 Predictors are winsorized and rescaled within each series using only past
-observations. The scaling variant standardizes by the expanding median and
-median absolute deviation after trimming at the 1st and 99th percentiles; the
-alternative maps each series to the unit interval after trimming at the 2.5th
-and 97.5th percentiles. Both require a minimum of 36 observations before any
+observations. The primary variant maps each winsorized series onto a bounded
+interval; the alternative standardizes it by the expanding median and median
+absolute deviation. Both require a minimum of 36 observations before any
 transformation is applied. Because the transformation is expanding and applied
 within series, no statistic estimated on future observations enters a training
 sample, and the panel remains comparable across series with different levels of
@@ -687,6 +726,8 @@ risk, which is the centering requirement of
 \citet{bollerslevhoodhusspedersen2018}.
 
 \subsection{Additional Tables}
+
+\input{../tables/hyperparameter_bounds.tex}
 
 \input{../tables/variable_definitions.tex}
 

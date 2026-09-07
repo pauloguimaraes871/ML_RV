@@ -68,21 +68,26 @@
   ## `var` is the internal column and never reaches the page.
   dict <- tibble::tribble(
     ~var, ~label, ~definition, ~source,
-    "rv_td_lag1", "Realized variance, daily", "Squared return on the last trading day of the previous month", "CRSP; JKP",
-    "rv_tw_lag1", "Realized variance, weekly", "Mean daily realized variance over the last five trading days of the previous month", "CRSP; JKP",
-    "rv_month_lag1", "Realized variance, monthly", "Mean daily realized variance over the previous month", "CRSP; JKP",
-    "rq_td_lag1", "Realized quarticity, daily", "Daily fourth power of returns scaled by three, last trading day", "CRSP; JKP",
-    "rq_tw_lag1", "Realized quarticity, weekly", "Five-day mean of the daily quarticity measure", "CRSP; JKP",
-    "rq_month_lag1", "Realized quarticity, monthly", "Monthly mean of the daily quarticity measure", "CRSP; JKP",
-    "jump_td_lag1", "Jump variation, daily", "Realized variance in excess of the truncated local variance, last trading day", "CRSP; JKP",
-    "jump_tw_lag1", "Jump variation, weekly", "Five-day mean of daily jump variation", "CRSP; JKP",
-    "jump_month_lag1", "Jump variation, monthly", "Monthly mean of daily jump variation", "CRSP; JKP",
-    "cont_td_lag1", "Continuous variation, daily", "Realized variance net of the jump component, last trading day", "CRSP; JKP",
-    "cont_tw_lag1", "Continuous variation, weekly", "Five-day mean of daily continuous variation", "CRSP; JKP",
-    "cont_month_lag1", "Continuous variation, monthly", "Monthly mean of daily continuous variation", "CRSP; JKP",
-    "negret_td_lag1", "Negative return, daily", "Minimum of the last daily return and zero", "CRSP; JKP",
-    "negret_tw_lag1", "Negative return, weekly", "Minimum of the five-day return and zero", "CRSP; JKP",
-    "negret_month_lag1", "Negative return, monthly", "Minimum of the monthly return and zero", "CRSP; JKP",
+    ## The three horizons are the heterogeneous autoregressive aggregation of
+    ## Corsi (2009) applied to each family, all expressed in monthly units: the
+    ## daily term is the last trading day scaled by 22, the weekly term is the
+    ## last five trading days scaled by 22/5, and the monthly term is the sum
+    ## over the month. Every term is lagged one month.
+    "rv_td_lag1", "Realized variance, daily term", "Realized variance of the last trading day of the previous month, scaled to monthly units", "CRSP; JKP",
+    "rv_tw_lag1", "Realized variance, weekly term", "Realized variance summed over the last five trading days of the previous month, scaled to monthly units", "CRSP; JKP",
+    "rv_month_lag1", "Realized variance, monthly term", "Realized variance summed over the previous month", "CRSP; JKP",
+    "rq_td_lag1", "Realized quarticity, daily term", "Realized quarticity of the last trading day of the previous month, scaled to monthly units", "CRSP; JKP",
+    "rq_tw_lag1", "Realized quarticity, weekly term", "Realized quarticity summed over the last five trading days, scaled to monthly units", "CRSP; JKP",
+    "rq_month_lag1", "Realized quarticity, monthly term", "Realized quarticity summed over the previous month", "CRSP; JKP",
+    "jump_td_lag1", "Jump variation, daily term", "Jump component of the last trading day, scaled to monthly units", "CRSP; JKP",
+    "jump_tw_lag1", "Jump variation, weekly term", "Jump component summed over the last five trading days, scaled to monthly units", "CRSP; JKP",
+    "jump_month_lag1", "Jump variation, monthly term", "Jump component summed over the previous month", "CRSP; JKP",
+    "cont_td_lag1", "Continuous variation, daily term", "Continuous component of the last trading day, scaled to monthly units", "CRSP; JKP",
+    "cont_tw_lag1", "Continuous variation, weekly term", "Continuous component summed over the last five trading days, scaled to monthly units", "CRSP; JKP",
+    "cont_month_lag1", "Continuous variation, monthly term", "Continuous component summed over the previous month", "CRSP; JKP",
+    "negret_td_lag1", "Negative return, daily term", "Minimum of the last trading day return and zero, scaled to monthly units", "CRSP; JKP",
+    "negret_tw_lag1", "Negative return, weekly term", "Minimum of the five-day return and zero, scaled to monthly units", "CRSP; JKP",
+    "negret_month_lag1", "Negative return, monthly term", "Minimum of the previous month return and zero", "CRSP; JKP",
     "log_epu_diff_lag1", "Policy uncertainty growth", "Log change in the news-based economic policy uncertainty index", "Baker, Bloom and Davis (2016)",
     "ppi_vol", "Producer price volatility", "Schwert (1989) out-of-sample volatility of producer price growth", "FRED PPIACO",
     "ip_vol", "Industrial production volatility", "Schwert (1989) out-of-sample volatility of industrial production growth", "FRED IPB50001N",
@@ -100,7 +105,7 @@
     "oil_rv_month_lag1", "Crude oil variance, monthly", "Monthly mean of daily crude oil realized variance", "FRED DCOILWTICO",
     "vix_lag1", "Implied volatility", "Closing level of the volatility index, extended before 1990 with its predecessor", "CBOE",
     "month", "Calendar month", "Month of the year, entering as twelve indicators", "Calendar",
-    "sqrt_days", "Trading days", "Square root of the number of trading days in the month", "CRSP"
+    "sqrt_days", "Trading days", "Square root of the number of trading days in the month; the level falls once Saturday trading ends in 1952", "CRSP"
   )
 
   key_cols  <- c("name", "month_id")
@@ -301,6 +306,126 @@
     "}"
   )
   writeLines(tbl_def, file.path(tables_dir, "variable_definitions.tex"))
+
+# Table: hyperparameter search spaces (Internet Appendix)-----------------------
+
+  ## The values below are transcribed from the run specification. They are not
+  ## read from it, because sourcing that file would launch the fitting run, so
+  ## the guard checks that each literal is still present in the source. Editing
+  ## a search space without editing this table therefore fails the build rather
+  ## than publishing a stale one.
+  spec_src <- paste(readLines(file.path(project_dir, "fit_models.R"),
+                              warn = FALSE), collapse = " ")
+  spec_src <- gsub("[[:space:]]+", " ", spec_src)
+  expected <- c(
+    "alpha = c(0, 0.25, 0.5, 0.75, 1)",
+    "lambda.min.ratio = 1e-4",
+    "bayes = list(alpha = c(0, 1))",
+    "mtry = c(0.15, 0.35, 0.50), max.depth = c(2L, 5L, 8L)",
+    "num.trees = 1000L, min.bucket = 5L",
+    "mtry = c(0.15, 0.50), max.depth = c(2L, 8L)",
+    "eta = c(0.01, 0.05, 0.10), max_depth = c(1L, 2L, 3L)",
+    "min_child_weight = c(5L, 20L)",
+    "nrounds = 1000L, subsample = 0.8, colsample_bytree = 0.8",
+    "eta = c(-2, -1), max_depth = c(1L, 3L)",
+    "lr = c(1e-4, 1e-3, 1e-2), droprate = c(0, 0.1, 0.25)",
+    "regularizer_l1 = c(1e-5, 1e-4, 1e-3)",
+    "lr = c(-4, -2), droprate = c(0, 0.25)",
+    "regularizer_l1 = c(-5, -3)",
+    "regularizer_l2 = 0, size_of_batch = 64L",
+    "number_of_epochs = 100L"
+  )
+  absent <- expected[!vapply(expected, function(e)
+    grepl(gsub("[[:space:]]+", " ", e), spec_src, fixed = TRUE), logical(1))]
+  if (length(absent) > 0L) {
+    stop("The run specification no longer matches the hyperparameter table. ",
+         "Missing: ", paste(absent, collapse = " | "))
+  }
+
+  hp <- tibble::tribble(
+    ~name, ~symbol, ~enet, ~rf, ~xgb, ~nn,
+    "L1 share of the penalty", "$\\lambda^{\\rho}$", "0, 0.25, 0.5, 0.75, 1", "--", "--", "--",
+    "Penalty path floor", "$\\lambda^{\\psi}$", "Fixed: $10^{-4}$", "--", "--", "--",
+    "Trees / boosting rounds", "$\\lambda^{T}$ / $\\lambda^{F}$", "--", "Fixed: 1{,}000", "Fixed: 1{,}000", "--",
+    "Maximum depth", "$\\lambda^{D}$", "--", "2, 5, 8", "1, 2, 3", "--",
+    "Minimum terminal node size", "$\\lambda^{L}$", "--", "Fixed: 5", "--", "--",
+    "Minimum child weight", "$\\lambda^{C}$", "--", "--", "5, 20", "--",
+    "Feature subsampling fraction", "$\\lambda^{R}$", "--", "0.15, 0.35, 0.50", "Fixed: 0.8", "--",
+    "Row subsampling fraction", "$\\lambda^{S}$", "--", "--", "Fixed: 0.8", "--",
+    "Learning rate", "$\\lambda^{\\eta}$", "--", "--", "0.01, 0.05, 0.10", "$10^{-4}$, $10^{-3}$, $10^{-2}$",
+    "L1 penalty", "$\\lambda^{\\alpha}$ / $\\lambda^{\\omega}$", "--", "--", "Fixed: 0", "$10^{-5}$, $10^{-4}$, $10^{-3}$",
+    "L2 penalty", "$\\lambda^{\\delta}$", "--", "--", "--", "Fixed: 0",
+    "Minimum split loss", "$\\lambda^{\\gamma}$", "--", "--", "Fixed: 0", "--",
+    "Dropout rate", "$\\lambda^{p}$", "--", "--", "--", "0, 0.1, 0.25",
+    "Batch size", "$\\lambda^{b}$", "--", "--", "--", "Fixed: 64",
+    "Epochs", "$\\lambda^{e}$", "--", "--", "--", "Fixed: 100"
+  )
+
+  hpb <- tibble::tribble(
+    ~name, ~symbol, ~enet, ~rf, ~xgb, ~nn,
+    "L1 share of the penalty", "$\\lambda^{\\rho}$", "[0, 1]", "--", "--", "--",
+    "Penalty path floor", "$\\lambda^{\\psi}$", "Fixed: $10^{-4}$", "--", "--", "--",
+    "Trees / boosting rounds", "$\\lambda^{T}$ / $\\lambda^{F}$", "--", "Fixed: 1{,}000", "Fixed: 1{,}000", "--",
+    "Maximum depth", "$\\lambda^{D}$", "--", "[2, 8]", "[1, 3]", "--",
+    "Minimum terminal node size", "$\\lambda^{L}$", "--", "Fixed: 5", "--", "--",
+    "Minimum child weight", "$\\lambda^{C}$", "--", "--", "[5, 20]", "--",
+    "Feature subsampling fraction", "$\\lambda^{R}$", "--", "[0.15, 0.50]", "Fixed: 0.8", "--",
+    "Row subsampling fraction", "$\\lambda^{S}$", "--", "--", "Fixed: 0.8", "--",
+    "Learning rate", "$\\lambda^{\\eta}$", "--", "--", "[$10^{-2}$, $10^{-1}$]", "[$10^{-4}$, $10^{-2}$]",
+    "L1 penalty", "$\\lambda^{\\alpha}$ / $\\lambda^{\\omega}$", "--", "--", "Fixed: 0", "[$10^{-5}$, $10^{-3}$]",
+    "L2 penalty", "$\\lambda^{\\delta}$", "--", "--", "--", "Fixed: 0",
+    "Minimum split loss", "$\\lambda^{\\gamma}$", "--", "--", "Fixed: 0", "--",
+    "Dropout rate", "$\\lambda^{p}$", "--", "--", "--", "[0, 0.25]",
+    "Batch size", "$\\lambda^{b}$", "--", "--", "--", "Fixed: 64",
+    "Epochs", "$\\lambda^{e}$", "--", "--", "--", "Fixed: 100"
+  )
+
+  hp_rows <- function(d) sprintf("%s & %s & %s & %s & %s & %s \\\\",
+                                 d$name, d$symbol, d$enet, d$rf, d$xgb, d$nn)
+
+  tbl_hp <- c(
+    "\\begin{table}[p]",
+    "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
+    "\\renewcommand{\\arraystretch}{0.85}",
+    paste0("\\caption[Hyperparameter search spaces]{\\footnotesize \\textbf{: ",
+           "Hyperparameter search spaces.} Reports the grid and the Bayesian ",
+           "search domains for each tuned model, with the per-refit evaluation ",
+           "budgets. Entries marked fixed are set once and excluded from the ",
+           "search. The heterogeneous autoregressive specifications are untuned ",
+           "and omitted.}"),
+    "\\scriptsize",
+    "\\setlength{\\tabcolsep}{3pt}",
+    paste0("\\begin{tabularx}{\\linewidth}{",
+           ">{\\raggedright\\arraybackslash}m{2.9cm}",
+           ">{\\centering\\arraybackslash}m{1.35cm}",
+           "*{4}{>{\\raggedleft\\arraybackslash}X}}"),
+    "\\hline",
+    "Hyperparameter & Symbol & ENET & RF & XGB & NN1--NN3 \\\\",
+    "\\hline",
+    "\\multicolumn{6}{@{}l}{\\textit{Panel A. Grid search}} \\\\",
+    hp_rows(hp),
+    "\\hline",
+    "Grid combinations per refit & & 5 & 9 & 18 & 27 \\\\",
+    "\\hline",
+    "\\multicolumn{6}{@{}l}{\\textit{Panel B. Bayesian optimization}} \\\\",
+    hp_rows(hpb),
+    "\\hline",
+    "Initial design points & & 6 & 8 & 10 & 10 \\\\",
+    "Acquisition iterations & & 6 & 10 & 12 & 10 \\\\",
+    "Total evaluations per refit & & 12 & 18 & 22 & 20 \\\\",
+    "\\hline",
+    paste0("\\multicolumn{6}{@{}p{0.98\\linewidth}@{}}{\\textit{Both arms ",
+           "minimize validation root mean squared error and re-optimize at each ",
+           "annual refit; grid search is the primary specification. Learning ",
+           "rates and the L1 penalty are searched on a logarithmic scale and ",
+           "reported here in engine units. Boosting rounds are a ceiling set by ",
+           "early stopping, not a tuned quantity.}} \\\\"),
+    "\\hline",
+    "\\end{tabularx}",
+    "\\label{tab:hyper}",
+    "\\end{table}"
+  )
+  writeLines(tbl_hp, file.path(tables_dir, "hyperparameter_bounds.tex"))
 
 # Figure: predictor time series-------------------------------------------------
 

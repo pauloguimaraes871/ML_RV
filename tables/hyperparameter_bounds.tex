@@ -1,0 +1,55 @@
+\begin{table}[p]
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.85}
+\caption[Hyperparameter search spaces]{\footnotesize \textbf{: Hyperparameter search spaces.} Reports the grid and the Bayesian search domains for each tuned model, with the per-refit evaluation budgets. Entries marked fixed are set once and excluded from the search. The heterogeneous autoregressive specifications are untuned and omitted.}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}m{2.9cm}>{\centering\arraybackslash}m{1.35cm}*{4}{>{\raggedleft\arraybackslash}X}}
+\hline
+Hyperparameter & Symbol & ENET & RF & XGB & NN1--NN3 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel A. Grid search}} \\
+L1 share of the penalty & $\lambda^{\rho}$ & 0, 0.25, 0.5, 0.75, 1 & -- & -- & -- \\
+Penalty path floor & $\lambda^{\psi}$ & Fixed: $10^{-4}$ & -- & -- & -- \\
+Trees / boosting rounds & $\lambda^{T}$ / $\lambda^{F}$ & -- & Fixed: 1{,}000 & Fixed: 1{,}000 & -- \\
+Maximum depth & $\lambda^{D}$ & -- & 2, 5, 8 & 1, 2, 3 & -- \\
+Minimum terminal node size & $\lambda^{L}$ & -- & Fixed: 5 & -- & -- \\
+Minimum child weight & $\lambda^{C}$ & -- & -- & 5, 20 & -- \\
+Feature subsampling fraction & $\lambda^{R}$ & -- & 0.15, 0.35, 0.50 & Fixed: 0.8 & -- \\
+Row subsampling fraction & $\lambda^{S}$ & -- & -- & Fixed: 0.8 & -- \\
+Learning rate & $\lambda^{\eta}$ & -- & -- & 0.01, 0.05, 0.10 & $10^{-4}$, $10^{-3}$, $10^{-2}$ \\
+L1 penalty & $\lambda^{\alpha}$ / $\lambda^{\omega}$ & -- & -- & Fixed: 0 & $10^{-5}$, $10^{-4}$, $10^{-3}$ \\
+L2 penalty & $\lambda^{\delta}$ & -- & -- & -- & Fixed: 0 \\
+Minimum split loss & $\lambda^{\gamma}$ & -- & -- & Fixed: 0 & -- \\
+Dropout rate & $\lambda^{p}$ & -- & -- & -- & 0, 0.1, 0.25 \\
+Batch size & $\lambda^{b}$ & -- & -- & -- & Fixed: 64 \\
+Epochs & $\lambda^{e}$ & -- & -- & -- & Fixed: 100 \\
+\hline
+Grid combinations per refit & & 5 & 9 & 18 & 27 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel B. Bayesian optimization}} \\
+L1 share of the penalty & $\lambda^{\rho}$ & [0, 1] & -- & -- & -- \\
+Penalty path floor & $\lambda^{\psi}$ & Fixed: $10^{-4}$ & -- & -- & -- \\
+Trees / boosting rounds & $\lambda^{T}$ / $\lambda^{F}$ & -- & Fixed: 1{,}000 & Fixed: 1{,}000 & -- \\
+Maximum depth & $\lambda^{D}$ & -- & [2, 8] & [1, 3] & -- \\
+Minimum terminal node size & $\lambda^{L}$ & -- & Fixed: 5 & -- & -- \\
+Minimum child weight & $\lambda^{C}$ & -- & -- & [5, 20] & -- \\
+Feature subsampling fraction & $\lambda^{R}$ & -- & [0.15, 0.50] & Fixed: 0.8 & -- \\
+Row subsampling fraction & $\lambda^{S}$ & -- & -- & Fixed: 0.8 & -- \\
+Learning rate & $\lambda^{\eta}$ & -- & -- & [$10^{-2}$, $10^{-1}$] & [$10^{-4}$, $10^{-2}$] \\
+L1 penalty & $\lambda^{\alpha}$ / $\lambda^{\omega}$ & -- & -- & Fixed: 0 & [$10^{-5}$, $10^{-3}$] \\
+L2 penalty & $\lambda^{\delta}$ & -- & -- & -- & Fixed: 0 \\
+Minimum split loss & $\lambda^{\gamma}$ & -- & -- & Fixed: 0 & -- \\
+Dropout rate & $\lambda^{p}$ & -- & -- & -- & [0, 0.25] \\
+Batch size & $\lambda^{b}$ & -- & -- & -- & Fixed: 64 \\
+Epochs & $\lambda^{e}$ & -- & -- & -- & Fixed: 100 \\
+\hline
+Initial design points & & 6 & 8 & 10 & 10 \\
+Acquisition iterations & & 6 & 10 & 12 & 10 \\
+Total evaluations per refit & & 12 & 18 & 22 & 20 \\
+\hline
+\multicolumn{6}{@{}p{0.98\linewidth}@{}}{\textit{Both arms minimize validation root mean squared error and re-optimize at each annual refit; grid search is the primary specification. Learning rates and the L1 penalty are searched on a logarithmic scale and reported here in engine units. Boosting rounds are a ceiling set by early stopping, not a tuned quantity.}} \\
+\hline
+\end{tabularx}
+\label{tab:hyper}
+\end{table}

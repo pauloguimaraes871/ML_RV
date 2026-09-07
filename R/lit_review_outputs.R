@@ -501,8 +501,23 @@
         v <- ref[key == k]
         v[which.min(nchar(v))]
       }, character(1))
-      agg$label <- sub(",\\s*\\(\\d{4}\\).*$", "", agg$label)   # drop year and outlet
-      agg$label <- tools::toTitleCase(tolower(sub("\\.$", "", agg$label)))
+      ## Label by first author and year. The full reference string is far too
+      ## long for a bar chart and truncating it leaves the reader unable to tell
+      ## which study a bar refers to.
+      ## Strip the initials while the string is still upper case. Doing it after
+      ## title-casing leaves forms such as "Andersen Tg" behind, because the
+      ## trailing block no longer looks like a run of initials.
+      first_author <- trimws(sub("^([^,]+),.*$", "\\1", agg$label))
+      ## Initials arrive run together ("T.G.") and space separated ("T. G."),
+      ## so the trailing block is a run of single capitals with optional dots
+      ## and optional spaces between them.
+      first_author <- sub("\\s+([A-Z]\\.?\\s*)+$", "", first_author)
+      first_author <- tools::toTitleCase(tolower(first_author))
+      yr <- regmatches(agg$label, regexpr("\\((\\d{4})\\)", agg$label))
+      yr <- ifelse(nchar(yr) > 0, gsub("[()]", "", yr), "n.d.")
+      agg$label <- sprintf("%s (%s)", first_author, yr)
+      ## Two works by the same author in the same year would collide.
+      agg$label <- make.unique(agg$label, sep = "")
 
       ggplot2::ggsave(bib_pngs[["localcited"]],
                       bar_plot(agg$label, agg$n,
@@ -621,7 +636,8 @@
            "{\\footnotesize \\textbf{: Intellectual and conceptual structure of the ",
            "reviewed literature.} Panel (a) reports the fifteen references most often ",
            "cited by the articles in the review set, which is the measure used in ",
-           "Table~\\ref{tab:litfamilies}. The bibliographic database records the same ",
+           "Table~\\ref{tab:litfamilies}. Each bar is labelled by first author ",
+           "and year. The bibliographic database records the same ",
            "reference with small variations in spelling, so entries are merged on a ",
            "normalized key before counting; residual duplication across very similar ",
            "titles by the same authors cannot be ruled out. Panel (b) is the ",
@@ -631,7 +647,7 @@
            "$k$-means.}"),
     "fig:litstructure",
     c(panel("lit_localcited.png", "Most locally cited references"),
-      panel("lit_conceptual.png", "Conceptual structure map", "0.95")))
+      panel("lit_conceptual.png", "Conceptual structure map", "0.72")))
 
   write_fig(
     "literature_histnetwork_figure.tex", "histnet",
