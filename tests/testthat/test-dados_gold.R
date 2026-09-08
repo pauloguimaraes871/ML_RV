@@ -1,7 +1,27 @@
+## Tests for the gold datasets: prep_covariates and the artifacts it produces.
+##
+## Three sections, in the order a build passes through them:
+##   1. prep_covariates: LOCF, winsorizing, the expanding scalers, key
+##      isolation, and the walk-forward split and run-matrix machinery
+##   2. the transforms it applies: the scaler warm-up is discarded rather than
+##      passed through raw, the variance-family predictors are logged before
+##      winsorizing and scaling, and each series carries its own volatility
+##      level, which the within-key scaling would otherwise erase
+##   3. the artifacts on disk: integration checks that read what load_data.R
+##      writes and assert the properties the fitting stage relies on
+##
+## R/load_data.R runs this file after writing the artifacts and refuses to
+## finish if it fails. A failure in section 3 usually means the artifacts on
+## disk predate a preprocessing change and load_data.R needs to be re-run.
+
 library("testthat")
-## Helpers and classes
+`%>%` <- dplyr::`%>%`
 source(file.path(here::here(), "R", "helpers.R"))
 source(file.path(here::here(), "R", "classes.R"))
+
+
+# 1. prep_covariates =========================================================
+
 
 
 testthat::test_that("prep_covariates runs without errors", {
@@ -431,7 +451,7 @@ testthat::test_that("larger values produce larger scaled values at same time", {
 })
 
 
-# Panel dataset (v3) tests------------------------------------------------------
+# Panel dataset tests------------------------------------------------------
 
 testthat::test_that("implied vol is lagged AFTER the month-end observation is picked", {
 
@@ -1129,3 +1149,523 @@ testthat::test_that("panel preprocessing rejects a month factor with dropped lev
 })
 
 
+
+
+# 2. The transforms it applies ===============================================
+
+
+## A frame shaped like the real thing: a positive, right-skewed monthly term,
+## a column carrying exact zeros, and a column that must not be touched.
+make_df <- function(n = 120, seed = 1, key = NULL) {
+  set.seed(seed)
+  out <- data.frame(
+    month_id  = seq(as.Date("1990-01-01"), by = "month", length.out = n),
+    month     = factor(rep(1:12, length.out = n), levels = 1:12),
+    rv_month_lag1 = exp(stats::rnorm(n, -6.5, 0.9)),
+    rv_tw_lag1    = exp(stats::rnorm(n, -6.6, 1.0)),
+    jump_td_lag1  = ifelse(stats::runif(n) < 0.6, 0, exp(stats::rnorm(n, -9, 1))),
+    dfy_lag1      = stats::rnorm(n),
+    sqrt_days     = rep(4.5, n)
+  )
+  if (!is.null(key)) out$name <- key
+  out
+}
+
+
+# Warm-up ---------------------------------------------------------------
+
+testthat::test_that("the warm-up rows are dropped, not passed through raw", {
+
+  n <- 120L; m <- 36L
+  df  <- make_df(n)
+  res <- prep_covariates(df, scaling = "range", min_n = m)
+
+  testthat::expect_equal(nrow(res), n - m)
+
+  ## The rows that survive are exactly the ones the scalers actually scaled.
+  testthat::expect_equal(res$month_id, df$month_id[-seq_len(m)])
+
+  ## And none of them is still on the natural scale. Before this fix the first
+  ## min_n values of rv_month_lag1 sat near exp(-6.5), orders of magnitude away
+  ## from the scaled range the rest of the column occupies.
+  testthat::expect_true(all(abs(res$rv_month_lag1) < 50))
+})
+
+testthat::test_that("the warm-up drop runs within key, not across the panel", {
+
+  m <- 6L
+  df <- rbind(make_df(24, seed = 1, key = "A"),
+              make_df(24, seed = 2, key = "B"))
+  res <- prep_covariates(df, scaling = "range", min_n = m, key_col = "name")
+
+  testthat::expect_equal(as.integer(table(res$name)), c(24L - m, 24L - m))
+})
+
+testthat::test_that("a key no longer than the warm-up is emptied, not kept raw", {
+
+  df <- rbind(make_df(24, seed = 1, key = "A"),
+              make_df(5,  seed = 2, key = "B"))
+  res <- prep_covariates(df, scaling = "range", min_n = 6L, key_col = "name")
+
+  testthat::expect_equal(sum(res$name == "B"), 0L)
+  testthat::expect_equal(sum(res$name == "A"), 24L - 6L)
+})
+
+
+# Log transform ---------------------------------------------------------
+
+testthat::test_that("log_with_floor logs outright when there are no zeros", {
+
+  x <- exp(stats::rnorm(50))
+  testthat::expect_equal(log_with_floor(x, min_n = 10L), log(x))
+})
+
+testthat::test_that("log_with_floor shifts only columns holding exact zeros", {
+
+  x <- c(exp(stats::rnorm(20)), 0, exp(stats::rnorm(19)))
+  out <- log_with_floor(x, min_n = 20L)
+
+  testthat::expect_true(all(is.finite(out)))
+  testthat::expect_false(any(is.nan(out)))
+
+  ## The shift comes from the warm-up window only, so it is knowable at the
+  ## time each retained row is formed.
+  shift <- min(x[seq_len(20L)][x[seq_len(20L)] > 0])
+  testthat::expect_equal(out, log(x + shift))
+})
+
+testthat::test_that("the log transform is monotone, so ordering survives", {
+
+  x <- c(1e-9, 1e-7, 0, 1e-5, 1e-3)
+  out <- log_with_floor(x, min_n = 5L)
+  testthat::expect_equal(order(out), order(x))
+})
+
+testthat::test_that("a fixed offset would flatten quarticity but the floor does not", {
+
+  ## Realized quarticity lives near 1e-08, which is exactly the offset the
+  ## target transform uses. Applying it here would collapse the column.
+  rq <- exp(stats::rnorm(200, log(1e-8), 2))
+
+  flattened <- log(rq + 1e-08)
+  honest    <- log_with_floor(rq, min_n = 36L)
+
+  testthat::expect_gt(stats::sd(honest), stats::sd(flattened))
+})
+
+testthat::test_that("logging happens before scaling, so the column is centred", {
+
+  df  <- make_df(400)
+  res <- prep_covariates(df, scaling = "range",
+                         winsorize_range = c(0.025, 0.975), min_n = 36L)
+
+  ## Range scaling a raw variance piles the mass against the minimum, because
+  ## the expanding max is set by a handful of extreme months. Logging first
+  ## removes the skew, so the median should sit away from the floor.
+  at_floor <- mean(res$rv_month_lag1 <= min(res$rv_month_lag1) + 0.02)
+  testthat::expect_lt(at_floor, 0.05)
+  testthat::expect_gt(stats::median(res$rv_month_lag1), -0.75)
+})
+
+testthat::test_that("a negative value in a logged column is rejected loudly", {
+
+  df <- make_df(60)
+  df$rv_month_lag1[10] <- -1
+
+  testthat::expect_error(
+    prep_covariates(df, scaling = "range", min_n = 12L),
+    "must be non-negative"
+  )
+})
+
+testthat::test_that("columns outside log_cols are left on their own scale", {
+
+  df  <- make_df(120)
+  res <- prep_covariates(df, scaling = "range", min_n = 36L)
+
+  ## sqrt_days is excluded from winsorizing and scaling entirely.
+  testthat::expect_equal(res$sqrt_days, df$sqrt_days[-seq_len(36L)])
+})
+
+
+# Series level ----------------------------------------------------------
+
+testthat::test_that("rv_level_lag1 is the expanding mean of the logged term", {
+
+  n <- 120L; m <- 36L
+  df  <- make_df(n)
+  res <- prep_covariates(df, scaling = "range", min_n = m)
+
+  expected <- cumsum(log(df$rv_month_lag1)) / seq_len(n)
+  testthat::expect_equal(res$rv_level_lag1, expected[-seq_len(m)])
+})
+
+testthat::test_that("rv_level_lag1 uses nothing beyond the row it sits on", {
+
+  ## rv_month_lag1 is already a lag, so an expanding mean through row t carries
+  ## information up to t-1 only. Perturbing the tail must leave earlier rows
+  ## untouched.
+  df <- make_df(120)
+  df2 <- df; df2$rv_month_lag1[100:120] <- 1e3
+
+  a <- prep_covariates(df,  scaling = "range", min_n = 36L)
+  b <- prep_covariates(df2, scaling = "range", min_n = 36L)
+
+  keep <- df$month_id[1:99]
+  testthat::expect_equal(a$rv_level_lag1[a$month_id %in% keep],
+                         b$rv_level_lag1[b$month_id %in% keep])
+})
+
+testthat::test_that("rv_level_lag1 is never scaled away", {
+
+  ## The whole point of the column is the cross-key level. Scaling it within
+  ## key would map every series onto the same range and delete it again.
+  df <- rbind(make_df(120, seed = 1, key = "loud"),
+              make_df(120, seed = 2, key = "quiet"))
+  df$rv_month_lag1[df$name == "quiet"] <-
+    df$rv_month_lag1[df$name == "quiet"] / 30
+
+  res <- prep_covariates(df, scaling = "range", min_n = 36L, key_col = "name")
+  lv  <- tapply(res$rv_level_lag1, res$name, mean)
+
+  ## log(30) is about 3.4, and the level column must still show that gap.
+  testthat::expect_gt(lv[["loud"]] - lv[["quiet"]], 3)
+
+  ## While a scaled column shows almost none of it.
+  sc <- tapply(res$rv_month_lag1, res$name, mean)
+  testthat::expect_lt(abs(sc[["loud"]] - sc[["quiet"]]), 0.5)
+})
+
+testthat::test_that("rv_level_lag1 orders series by how volatile they are", {
+
+  df <- rbind(make_df(120, seed = 3, key = "a"),
+              make_df(120, seed = 4, key = "b"),
+              make_df(120, seed = 5, key = "c"))
+  df$rv_month_lag1[df$name == "b"] <- df$rv_month_lag1[df$name == "b"] / 10
+  df$rv_month_lag1[df$name == "c"] <- df$rv_month_lag1[df$name == "c"] / 100
+
+  res <- prep_covariates(df, scaling = "range", min_n = 36L, key_col = "name")
+  lv  <- tapply(res$rv_level_lag1, res$name, mean)
+
+  testthat::expect_true(lv[["a"]] > lv[["b"]] && lv[["b"]] > lv[["c"]])
+})
+
+testthat::test_that("a frame without rv_month_lag1 gains no level column", {
+
+  df <- data.frame(
+    month_id = seq(as.Date("1990-01-01"), by = "month", length.out = 60),
+    month    = factor(rep(1:12, length.out = 60), levels = 1:12),
+    x        = stats::rnorm(60)
+  )
+  res <- prep_covariates(df, scaling = "range", min_n = 12L)
+
+  testthat::expect_false("rv_level_lag1" %in% names(res))
+})
+
+
+# Key isolation, which every transform must preserve -----------------------
+
+testthat::test_that("leading NAs are not filled across keys", {
+
+  ## This is the isolation the panel test used to assert on prep_covariates
+  ## output, before the warm-up drop removed the row it looked at. impute_locf
+  ## is where the behaviour lives.
+  df <- data.frame(
+    month_id = rep(seq(as.Date("1990-01-01"), by = "month", length.out = 3), 2),
+    name     = rep(c("A", "B"), each = 3),
+    x        = c(1, 2, 3, NA, 5, 6)
+  )
+  out <- df %>%
+    dplyr::group_by(name) %>%
+    dplyr::group_modify(~ impute_locf(.x)) %>%
+    dplyr::ungroup()
+
+  ## B opens with an NA and has nothing above it, so the NA survives. A
+  ## panel-wide fill would have written A's last value, 3.
+  testthat::expect_true(is.na(out$x[out$name == "B"][1]))
+})
+
+testthat::test_that("a key inside the panel matches the same key on its own", {
+
+  df <- rbind(make_df(80, seed = 7, key = "A"),
+              make_df(80, seed = 8, key = "B"))
+
+  panel <- prep_covariates(df, scaling = "range", min_n = 24L, key_col = "name")
+  alone <- prep_covariates(df[df$name == "B", setdiff(names(df), "name")],
+                           scaling = "range", min_n = 24L)
+
+  b <- as.data.frame(panel[panel$name == "B", names(alone)])
+  row.names(b) <- NULL
+  row.names(alone) <- NULL
+  testthat::expect_equal(b, as.data.frame(alone))
+})
+
+
+# 3. The artifacts on disk ===================================================
+
+
+DATA  <- file.path(here::here(), "data")
+MIN_N <- 36L
+
+art <- function(f) file.path(DATA, f)
+have <- function(f) file.exists(art(f))
+read_art <- function(f) readRDS(art(f))
+
+## Artifacts written before a preprocessing change cannot satisfy the tests for
+## it. Exactly one test asserts the column is there, so it fails and says so;
+## everything that depends on it skips rather than raising a subscript error.
+has_level <- function(f) have(f) && "rv_level_lag1" %in% names(read_art(f))
+skip_unless_rebuilt <- function(f) {
+  testthat::skip_if_not(
+    has_level(f),
+    paste0(f, " predates the preprocessing fixes; re-run R/load_data.R")
+  )
+}
+
+PANELS <- list(
+  list(tag = "1986", raw = "covariates_panel_1986_v3.rds",
+       range = "covariates_panel_1986_range_v3.rds",
+       zscore = "covariates_panel_1986_zscore_v3.rds",
+       spx_range = "covariates_spx_1986_range_v3.rds"),
+  list(tag = "1927", raw = "covariates_panel_1927_v3.rds",
+       range = "covariates_panel_1927_range_v3.rds",
+       zscore = "covariates_panel_1927_zscore_v3.rds",
+       spx_range = "covariates_spx_1927_range_v3.rds")
+)
+
+ALL_ARTIFACTS <- c(
+  "covariates_panel_1986_v3.rds", "covariates_panel_1986_range_v3.rds",
+  "covariates_panel_1986_zscore_v3.rds", "covariates_panel_1927_v3.rds",
+  "covariates_panel_1927_range_v3.rds", "covariates_panel_1927_zscore_v3.rds",
+  "covariates_spx_1986_range_v3.rds", "covariates_spx_1986_zscore_v3.rds",
+  "covariates_spx_1927_range_v3.rds", "covariates_spx_1927_zscore_v3.rds",
+  "target_panel_v3.rds", "target_spx_v3.rds"
+)
+
+
+# The artifacts exist ------------------------------------------------------
+
+testthat::test_that("every artifact load_data.R promises is on disk", {
+  missing <- ALL_ARTIFACTS[!vapply(ALL_ARTIFACTS, have, logical(1))]
+  testthat::expect_equal(missing, character(0))
+})
+
+
+# The warm-up is gone ------------------------------------------------------
+
+for (p in PANELS) local({
+  pp <- p
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": each key is shorter by exactly the warm-up"), {
+    testthat::skip_if_not(have(pp$raw))
+    skip_unless_rebuilt(pp$range)
+
+    raw <- read_art(pp$raw)
+    prp <- read_art(pp$range)
+
+    n_raw <- table(raw$name)
+    n_prp <- table(prp$name)
+
+    ## Keys that had no more than the warm-up are dropped entirely.
+    survivors <- names(n_raw)[n_raw > MIN_N]
+    testthat::expect_setequal(names(n_prp), survivors)
+    testthat::expect_equal(as.integer(n_prp[survivors]),
+                           as.integer(n_raw[survivors]) - MIN_N)
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": the first retained month is the one after the warm-up"), {
+    testthat::skip_if_not(have(pp$raw))
+    skip_unless_rebuilt(pp$range)
+
+    raw <- read_art(pp$raw); prp <- read_art(pp$range)
+    first_raw <- tapply(raw$month_id, raw$name, function(d) sort(d)[MIN_N + 1L])
+    first_prp <- tapply(prp$month_id, prp$name, min)
+    k <- intersect(names(first_raw), names(first_prp))
+
+    testthat::expect_equal(unname(first_prp[k]), unname(first_raw[k]))
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": no row is still on the natural scale"), {
+    skip_unless_rebuilt(pp$range)
+
+    prp <- read_art(pp$range)
+    num <- setdiff(names(prp)[vapply(prp, is.numeric, logical(1))],
+                   c("sqrt_days", "rv_level_lag1"))
+    num <- num[!grepl("^m_[0-9]+$", num)]
+
+    ## Before the fix the warm-up rows of rv_month_lag1 sat near 1e-03 while
+    ## the scaled rows sat near -1. Nothing that wide should survive: an
+    ## out-of-sample extreme can leave [-1, 1], but not by orders of magnitude.
+    worst <- vapply(prp[num], function(x) max(abs(x), na.rm = TRUE), numeric(1))
+    testthat::expect_true(all(worst < 50),
+                          info = paste("widest columns:",
+                                       paste(names(sort(worst, decreasing = TRUE))[1:3],
+                                             collapse = ", ")))
+  })
+})
+
+
+# The level column ---------------------------------------------------------
+
+for (p in PANELS) local({
+  pp <- p
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": rv_level_lag1 is present and unscaled"), {
+    testthat::skip_if_not(have(pp$range))
+
+    prp <- read_art(pp$range)
+    testthat::expect_true("rv_level_lag1" %in% names(prp))
+    skip_unless_rebuilt(pp$range)
+
+    ## It carries log realized variance, so it must sit well below the scaled
+    ## band. If it were inside [-1, 1] it would have been scaled by mistake.
+    testthat::expect_lt(max(prp$rv_level_lag1), -1)
+    testthat::expect_true(all(is.finite(prp$rv_level_lag1)))
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": rv_level_lag1 equals the expanding mean of the logged term"), {
+    testthat::skip_if_not(have(pp$raw))
+    skip_unless_rebuilt(pp$range)
+
+    raw <- read_art(pp$raw)[, c("month_id", "name", "rv_month_lag1")]
+    raw <- raw[order(raw$name, raw$month_id), ]
+    raw$expected <- ave(log(raw$rv_month_lag1), raw$name,
+                        FUN = function(v) cumsum(v) / seq_along(v))
+    raw <- raw[ave(seq_len(nrow(raw)), raw$name, FUN = seq_along) > MIN_N, ]
+
+    prp <- read_art(pp$range)[, c("month_id", "name", "rv_level_lag1")]
+    both <- merge(raw, prp, by = c("month_id", "name"))
+
+    testthat::expect_equal(nrow(both), nrow(prp))
+    testthat::expect_equal(both$rv_level_lag1, both$expected)
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": rv_level_lag1 tracks how volatile each series really is"), {
+    testthat::skip_if_not(have("target_panel_v3.rds"))
+    skip_unless_rebuilt(pp$range)
+
+    prp <- read_art(pp$range)
+    tgt <- read_art("target_panel_v3.rds")
+    tgt <- tgt[tgt$month_id >= min(prp$month_id), ]
+
+    truth <- tapply(log(tgt$rv_month + 1e-08), tgt$name, mean)
+    level <- tapply(prp$rv_level_lag1, prp$name, mean)
+    k <- intersect(names(truth), names(level))
+
+    ## Before the level column existed the pooled forecast correlated -0.244
+    ## with this. The column itself must do far better than that.
+    testthat::expect_gt(stats::cor(level[k], truth[k]), 0.85)
+
+    ## And it must spread the series out rather than flatten them.
+    testthat::expect_gt(stats::sd(level[k]), 0.5 * stats::sd(truth[k]))
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": the market key reads as more volatile than a typical factor"), {
+    skip_unless_rebuilt(pp$range)
+
+    prp <- read_art(pp$range)
+    testthat::skip_if_not("spx_vw" %in% prp$name)
+
+    level <- tapply(prp$rv_level_lag1, prp$name, mean)
+    testthat::expect_gt(level[["spx_vw"]], stats::median(level))
+  })
+})
+
+
+# The log transform --------------------------------------------------------
+
+testthat::test_that("the variance-family columns are logged, not left skewed", {
+  skip_unless_rebuilt("covariates_panel_1986_range_v3.rds")
+
+  prp <- read_art("covariates_panel_1986_range_v3.rds")
+  check <- intersect(c("rv_month_lag1", "rv_tw_lag1", "rq_month_lag1",
+                       "cont_month_lag1", "vix_lag1", "oil_rv_month_lag1"),
+                     names(prp))
+
+  for (v in check) {
+    at_floor <- mean(prp[[v]] <= min(prp[[v]]) + 0.02)
+    testthat::expect_lt(at_floor, 0.10)
+    testthat::expect_gt(stats::median(prp[[v]]), -0.80)
+  }
+})
+
+testthat::test_that("the jump daily term keeps its zeros rather than gaining -Inf", {
+  skip_unless_rebuilt("covariates_panel_1986_range_v3.rds")
+
+  prp <- read_art("covariates_panel_1986_range_v3.rds")
+  testthat::skip_if_not("jump_td_lag1" %in% names(prp))
+
+  ## It is exactly zero most months, so a large floor share is the data and not
+  ## a defect. What matters is that nothing became non-finite.
+  testthat::expect_true(all(is.finite(prp$jump_td_lag1)))
+})
+
+
+# Nothing broke ------------------------------------------------------------
+
+testthat::test_that("no PREPROCESSED artifact carries an NA or a non-finite value", {
+  ## The raw panel artifacts are excluded on purpose: they are the input to
+  ## prep_covariates and still hold the gaps that impute_locf fills.
+  prepped <- grep("_(range|zscore)_v3[.]rds$", ALL_ARTIFACTS, value = TRUE)
+  for (f in prepped) {
+    if (!have(f)) next
+    d <- read_art(f)
+    num <- d[vapply(d, is.numeric, logical(1))]
+    testthat::expect_true(all(vapply(num, function(x) all(is.finite(x)), logical(1))),
+                          info = f)
+  }
+})
+
+testthat::test_that("the range and z-score builds cover the same rows", {
+  for (p in PANELS) {
+    if (!have(p$range) || !have(p$zscore)) next
+    a <- read_art(p$range); b <- read_art(p$zscore)
+    testthat::expect_equal(nrow(a), nrow(b), info = p$tag)
+    testthat::expect_setequal(names(a), names(b))
+    testthat::expect_equal(a$month_id, b$month_id, info = p$tag)
+    testthat::expect_equal(a$name, b$name, info = p$tag)
+  }
+})
+
+testthat::test_that("the market key inside the panel is untouched by the factors", {
+  for (p in PANELS) {
+    if (!have(p$range) || !have(p$spx_range)) next
+    panel <- read_art(p$range); spx <- read_art(p$spx_range)
+
+    shared <- intersect(names(panel), names(spx))
+    lhs <- as.data.frame(panel %>% dplyr::filter(name == "spx_vw") %>%
+                           dplyr::arrange(month_id) %>%
+                           dplyr::select(dplyr::all_of(shared)))
+    rhs <- as.data.frame(spx %>% dplyr::arrange(month_id) %>%
+                           dplyr::select(dplyr::all_of(shared)))
+    row.names(lhs) <- NULL; row.names(rhs) <- NULL
+
+    testthat::expect_equal(lhs, rhs, info = p$tag)
+  }
+})
+
+testthat::test_that("`name` is a key, never a feature", {
+  for (f in ALL_ARTIFACTS) {
+    if (!have(f) || !grepl("^covariates_", f)) next
+    d <- read_art(f)
+    ## The S&P frames carry no key at all, which satisfies this trivially.
+    if (!"name" %in% names(d)) next
+    testthat::expect_false(is.numeric(d$name), info = f)
+  }
+})
+
+testthat::test_that("every covariate row has a target to match", {
+  for (p in PANELS) {
+    if (!have(p$range) || !have("target_panel_v3.rds")) next
+    cov <- read_art(p$range); tgt <- read_art("target_panel_v3.rds")
+    joined <- merge(cov[, c("month_id", "name")], tgt, by = c("month_id", "name"))
+    testthat::expect_equal(nrow(joined), nrow(cov), info = p$tag)
+  }
+})

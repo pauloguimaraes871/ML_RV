@@ -10,7 +10,7 @@
 #   Rscript tests/testthat.R
 #
 # Run one file:
-#   testthat::test_file("tests/testthat/test-dataset-artifacts.R")
+#   testthat::test_file("tests/testthat/test-dados_gold.R")
 #
 # The dataset build in R/load_data.R runs the preprocessing and artifact files
 # itself, and refuses to finish if they fail.
