@@ -896,5 +896,40 @@ if (length(missing_inputs) > 0) {
           file = file.path(here::here(), "data", "crsp_monthly.rds"))
 
     cat("\nWrote", length(v3_outputs), "v3 artifacts and data/manifest_v3.csv\n")
+
+
+# Tests--------------------------------------------------------------------------
+
+  ## Run against the artifacts that were just written, so a build which breaks
+  ## an invariant the fitting stage depends on fails HERE rather than quietly
+  ## producing models from a bad dataset. The unit tests come first because a
+  ## failure there explains a failure in the integration tests.
+  ##
+  ## stop_on_failure is deliberate: a build that cannot pass its own checks must
+  ## not be treated as a build.
+  local({
+
+    test_dir_path <- file.path(here::here(), "tests", "testthat")
+
+    suite <- "test-dados_gold.R"
+
+    missing <- suite[!file.exists(file.path(test_dir_path, suite))]
+    if (length(missing) > 0L) {
+      stop("Test files are missing: ", paste(missing, collapse = ", "))
+    }
+
+    cat("\nChecking the artifacts just written\n")
+
+    for (f in suite) {
+      cat("  ", f, "\n", sep = "")
+      testthat::test_file(
+        file.path(test_dir_path, f),
+        reporter         = "summary",
+        stop_on_failure  = TRUE
+      )
+    }
+
+    cat("\nAll checks passed.\n")
+  })
     
     

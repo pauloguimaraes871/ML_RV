@@ -9,15 +9,15 @@
 
   ## The only switches that need editing. Nothing further down has to be touched
   ## to change sample, universe, preprocessing or tuning method.
-  run_1986     <- TRUE   # Initial sample
-  run_1927     <- FALSE  # Enable later as a longer-sample robustness check
+  run_1986     <- FALSE   # Initial sample
+  run_1927     <- TRUE  # Enable later as a longer-sample robustness check
   run_panel    <- TRUE   # Pooled factor panel, including the spx_vw key
   run_spx_only <- TRUE   # Standalone S&P 500 comparison
 
   models_to_run <- c("har", "harx", "glmnet", "rf", "xgb",
                      "nn1", "nn2", "nn3")
   preprocessing_to_run <- "range"
-  tuning_methods_to_run <- "bayesian_optimization"
+  tuning_methods_to_run <- "grid_search"
 
   ## TRUE reports the run matrix with cache hits and misses and fits NOTHING.
   ## Set to FALSE to actually fit.
