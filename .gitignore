@@ -47,3 +47,7 @@ latex_paper/*.spl
 latex_paper/*.synctex.gz
 latex_paper/*.toc
 latex_paper/figures/
+
+# The fitted objects as they stood before the preprocessing fixes, kept for
+# comparison. Same reason as models_v3/: large, and regenerable in principle.
+models_before_fixes/

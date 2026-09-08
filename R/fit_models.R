@@ -9,13 +9,16 @@
 
   ## The only switches that need editing. Nothing further down has to be touched
   ## to change sample, universe, preprocessing or tuning method.
-  run_1986     <- FALSE   # Initial sample
-  run_1927     <- TRUE  # Enable later as a longer-sample robustness check
+  run_1986     <- TRUE   # Initial sample
+  run_1927     <- FALSE  # Enable later as a longer-sample robustness check
   run_panel    <- TRUE   # Pooled factor panel, including the spx_vw key
   run_spx_only <- TRUE   # Standalone S&P 500 comparison
 
-  models_to_run <- c("har", "harx", "glmnet", "rf", "xgb",
-                     "nn1", "nn2", "nn3")
+  ## The five cheap models first, roughly an hour for the whole 1986 matrix.
+  ## The three networks are about nineteen hours on top of that, so they are
+  ## left out until the cheap models confirm the rebuilt datasets behave.
+  ## Add "nn1", "nn2", "nn3" back to this vector to fit them.
+  models_to_run <- c("har", "harx", "glmnet", "rf", "xgb")
   preprocessing_to_run <- "range"
   tuning_methods_to_run <- "grid_search"
 
@@ -178,11 +181,25 @@
   }
 
   ## HAR uses only the three lagged RV terms; HARX uses every covariate.
+  ##
+  ## In the pooled panel HAR also carries rv_level_lag1. Preprocessing runs
+  ## within key, so each series is normalised against its own extremes and the
+  ## design matrix says nothing about which series a row belongs to, while the
+  ## target still spans three log units across series. Without the level term a
+  ## pooled HAR cannot tell the market from a long-short factor and predicts
+  ## close to one number for all of them, which makes it a broken benchmark
+  ## rather than a weak one. The term is the panel analogue of a fixed effect,
+  ## not an extra predictor.
+  ##
+  ## On a single series there is no cross-sectional level to carry, so the S&P
+  ## HAR stays exactly the three terms of Corsi (2009).
   select_features <- function(covariates, feature_set, key_col){
     if (feature_set == "harx") return(covariates)
+    level_col <- if (is.null(key_col)) character() else "rv_level_lag1"
     covariates %>%
       dplyr::select(dplyr::all_of(c("month_id", key_col)),
-                    dplyr::matches("^rv_(month|tw|td)_lag1$"))
+                    dplyr::matches("^rv_(month|tw|td)_lag1$"),
+                    dplyr::any_of(level_col))
   }
 
   ## Covariates and target must describe exactly the same observations, in the
