@@ -1,12 +1,24 @@
-# This file is part of the standard setup for testthat.
-# It is recommended that you do not modify it.
+# Test runner.
 #
-# Where should you do additional test configuration?
-# Learn more about the roles of various files in:
-# * https://r-pkgs.org/testing-design.html#sec-tests-files-overview
-# * https://testthat.r-lib.org/articles/special-files.html
+# This project is a set of scripts, not an R package, so the usual
+#   library(ML_RV); test_check("ML_RV")
+# form that usethis::use_testthat() writes cannot work here: there is no
+# DESCRIPTION and no package to attach. The suite is run over the directory
+# instead, and each test file sources the helpers it needs.
+#
+# Run everything:
+#   Rscript tests/testthat.R
+#
+# Run one file:
+#   testthat::test_file("tests/testthat/test-v3-artifacts.R")
+#
+# The dataset build in R/load_data.R runs the preprocessing and artifact files
+# itself, and refuses to finish if they fail.
 
-library(testthat)
-library(ML_RV)
+library("testthat")
 
-test_check("ML_RV")
+testthat::test_dir(
+  file.path(here::here(), "tests", "testthat"),
+  reporter        = "summary",
+  stop_on_failure = TRUE
+)

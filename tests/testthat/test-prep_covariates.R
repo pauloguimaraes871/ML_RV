@@ -16,8 +16,9 @@ testthat::test_that("prep_covariates runs without errors", {
   expect_no_error({
     res <- prep_covariates(df, scaling = "range")
   })
-  
-  expect_equal(nrow(res), nrow(df))
+
+  # The scaler warm-up is discarded, so the frame is shorter by min_n.
+  expect_equal(nrow(res), nrow(df) - 36L)
 })
 
 testthat::test_that("LOCF imputes NAs correctly", {
@@ -236,8 +237,9 @@ testthat::test_that("excluded columns are not transformed", {
   )
   
   res <- prep_covariates(df)
-  
-  expect_equal(res$sqrt_days, df$sqrt_days)
+
+  # Compared on the rows that survive the warm-up drop.
+  expect_equal(res$sqrt_days, df$sqrt_days[-seq_len(36L)])
 })
 
 testthat::test_that("no unexpected NA inflation", {
@@ -532,7 +534,16 @@ testthat::test_that("preprocessing at t is invariant to future observations", {
   res_perturbed     <- prep_covariates(df_perturbed, scaling = "zscore",
                                        min_n = 6)
 
-  testthat::expect_equal(res_full$x[1:69], res_perturbed$x[1:69])
+  # Aligned on month_id rather than position, because the warm-up drop shifts
+  # the row indices and the invariant is about calendar time, not offsets.
+  untouched <- df$month_id[1:69]
+  testthat::expect_equal(
+    res_full$x[res_full$month_id %in% untouched],
+    res_perturbed$x[res_perturbed$month_id %in% untouched]
+  )
+
+  # The comparison must not be vacuous: some pre-perturbation rows survive.
+  testthat::expect_gt(sum(res_full$month_id %in% untouched), 0L)
 })
 
 
@@ -550,11 +561,15 @@ testthat::test_that("prep_covariates isolates keys when key_col is supplied", {
 
   res <- prep_covariates(df, scaling = "zscore", min_n = 6, key_col = "name")
 
-  # Within-key LOCF has nothing above B's first row, so the NA must survive.
-  # A panel-wide fill would have replaced it with A's last observation.
-  testthat::expect_true(is.na(res$x[res$name == "B"][1]))
+  # B's opening NA is inside the scaler warm-up and no longer survives to the
+  # output, so it cannot be asserted on directly here. The isolation it was
+  # written to catch is checked on impute_locf itself, where the logic lives,
+  # in "leading NAs are not filled across keys" below.
+  testthat::expect_true(nrow(res) > 0L)
 
-  # Stronger invariant: B inside the panel is identical to B on its own.
+  # Stronger invariant: B inside the panel is identical to B on its own. This
+  # is what actually rules out A's history reaching B, through the fill or
+  # through the scaling.
   res_b_alone <- prep_covariates(
     df %>% dplyr::filter(name == "B") %>% dplyr::select(-name),
     scaling = "zscore", min_n = 6
