@@ -807,11 +807,32 @@ prep_covariates <- function(df,
   dplyr::mutate(
     dplyr::across(dplyr::any_of(log_cols), ~ log_with_floor(.x, min_n = min_n))
   ) %>%
+  ### Carry the series' own volatility level
+  ### Everything above is scaled WITHIN key, which is what lets one model see
+  ### 154 series as comparable. It also erases how volatile each series is:
+  ### spx_vw has roughly 29 times the median realized variance of sti_gr1a, yet
+  ### after scaling the two sit at -0.95 and -0.83, and in the wrong order. The
+  ### target is not scaled, so the pooled model was asked to produce levels
+  ### spanning three log units from inputs that no longer distinguish the
+  ### series, and it answered with one number for all of them.
+  ###
+  ### This column hands that level back. It is the expanding mean of the logged
+  ### monthly term, which is already lagged, so it uses nothing beyond t-1, and
+  ### it is excluded from the winsorizing and the scaling below for the same
+  ### reason sqrt_days is: scaling it within key would delete it again.
+  ###
+  ### One continuous column rather than 153 dummies, because trees split on it
+  ### naturally, and a series joining the panel late needs no new column.
+  { if ("rv_month_lag1" %in% names(.)) {
+      dplyr::mutate(., rv_level_lag1 = cumsum(rv_month_lag1) /
+                                       seq_along(rv_month_lag1))
+    } else . } %>%
   ### Winsorize
   dplyr::mutate(
     dplyr::across(
       dplyr::where(is.numeric) &
-        !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
+        !dplyr::any_of(c("sqrt_days", "rv_level_lag1")) &
+        !dplyr::starts_with("m_"),
       ~ winsorize_expanding(.x,
                             p_lo = min(winsorize_range),
                             p_hi = max(winsorize_range),
@@ -822,7 +843,8 @@ prep_covariates <- function(df,
   dplyr::mutate(
     dplyr::across(
       dplyr::where(is.numeric) &
-        !dplyr::any_of("sqrt_days") & !dplyr::starts_with("m_"),
+        !dplyr::any_of(c("sqrt_days", "rv_level_lag1")) &
+        !dplyr::starts_with("m_"),
       ~ if (scaling == "zscore") {
         scale_expanding(.x, min_n = min_n)
       } else {
