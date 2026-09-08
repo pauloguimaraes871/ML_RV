@@ -769,7 +769,18 @@ prep_covariates <- function(df,
         rescale_expanding_to_unit(.x, min_n = min_n)
       }
     )
-  )
+  ) %>%
+  ### Drop the scaler warm-up
+  ### Both expanding scalers return the RAW value until min_n prior
+  ### observations exist, so without this the first min_n rows of a key sit on
+  ### a different scale from the rest of the very same column. They are also
+  ### the earliest rows, which puts them inside every training window at every
+  ### refit rather than only at the start. Removing them is what keeps each
+  ### column on one scale end to end.
+  ###
+  ### A key with no more than min_n observations has no scaled rows at all and
+  ### is emptied here, which is the correct outcome: it never had a usable row.
+  dplyr::slice(-seq_len(min(min_n, dplyr::n())))
 }
 
 ## Box-Cox
