@@ -25,3 +25,25 @@ data/*_v3.rds
 
 # Exploratory figure renders written to the project root
 fig_*.png
+
+# Stale root renders of the covariate summaries. plot_variables_v3.R writes the
+# current ones to diagnostics_v3/; these are leftovers from before it was
+# redirected there.
+summary_*.html
+
+# Interactive result dumps from the v2 workflow. No script in the repo writes
+# or reads them.
+results_summary_*.csv
+
+# LaTeX build artifacts. The manuscript sources live on the paper branch;
+# listed here so a compile from this branch cannot stage them by accident.
+latex_paper/*.aux
+latex_paper/*.bbl
+latex_paper/*.blg
+latex_paper/*.log
+latex_paper/*.out
+latex_paper/*.pdf
+latex_paper/*.spl
+latex_paper/*.synctex.gz
+latex_paper/*.toc
+latex_paper/figures/
