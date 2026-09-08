@@ -49,7 +49,7 @@ ALL_ARTIFACTS <- c(
 
 # The artifacts exist ------------------------------------------------------
 
-testthat::test_that("every V3 artifact load_data.R promises is on disk", {
+testthat::test_that("every artifact load_data.R promises is on disk", {
   missing <- ALL_ARTIFACTS[!vapply(ALL_ARTIFACTS, have, logical(1))]
   testthat::expect_equal(missing, character(0))
 })

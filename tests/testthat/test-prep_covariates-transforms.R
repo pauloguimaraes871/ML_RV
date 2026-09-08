@@ -1,7 +1,8 @@
-## Unit tests for the three V3 preprocessing fixes:
+## Unit tests for the transforms prep_covariates applies:
 ##   1. the scaler warm-up is discarded rather than passed through raw
 ##   2. the variance-family predictors are logged before winsorizing and scaling
-##   3. the pooled model is handed each series' own volatility level
+##   3. each series carries its own volatility level, which the within-key
+##      scaling would otherwise erase
 library("testthat")
 `%>%` <- dplyr::`%>%`
 source(file.path(here::here(), "R", "helpers.R"))
