@@ -694,13 +694,58 @@ rescale_expanding_to_unit <- function(x, min_n = 36L) {
 ## path dependent, so a panel MUST be processed one series at a time. Running
 ## them over a stacked panel would let the tail of one factor's history set the
 ## scaling — and fill the leading NAs — of the next factor in the frame.
+## `log_cols` names the strictly non-negative variance-family predictors that
+## are logged before winsorizing and scaling, so that both sides of the fitted
+## regression are in the same units. The per-column shift is set by
+## log_with_floor() below.
+## Logs a non-negative predictor. Columns with no exact zeros are logged
+## outright. The jump and crude-oil daily terms do contain exact zeros, so those
+## are shifted by the smallest strictly positive value seen in the first `min_n`
+## observations. That window is the scaler warm-up, which is discarded before
+## the frame is returned, so the shift is set entirely on rows that never reach
+## estimation and cannot leak.
+log_with_floor <- function(x, min_n = 36L) {
+
+  if (!any(x == 0, na.rm = TRUE)) return(log(x))
+
+  warm <- x[seq_len(min(min_n, length(x)))]
+  pos  <- warm[warm > 0 & is.finite(warm)]
+
+  ### A column that is zero throughout the warm-up has no scale to borrow from
+  ### it; fall back to the series, which is still the least-bad fixed shift.
+  if (length(pos) == 0L) pos <- x[x > 0 & is.finite(x)]
+  if (length(pos) == 0L) return(x)
+
+  log(x + min(pos))
+}
+
+prep_covariates_log_cols <- c(
+  "rv_month_lag1",     "rv_tw_lag1",     "rv_td_lag1",
+  "rq_month_lag1",     "rq_tw_lag1",     "rq_td_lag1",
+  "jump_month_lag1",   "jump_tw_lag1",   "jump_td_lag1",
+  "cont_month_lag1",   "cont_tw_lag1",   "cont_td_lag1",
+  "oil_rv_month_lag1", "oil_rv_tw_lag1", "oil_rv_td_lag1",
+  "vix_lag1"
+)
+
 prep_covariates <- function(df,
                             scaling = c("zscore", "range"),
                             winsorize_range = c(0.01, 0.99),
                             min_n = 36L,
+                            log_cols = prep_covariates_log_cols,
                             key_col = NULL) {
 
   scaling <- match.arg(scaling)
+
+  ### A negative value here would silently become NaN and then propagate
+  ### through every expanding statistic downstream. Fail on the spot instead.
+  present <- intersect(log_cols, names(df))
+  negative <- present[vapply(df[present],
+                             function(x) any(x < 0, na.rm = TRUE), logical(1))]
+  if (length(negative) > 0L) {
+    stop("log_cols must be non-negative, but these carry negative values: ",
+         paste(negative, collapse = ", "))
+  }
 
   ### Panel case: recurse one key at a time, so the body below only ever sees
   ### a single series and stays identical to the S&P 500 code path
@@ -727,6 +772,7 @@ prep_covariates <- function(df,
                             scaling         = scaling,
                             winsorize_range = winsorize_range,
                             min_n           = min_n,
+                            log_cols        = log_cols,
                             key_col         = NULL)
         ) %>%
         dplyr::ungroup() %>%
@@ -747,6 +793,20 @@ prep_covariates <- function(df,
   dplyr::bind_cols(., as.data.frame(mm))
   } %>%
   dplyr::select(-month) %>%
+  ### Log the variance-family predictors
+  ### The target is fitted as log(rv_month + offset). Leaving these covariates
+  ### on the variance scale regresses a logged quantity on unlogged ones, which
+  ### is a specification neither Corsi (2009), who works in realized volatility
+  ### on both sides, nor the logHAR of Branco, Rubesam and Zevallos (2024),
+  ### which logs both sides, ever estimates.
+  ###
+  ### The shift is per column and comes from log_with_floor(), because a single
+  ### constant cannot serve all of them: realized quarticity has a mean near
+  ### 1e-08, so the offset the target uses would swamp most of that column and
+  ### flatten it into a near-constant.
+  dplyr::mutate(
+    dplyr::across(dplyr::any_of(log_cols), ~ log_with_floor(.x, min_n = min_n))
+  ) %>%
   ### Winsorize
   dplyr::mutate(
     dplyr::across(
