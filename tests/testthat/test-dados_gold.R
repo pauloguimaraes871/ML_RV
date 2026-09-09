@@ -1220,25 +1220,73 @@ testthat::test_that("log_with_floor logs outright when there are no zeros", {
   testthat::expect_equal(log_with_floor(x, min_n = 10L), log(x))
 })
 
-testthat::test_that("log_with_floor shifts only columns holding exact zeros", {
+testthat::test_that("a zero takes the smallest positive value seen so far", {
 
-  x <- c(exp(stats::rnorm(20)), 0, exp(stats::rnorm(19)))
-  out <- log_with_floor(x, min_n = 20L)
+  x   <- c(4, 2, 8, 0, 1, 0)
+  out <- log_with_floor(x)
 
+  ## Position 4 sees 4, 2, 8 behind it, so it floors at 2. Position 6 has also
+  ## seen the 1, so it floors lower.
+  testthat::expect_equal(out, log(c(4, 2, 8, 2, 1, 1)))
   testthat::expect_true(all(is.finite(out)))
-  testthat::expect_false(any(is.nan(out)))
-
-  ## The shift comes from the warm-up window only, so it is knowable at the
-  ## time each retained row is formed.
-  shift <- min(x[seq_len(20L)][x[seq_len(20L)] > 0])
-  testthat::expect_equal(out, log(x + shift))
 })
 
-testthat::test_that("the log transform is monotone, so ordering survives", {
+testthat::test_that("positive values are never shifted", {
 
-  x <- c(1e-9, 1e-7, 0, 1e-5, 1e-3)
-  out <- log_with_floor(x, min_n = 5L)
-  testthat::expect_equal(order(out), order(x))
+  x <- c(exp(stats::rnorm(20)), 0, exp(stats::rnorm(19)))
+  out <- log_with_floor(x)
+
+  ## The floor applies to the zero alone. Everything else is a plain log, so a
+  ## column that happens to contain a zero is not distorted elsewhere.
+  keep <- x > 0
+  testthat::expect_equal(out[keep], log(x[keep]))
+  testthat::expect_true(all(is.finite(out)))
+})
+
+testthat::test_that("the floor is decided from history, never from the future", {
+
+  ## The old version asked any(x == 0) over the whole column, so a zero
+  ## appearing in the test period changed the transform for every earlier row.
+  x  <- c(5, 3, 9, 4, 7)
+  x2 <- c(5, 3, 9, 4, 0)          # a zero arrives at the very end
+
+  testthat::expect_equal(log_with_floor(x)[1:4], log_with_floor(x2)[1:4])
+})
+
+testthat::test_that("a leading zero with no positive value behind it is NA, not -Inf", {
+
+  out <- log_with_floor(c(0, 0, 4, 2))
+
+  testthat::expect_true(all(is.na(out[1:2])))
+  testthat::expect_false(any(is.infinite(out)))
+  testthat::expect_equal(out[3:4], log(c(4, 2)))
+})
+
+testthat::test_that("the log transform is weakly monotone, so ordering survives", {
+
+  ## A zero cannot map below the smallest positive value seen so far, so it
+  ## ties with it rather than ordering beneath it. Everything else is strictly
+  ## ordered.
+  x   <- c(1e-9, 1e-7, 0, 1e-5, 1e-3)
+  out <- log_with_floor(x)
+
+  testthat::expect_equal(out[3], log(1e-9))
+  testthat::expect_false(is.unsorted(out[c(1, 2, 4, 5)]))
+})
+
+testthat::test_that("the zero-inflated jump family is not logged", {
+
+  ## jump = max(0, RV - BPV), so it is a point mass at zero: exactly zero in
+  ## 3.7% of panel rows weekly and 66% daily. Any floor then becomes most of
+  ## the distribution and its distance from the rest of the mass is arbitrary.
+  ## Worse, a floor that moves at all re-bases two thirds of the column: an
+  ## expanding floor drifting 1.5 log units drove the scaled daily term to
+  ## -17.5 against a bound of 5. The jump terms stay on the variance scale.
+  testthat::expect_false(any(grepl("^jump_", prep_covariates_log_cols)))
+
+  ## The strictly positive families are logged.
+  for (fam in c("rv_", "rq_", "cont_", "oil_rv_"))
+    testthat::expect_true(any(grepl(paste0("^", fam), prep_covariates_log_cols)))
 })
 
 testthat::test_that("a fixed offset would flatten quarticity but the floor does not", {
@@ -1488,7 +1536,25 @@ for (p in PANELS) local({
   })
 
   testthat::test_that(paste0("panel ", pp$tag,
-                             ": no row is still on the natural scale"), {
+                             ": the scaling exclusion list is honoured exactly"), {
+    testthat::skip_if_not(have(pp$raw))
+    skip_unless_rebuilt(pp$range)
+
+    raw <- read_art(pp$raw); prp <- read_art(pp$range)
+    both <- merge(raw[, c("month_id", "name", "sqrt_days")],
+                  prp[, c("month_id", "name", "sqrt_days")],
+                  by = c("month_id", "name"), suffixes = c("_raw", "_prp"))
+
+    ## sqrt_days is excluded from winsorizing and scaling, so it must come out
+    ## bit-identical. This is the exact form of the check a magnitude bound
+    ## only gestures at: an exclusion-list regression shows up here as an
+    ## inequality, not as a number that happens to be large.
+    testthat::expect_equal(both$sqrt_days_prp, both$sqrt_days_raw)
+    testthat::expect_gt(nrow(both), 0L)
+  })
+
+  testthat::test_that(paste0("panel ", pp$tag,
+                             ": scaled columns sit in the unit band apart from real extremes"), {
     skip_unless_rebuilt(pp$range)
 
     prp <- read_art(pp$range)
@@ -1496,14 +1562,20 @@ for (p in PANELS) local({
                    c("sqrt_days", "rv_level_lag1"))
     num <- num[!grepl("^m_[0-9]+$", num)]
 
-    ## Before the fix the warm-up rows of rv_month_lag1 sat near 1e-03 while
-    ## the scaled rows sat near -1. Nothing that wide should survive: an
-    ## out-of-sample extreme can leave [-1, 1], but not by orders of magnitude.
-    worst <- vapply(prp[num], function(x) max(abs(x), na.rm = TRUE), numeric(1))
-    testthat::expect_true(all(worst < 50),
-                          info = paste("widest columns:",
-                                       paste(names(sort(worst, decreasing = TRUE))[1:3],
-                                             collapse = ", ")))
+    ## A distribution check rather than a maximum, because a maximum cannot
+    ## tell an unscaled column from a genuine tail: unscaled tbill_lag1 runs 5
+    ## to 8, and the legitimately-scaled jump daily term reaches 7.5 in the
+    ## 1927 panel once an out-of-sample month exceeds its whole history. A
+    ## column that was never scaled fails this on nearly every row; a column
+    ## with a fat tail does not.
+    ##
+    ## Note this is NOT the warm-up detector either. The un-scaled warm-up
+    ## values were SMALL, so they would sit inside any band. The row-count and
+    ## first-retained-month tests above are the exact checks for that.
+    inside <- vapply(prp[num], function(x) mean(abs(x) <= 1.5), numeric(1))
+    testthat::expect_true(all(inside >= 0.95),
+                          info = paste("least contained:",
+                                       paste(names(sort(inside))[1:3], collapse = ", ")))
   })
 })
 

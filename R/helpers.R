@@ -698,31 +698,56 @@ rescale_expanding_to_unit <- function(x, min_n = 36L) {
 ## are logged before winsorizing and scaling, so that both sides of the fitted
 ## regression are in the same units. The per-column shift is set by
 ## log_with_floor() below.
-## Logs a non-negative predictor. Columns with no exact zeros are logged
-## outright. The jump and crude-oil daily terms do contain exact zeros, so those
-## are shifted by the smallest strictly positive value seen in the first `min_n`
-## observations. That window is the scaler warm-up, which is discarded before
-## the frame is returned, so the shift is set entirely on rows that never reach
-## estimation and cannot leak.
+## Logs a non-negative predictor.
+##
+## Positive values are logged outright and are never shifted, so the transform
+## does not distort them. A value of exactly zero takes the smallest strictly
+## positive value observed in the same series UP TO THAT POINT, which keeps the
+## floor close to the data and is decided only from history.
+##
+## Zeros are not rare and not confined to one family: the jump weekly and daily
+## terms are zero in 3.7% and 66% of panel rows, the crude-oil daily term in
+## 1.1%, and in the 1927 panel the daily realized variance, quarticity and
+## continuous terms each carry one. So the columns needing a floor cannot be
+## hard-coded, and the earlier version detected them with any(x == 0) over the
+## whole column. That decided the transform for a column using rows from the
+## test period: on the 1986 panel the crude-oil daily term was affected on all
+## 154 keys and the jump weekly term on 42. Nothing about the target leaked,
+## but the specification was chosen having seen the sample. The expanding
+## floor removes the decision instead of timing it better.
 log_with_floor <- function(x, min_n = 36L) {
 
-  if (!any(x == 0, na.rm = TRUE)) return(log(x))
+  ### Inf marks the non-positive entries so cummin() skips over them and
+  ### carries forward the smallest positive value seen so far.
+  pos          <- ifelse(is.finite(x) & x > 0, x, Inf)
+  floor_so_far <- cummin(pos)
 
-  warm <- x[seq_len(min(min_n, length(x)))]
-  pos  <- warm[warm > 0 & is.finite(warm)]
+  y <- ifelse(is.finite(x) & x > 0, x, floor_so_far)
 
-  ### A column that is zero throughout the warm-up has no scale to borrow from
-  ### it; fall back to the series, which is still the least-bad fixed shift.
-  if (length(pos) == 0L) pos <- x[x > 0 & is.finite(x)]
-  if (length(pos) == 0L) return(x)
+  ### A leading run of zeros has no positive value behind it yet. Those rows
+  ### are inside the scaler warm-up in every dataset built here and are dropped
+  ### before the frame is returned; NA rather than -Inf keeps the failure
+  ### visible if that ever stops being true.
+  y[!is.finite(y)] <- NA_real_
 
-  log(x + min(pos))
+  log(y)
 }
 
+## The jump family is deliberately absent. It is zero-inflated by construction,
+## being a truncation at zero of the difference between realized variance and
+## bipower variation: the weekly term is exactly zero in 3.7% of panel rows and
+## the daily term in 66%. A log needs a floor for those, the floor then becomes
+## most of the distribution, and its distance from the rest of the mass is
+## arbitrary. Logging it is simply the wrong transform for a point mass, so the
+## jump terms stay on the variance scale and the expanding min-max handles them.
+##
+## Everything listed here is strictly positive except for a handful of rows in
+## the 1927 panel, where the daily realized variance, quarticity and continuous
+## terms each carry one exact zero. Those are measurement artifacts rather than
+## a point mass, and log_with_floor() covers them.
 prep_covariates_log_cols <- c(
   "rv_month_lag1",     "rv_tw_lag1",     "rv_td_lag1",
   "rq_month_lag1",     "rq_tw_lag1",     "rq_td_lag1",
-  "jump_month_lag1",   "jump_tw_lag1",   "jump_td_lag1",
   "cont_month_lag1",   "cont_tw_lag1",   "cont_td_lag1",
   "oil_rv_month_lag1", "oil_rv_tw_lag1", "oil_rv_td_lag1",
   "vix_lag1"

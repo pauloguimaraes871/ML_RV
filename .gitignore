@@ -48,6 +48,8 @@ latex_paper/*.synctex.gz
 latex_paper/*.toc
 latex_paper/figures/
 
-# The fitted objects as they stood before the preprocessing fixes, kept for
-# comparison. Same reason as models_v3/: large, and regenerable in principle.
-models_before_fixes/
+# Snapshots of models_v3/ kept for comparison across a change, such as
+# models_v3_before_level_fix/. Same reason as models_v3/ itself: large, and
+# regenerable in principle. Wildcarded so renaming a snapshot cannot silently
+# put 2.8 GB back in front of git.
+models_v3_*/

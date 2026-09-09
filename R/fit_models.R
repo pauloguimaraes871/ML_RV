@@ -194,12 +194,25 @@
   ## On a single series there is no cross-sectional level to carry, so the S&P
   ## HAR stays exactly the three terms of Corsi (2009).
   select_features <- function(covariates, feature_set, key_col){
+
+    ### prep_covariates() emits rv_level_lag1 for every series, but it only
+    ### means something in a pooled fit. On a single series it is redundant at
+    ### best and harmful at worst: a linear model already carries the level in
+    ### its intercept, which is re-estimated at every refit, and for a tree an
+    ### expanding mean drifts monotonically enough to serve as a calendar
+    ### index, so splits on it partition the sample by date rather than by
+    ### state and do not extrapolate. It is dropped before anything else.
+    if (is.null(key_col)) {
+      covariates <- covariates %>%
+        dplyr::select(-dplyr::any_of("rv_level_lag1"))
+    }
+
     if (feature_set == "harx") return(covariates)
-    level_col <- if (is.null(key_col)) character() else "rv_level_lag1"
+
     covariates %>%
       dplyr::select(dplyr::all_of(c("month_id", key_col)),
                     dplyr::matches("^rv_(month|tw|td)_lag1$"),
-                    dplyr::any_of(level_col))
+                    dplyr::any_of("rv_level_lag1"))
   }
 
   ## Covariates and target must describe exactly the same observations, in the
