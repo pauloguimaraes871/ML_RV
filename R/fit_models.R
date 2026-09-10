@@ -81,10 +81,17 @@
     ),
 
     rf = list(
-      ### Predictor fraction and shallow depth. Tree count and leaf size are
-      ### fixed: neither repays a search once the forest is large enough.
-      bayes  = list(mtry = c(0.15, 0.50), max.depth = c(2L, 8L)),
-      grid   = list(mtry = c(0.15, 0.35, 0.50), max.depth = c(2L, 5L, 8L)),
+      ### Predictor fraction and depth. Tree count and leaf size are fixed:
+      ### neither repays a search once the forest is large enough.
+      ###
+      ### The first pass over the 1986 panel saturated both boundaries: the
+      ### search took max.depth = 8 at 19 of 19 refits and mtry = 0.50 at 16 of
+      ### 19, which is a search asking for capacity the grid would not give it.
+      ### Depth matters most here. A pooled forest has to isolate one key out of
+      ### 154 to place it correctly, and at depth 8 the market shared leaves with
+      ### calmer series and was pulled toward them.
+      bayes  = list(mtry = c(0.25, 0.85), max.depth = c(4L, 16L)),
+      grid   = list(mtry = c(0.35, 0.50, 0.75), max.depth = c(5L, 8L, 12L)),
       fixed  = list(num.trees = 1000L, min.bucket = 5L),
       int    = c("max.depth", "num.trees", "min.bucket"),
       log10  = character(),
@@ -336,7 +343,23 @@
       target_transform         = target_transform_id,
       target_inverse_transform = target_inverse_id,
       feature_set              = spec$feature_set,
-      model_id                 = row$model_id
+      model_id                 = row$model_id,
+      ### Columns the forest must be allowed to split on at every node, on top
+      ### of whatever mtry samples. rf_always_split() in helpers.R decides this
+      ### from the data, but the decision changes the estimator, so it is
+      ### recorded here and signs the run rather than living only in code.
+      ###
+      ### Only ranger consumes it. The other engines have no equivalent
+      ### mechanism, so the field is NULL for them and says so explicitly.
+      ###
+      ### The condition tracks select_features() above, which hands
+      ### rv_level_lag1 to pooled runs and withholds it from single-series
+      ### ones. If that rule changes, this must change with it, or the record
+      ### will claim a forced split the engine never made.
+      forced_split_cols        = if (identical(spec$model, "rf") &&
+                                     !is.null(key_col)){
+        "rv_level_lag1"
+      } else NULL
     )
 
     ### The cache key. Built from the same wf_args that drive the fit, so a

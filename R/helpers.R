@@ -745,6 +745,26 @@ log_with_floor <- function(x, min_n = 36L) {
 ## the 1927 panel, where the daily realized variance, quarticity and continuous
 ## terms each carry one exact zero. Those are measurement artifacts rather than
 ## a point mass, and log_with_floor() covers them.
+## Names the columns ranger must be allowed to split on at every node,
+## regardless of what mtry happens to sample.
+##
+## rv_level_lag1 is a fixed effect rather than an ordinary predictor: it is the
+## only column telling a pooled model which series a row belongs to. Leaving it
+## to mtry means half the splits never see it at mtry = 0.50, and the trees that
+## miss it cannot separate an extreme key from the pack, so their predictions
+## regress toward the panel mean. Averaged over a thousand trees that is a
+## systematic level bias on whichever series sits furthest from the centre. On
+## the 1986 panel that series is the market: the pooled forest under-predicted
+## spx_vw by 0.597 log units, a factor of 1.8 in variance, and 36% of its
+## squared error on that key was the bias alone.
+##
+## Returns NULL when the column is absent, which is the single-series case,
+## where there is no cross-sectional level to protect.
+rf_always_split <- function(nms) {
+  hit <- intersect("rv_level_lag1", janitor::make_clean_names(nms))
+  if (length(hit) == 0L) NULL else hit
+}
+
 prep_covariates_log_cols <- c(
   "rv_month_lag1",     "rv_tw_lag1",     "rv_td_lag1",
   "rq_month_lag1",     "rq_tw_lag1",     "rq_td_lag1",
@@ -2431,11 +2451,15 @@ set_eval_function <- function(model){ #General Parameters
                  #Names need to be clean
                  data = janitor::clean_names(full_data_train_clean), 
                  #Proportion of variables used to forecast
-                 mtry = mtry * (ncol(full_data_train_clean) - 1), 
+                 mtry = mtry * (ncol(full_data_train_clean) - 1),
                  num.trees = num.trees,  #Number of trees
                  max.depth = max.depth,  #Max Depth of tree
-                 min.bucket = min.bucket #Min Size of Terminal Node
-               ) 
+                 min.bucket = min.bucket, #Min Size of Terminal Node
+                 #The series level is offered at every node, on top of the
+                 #mtry draw, so an extreme key cannot be averaged away
+                 always.split.variables =
+                   rf_always_split(names(full_data_train_clean))
+               )
                
                ### Format
                covariates_val_clean <- covariates_val %>%
@@ -3734,11 +3758,15 @@ fit_rv_model <- function(
                   ### Features and target
                   data = janitor::clean_names(full_data_refit_clean), 
                   ### Hyperparameters
-                  mtry = optimal_hyper["mtry"] * 
+                  mtry = optimal_hyper["mtry"] *
                     (ncol(full_data_refit_clean) - 1),
                   num.trees = optimal_hyper["num.trees"],
                   max.depth = optimal_hyper["max.depth"],
                   min.bucket = optimal_hyper["min.bucket"],
+                  ### Must match the tuning call, or the refitted forest is a
+                  ### different estimator from the one the search scored
+                  always.split.variables =
+                    rf_always_split(names(full_data_refit_clean)),
                   verbose = verbose
                 ),
                 
@@ -3980,6 +4008,11 @@ build_run_matrix <- function(run_1986 = TRUE, run_1927 = TRUE,
   "int_params", "log10_params",
   "n_iter", "init_points", "k_iter", "acq",
   "early_stop", "n_ensembles", "keras_architecture_pars",
+  ### Columns ranger is forced to offer at every node, on top of the mtry draw.
+  ### This changes the estimator, so it has to sign the run. It was set inside
+  ### helpers.R and recorded nowhere, which meant changing it alone would have
+  ### been reported as a cache HIT and the stale object silently reused.
+  "forced_split_cols",
   "seed"
 )
 

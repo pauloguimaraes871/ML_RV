@@ -1274,6 +1274,32 @@ testthat::test_that("the log transform is weakly monotone, so ordering survives"
   testthat::expect_false(is.unsorted(out[c(1, 2, 4, 5)]))
 })
 
+testthat::test_that("a forced split signs the run", {
+
+  ## always.split.variables changes what ranger estimates, but it was set
+  ## inside helpers.R and recorded nowhere, so changing it alone would have
+  ## been reported as a cache HIT and the stale object reused.
+  testthat::expect_true("forced_split_cols" %in% .provenance_signature_fields)
+
+  base <- list(dataset_version = "v3", model = "rf", model_id = "rf",
+               key_col = "name", target_name = "rv_month")
+  a <- compute_run_signature(c(base, list(forced_split_cols = NULL)))
+  b <- compute_run_signature(c(base, list(forced_split_cols = "rv_level_lag1")))
+  testthat::expect_false(identical(a, b))
+})
+
+testthat::test_that("rf_always_split follows the data, not the model name", {
+
+  ## Pooled runs carry the level column and must protect it.
+  testthat::expect_equal(
+    rf_always_split(c("month_id", "name", "rv_month_lag1", "rv_level_lag1")),
+    "rv_level_lag1")
+
+  ## Single-series runs have it withheld by select_features(), so there is
+  ## nothing to force and ranger must be passed NULL rather than a missing name.
+  testthat::expect_null(rf_always_split(c("month_id", "rv_month_lag1")))
+})
+
 testthat::test_that("the zero-inflated jump family is not logged", {
 
   ## jump = max(0, RV - BPV), so it is a point mass at zero: exactly zero in
