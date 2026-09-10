@@ -3833,6 +3833,25 @@ fit_rv_model <- function(
                   if (!is.null(keras_res$seeds)) {
                     base::attr(fit_obj, "seeds") <- keras_res$seeds
                   }
+
+                  ##### Keras models are Python external pointers, so saveRDS()
+                  ##### writes the R wrapper and loses the network: a reloaded
+                  ##### object holds null pointers and predicts nothing. The
+                  ##### numeric backtest survives, the fitted model does not,
+                  ##### which makes it impossible to replay or audit a network
+                  ##### after the session ends.
+                  #####
+                  ##### serialize_model() returns a raw vector, which does
+                  ##### survive saveRDS, so the weights travel inside the same
+                  ##### object rather than in side files that can be separated
+                  ##### from it. predict() on rv_model restores from these
+                  ##### whenever the live pointer is gone.
+                  base::attr(fit_obj, "serialized") <-
+                    if (base::is.list(keras_res$model_nn)){
+                      base::lapply(keras_res$model_nn, keras::serialize_model)
+                    } else {
+                      base::list(keras::serialize_model(keras_res$model_nn))
+                    }
                   if (n_ensembles > 1L) {
                     base::class(fit_obj) <- base::unique(c("keras_ensemble", base::class(fit_obj)))
                   }
@@ -4000,6 +4019,10 @@ build_run_matrix <- function(run_1986 = TRUE, run_1927 = TRUE,
   "preprocessing", "winsorize_range", "scaling_min_n",
   "target_transform", "target_inverse_transform",
   "feature_set", "model_id",
+  ### The resolved design matrix, not just the "har"/"harx" label. Without it a
+  ### change to select_features() leaves every signature untouched and a cached
+  ### fit can be reused for a different feature set.
+  "feature_names_requested",
   ### Engine settings, all known before the fit
   "model", "key_col", "target_name",
   "train_n", "val_n", "rebal_months",
@@ -4662,6 +4685,24 @@ run_walk_forward_validation <- function(
       feature_names <- if (!is.null(rv_model_fit)){
         rv_model_fit@covariates
       } else character()
+
+      #### The caller signs the feature vector it BELIEVES this run will use,
+      #### resolved from the artifact. feature_names above is read back out of
+      #### the fitted model, so it is what the engine actually estimated on.
+      #### If the two disagree, the signature describes a run that did not
+      #### happen and the cache would hand this object to the wrong request.
+      #### Compared on cleaned names because ranger renames its inputs.
+      if (!is.null(run_spec$feature_names_requested) && length(feature_names)){
+        want <- sort(janitor::make_clean_names(run_spec$feature_names_requested))
+        got  <- sort(janitor::make_clean_names(feature_names))
+        if (!identical(want, got)){
+          stop("The signed feature vector does not match the one estimated on.",
+               "\n  signed but unused: ",
+               paste(setdiff(want, got), collapse = ", "),
+               "\n  used but unsigned: ",
+               paste(setdiff(got, want), collapse = ", "))
+        }
+      }
 
       engine_facts <- list(
         model                   = model,

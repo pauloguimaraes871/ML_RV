@@ -1,16 +1,16 @@
 "role","artifact","sha256","n_rows","n_cols","n_keys","date_min","date_max","notes"
 "input","[usa]_[all_factors]_[daily]_[vw_cap].csv","b4a248b40e071b544dd5fbb0bce525718f58fb4d5f55cb639702292eec90f7a8",NA,NA,NA,NA,NA,NA
 "input","crsp.csv","af635266800a847df406fae9134d9a7a0c4a3fd32eb024a7262e54fc738239cf",NA,NA,NA,NA,NA,NA
-"output","covariates_panel_1986_v3.rds","96b4ba04aebbea04cc86d0b168434a08cfa6a6559ead2a173c7c406bcb56153b",71918,35,154,"1986-02-01","2024-12-01",NA
-"output","covariates_panel_1986_zscore_v3.rds","f33d8493603512ca449ebdad677d5e849b009d03f1e9c8fce72ebf43d15daeaa",66374,47,154,"1989-02-01","2024-12-01",NA
-"output","covariates_panel_1986_range_v3.rds","9bc76ba1b88283706ebb28ddb066de4ed1c88aea4fbf8f4fd3ee0c0e56d966d3",66374,47,154,"1989-02-01","2024-12-01",NA
-"output","covariates_panel_1927_v3.rds","384420481a203457f6865dca8fccdff3f18ce57e568cbb7693d178587bbadaf1",145267,25,154,"1927-01-01","2024-12-01",NA
-"output","covariates_panel_1927_zscore_v3.rds","46ee03968ed2f8bbf261ba7f5060aadc22b6e9f1427cf9ecf5adcaac6e7d1c65",139723,37,154,"1930-01-01","2024-12-01",NA
-"output","covariates_panel_1927_range_v3.rds","b9b294321978133245ade3ba9f9b47390eb60dd8a78d9bb681ea49daaee75520",139723,37,154,"1930-01-01","2024-12-01",NA
-"output","covariates_spx_1986_zscore_v3.rds","0bbf7f87cc0ba7f165d3769c73655f6bacd2a8aa980e4934e09f3d4078fda5e2",431,46,1,"1989-02-01","2024-12-01",NA
-"output","covariates_spx_1986_range_v3.rds","17ece735b5a0d1144f6869b01a7ebde939c35c4d4e66aef35b6790c271e93977",431,46,1,"1989-02-01","2024-12-01",NA
-"output","covariates_spx_1927_zscore_v3.rds","0974eb6634c52e91c233f24e25be1ba38a3610561cad976b2a4fbeeafde1476d",1140,36,1,"1930-01-01","2024-12-01",NA
-"output","covariates_spx_1927_range_v3.rds","d000a880797fcfeb9864466fa348d61360972096e2b18051d1e87487b000c8b0",1140,36,1,"1930-01-01","2024-12-01",NA
+"output","covariates_panel_1986_v3.rds","1a6caf5f5ebc1e9027046ef15e81c22875f8ebc58bad0c827a701d23245ee7c7",71918,35,154,"1986-02-01","2024-12-01",NA
+"output","covariates_panel_1986_zscore_v3.rds","4c81f2292cc4de7875193659737aee1dd6767ea09fef79bcbed7e0e349bb9978",66374,47,154,"1989-02-01","2024-12-01",NA
+"output","covariates_panel_1986_range_v3.rds","192ac063f5ff564d5a76ef621da7cb99a39730ee9bb2816f208dd3c9fcaaf840",66374,47,154,"1989-02-01","2024-12-01",NA
+"output","covariates_panel_1927_v3.rds","08c128871bef0f4a558357cea9abe446a1ef8ddb1239d9510ab7a70e9f0ad47d",145267,23,154,"1927-01-01","2024-12-01",NA
+"output","covariates_panel_1927_zscore_v3.rds","0146b6e5b2c4df6004c535ec1b91553bc11eb1368c949e5d50626c80dc6ad9d6",139723,35,154,"1930-01-01","2024-12-01",NA
+"output","covariates_panel_1927_range_v3.rds","81b61c0322d5fba3a0f0c553c9964eab169ab3289a5615bc35d728049cd8776c",139723,35,154,"1930-01-01","2024-12-01",NA
+"output","covariates_spx_1986_zscore_v3.rds","3d5f2122c9caf2c019f193cd3637ddac8e452c87d8cce8124fe5ad9af59a30fd",431,46,1,"1989-02-01","2024-12-01",NA
+"output","covariates_spx_1986_range_v3.rds","1753501332e5beeb6fbdd4ba0b8b93946c69581d582dff30364b5b70ce69a13f",431,46,1,"1989-02-01","2024-12-01",NA
+"output","covariates_spx_1927_zscore_v3.rds","7d74248060c8da4487a33a184f029fee8b2177d5b0199f52791961b42764d3e4",1140,34,1,"1930-01-01","2024-12-01",NA
+"output","covariates_spx_1927_range_v3.rds","2c4a55ca86be85fd76d5f862b123a8b5190b54147f3e8f7638ea1d3a87a465ef",1140,34,1,"1930-01-01","2024-12-01",NA
 "output","target_panel_v3.rds","ea5b3555a347f5f17158069faff2f9140b02eca32bb261cdea59b99e899a2f1f",147627,3,154,"1926-01-01","2025-12-01",NA
 "output","target_spx_v3.rds","dca6d140514ecffffdc4756069cbcda21e601c1c416a73e20ab10d6c19b4622e",1188,2,1,"1926-01-01","2024-12-01",NA
 "policy","universe",NA,NA,NA,NA,NA,NA,"usa, all JKP vw_cap factors; industries excluded; market series pooled in"

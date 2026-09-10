@@ -13,12 +13,7 @@
   run_1927     <- FALSE  # Enable later as a longer-sample robustness check
   run_panel    <- TRUE   # Pooled factor panel, including the spx_vw key
   run_spx_only <- TRUE   # Standalone S&P 500 comparison
-
-  ## The five cheap models first, roughly an hour for the whole 1986 matrix.
-  ## The three networks are about nineteen hours on top of that, so they are
-  ## left out until the cheap models confirm the rebuilt datasets behave.
-  ## Add "nn1", "nn2", "nn3" back to this vector to fit them.
-  models_to_run <- c("har", "harx", "glmnet", "rf", "xgb")
+  models_to_run <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
   preprocessing_to_run <- "range"
   tuning_methods_to_run <- "grid_search"
 
@@ -222,6 +217,25 @@
                     dplyr::any_of("rv_level_lag1"))
   }
 
+  ## The feature vector a run will actually estimate on, RESOLVED from the
+  ## dataset rather than declared.
+  ##
+  ## feature_set is signed as the label "har" or "harx", so a change to
+  ## select_features() -- which decides what those labels mean -- would leave
+  ## every signature untouched and let a cached fit be reused for a different
+  ## design matrix. Signing the resolved vector closes that.
+  ##
+  ## Column names only, so the read is cached per artifact rather than repeated
+  ## once per run.
+  resolve_feature_names <- local({
+    seen <- new.env(parent = emptyenv())
+    function(cov_path, feature_set, key_col){
+      if (is.null(seen[[cov_path]])) seen[[cov_path]] <- readRDS(cov_path)[0, ]
+      setdiff(names(select_features(seen[[cov_path]], feature_set, key_col)),
+              c("month_id", key_col))
+    }
+  })
+
   ## Covariates and target must describe exactly the same observations, in the
   ## same order, keyed on (month_id[, key]). validator() rejects anything else.
   align_covariates_target <- function(covariates, target, key_col){
@@ -273,6 +287,9 @@
     key_col  <- if (row$universe == "panel") "name" else NULL
     cov_path <- dataset_path(row$universe, row$sample, row$preprocessing)
     tgt_path <- target_path(row$universe)
+
+    feature_names_requested <- resolve_feature_names(cov_path,
+                                                     spec$feature_set, key_col)
 
     ### Untuned models carry an empty domain and no budget
     hs <- if (is.null(spec$hyper)) NULL else hyper_spec[[spec$hyper]]
@@ -352,13 +369,19 @@
       ### Only ranger consumes it. The other engines have no equivalent
       ### mechanism, so the field is NULL for them and says so explicitly.
       ###
-      ### The condition tracks select_features() above, which hands
-      ### rv_level_lag1 to pooled runs and withholds it from single-series
-      ### ones. If that rule changes, this must change with it, or the record
-      ### will claim a forced split the engine never made.
-      forced_split_cols        = if (identical(spec$model, "rf") &&
-                                     !is.null(key_col)){
-        "rv_level_lag1"
+      ### The design matrix this run will actually estimate on, resolved from
+      ### the artifact. Signing it means a change to select_features() cannot
+      ### slip past the cache behind an unchanged "har"/"harx" label.
+      feature_names_requested  = feature_names_requested,
+      ### Derived by calling the SAME helper the two ranger call sites call, on
+      ### the resolved feature vector, rather than restating its rule here.
+      ### The previous version hardcoded "rv_level_lag1" under a condition that
+      ### mirrored select_features(): editing rf_always_split() to return NULL
+      ### then changed the estimator while leaving this field, and therefore
+      ### the signature, untouched -- a false cache hit. Routing both through
+      ### one function means they cannot disagree about the rule.
+      forced_split_cols        = if (identical(spec$model, "rf")){
+        rf_always_split(feature_names_requested)
       } else NULL
     )
 

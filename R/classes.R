@@ -94,7 +94,34 @@ setMethod("predict",
                   ), 
                 nn = {
                   Xv <- data.matrix(new_data)
-                  
+
+                  # A Keras model is a Python external pointer. saveRDS() keeps
+                  # the R wrapper and drops the network, so a fitted object
+                  # reloaded in a fresh session holds ten null pointers and can
+                  # predict nothing. The backtest forecasts survive that,
+                  # because they are already numeric, but the model itself
+                  # cannot be replayed or audited.
+                  #
+                  # fit_rv_model() therefore stores serialize_model() bytes
+                  # alongside the live models; a raw vector does survive
+                  # saveRDS. Restore from them only when the live pointer is
+                  # gone, so an in-session predict costs nothing.
+                  blobs <- base::attr(fit_obj, "serialized")
+                  if (!base::is.null(blobs)) {
+                    is_dead <- function(z) base::tryCatch(
+                      reticulate::py_is_null_xptr(z),
+                      error = function(e) TRUE)
+                    if (base::is.list(fit_obj)) {
+                      for (i in base::seq_along(fit_obj)) {
+                        if (i <= base::length(blobs) && is_dead(fit_obj[[i]])) {
+                          fit_obj[[i]] <- keras::unserialize_model(blobs[[i]])
+                        }
+                      }
+                    } else if (is_dead(fit_obj)) {
+                      fit_obj <- keras::unserialize_model(blobs[[1]])
+                    }
+                  }
+
                   pred_one <- function(m) {
                     # Prefer stats::predict if it dispatches; otherwise use the python method.
                     out <- base::tryCatch(

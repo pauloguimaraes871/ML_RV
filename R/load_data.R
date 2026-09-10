@@ -204,10 +204,24 @@ if (length(missing_inputs) > 0) {
       dplyr::mutate(month_id     = as.Date(paste(lubridate::year(dates),
                                                  lubridate::month(dates), "01",
                                                  sep = "-")),
-                    ### No lag needed, even though ppi from t is released t+1
-                    ### Bco function will use data up to t-1 to gen sigma_t
                     ppi_vol      = sigma_ann
                     ) %>%
+      ### Release lag. schwert_vol_oos() builds sigma_t from residuals through
+      ### t-1, and an earlier comment here concluded that this made a lag
+      ### unnecessary. It does not. The predictor row for month t is used to
+      ### forecast month t's realized variance, so its forecast origin is the
+      ### END of t-1 -- and the t-1 PPI observation is not published until the
+      ### middle of t. Using data "through t-1" is only safe for a forecast
+      ### made at the end of t.
+      ###
+      ### The market-observed series above (dfr, dfy, tms) need no such
+      ### treatment: they are prices, known the day they are quoted, which is
+      ### why they carry a plain dplyr::lag() instead.
+      ###
+      ### Stamping sigma_t to month t+1 rather than lagging by position, so a
+      ### gap in the monthly series cannot silently turn into a lag of more
+      ### than one month.
+      dplyr::mutate(month_id = lubridate::`%m+%`(month_id, months(1))) %>%
       dplyr::arrange(month_id) %>%
       dplyr::select(month_id, ppi_vol)
     
@@ -237,10 +251,12 @@ if (length(missing_inputs) > 0) {
         dplyr::mutate(month_id     = as.Date(paste(lubridate::year(dates),
                                                    lubridate::month(dates), "01",
                                                    sep = "-")),
-                      ### No lag needed, even though ip from t is released t+1
-                      ### Bco function will use data up to t-1 to gen sigma_t
                       ip_vol       = sigma_ann
         ) %>%
+        ### Release lag, for the reason set out in the PPI block above:
+        ### industrial production for month t-1 is published during month t, so
+        ### it is not available at the end of t-1 where the forecast originates.
+        dplyr::mutate(month_id = lubridate::`%m+%`(month_id, months(1))) %>%
         dplyr::arrange(month_id) %>%
         dplyr::select(month_id, ip_vol)
       
@@ -271,10 +287,12 @@ if (length(missing_inputs) > 0) {
         dplyr::mutate(month_id     = as.Date(paste(lubridate::year(dates),
                                                    lubridate::month(dates), "01",
                                                    sep = "-")),
-                      ### No lag needed, even though mbas from t is released t+1
-                      ### Bco function will use data up to t-1 to gen sigma_t
                       mbas_vol     = sigma_ann
         ) %>%
+        ### Release lag, for the reason set out in the PPI block above. The
+        ### monetary base is published faster than PPI or industrial
+        ### production, so a full month is conservative here rather than exact.
+        dplyr::mutate(month_id = lubridate::`%m+%`(month_id, months(1))) %>%
         dplyr::arrange(month_id) %>%
         dplyr::select(month_id, mbas_vol)
     

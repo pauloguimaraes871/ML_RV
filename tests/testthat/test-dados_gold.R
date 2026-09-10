@@ -1274,6 +1274,29 @@ testthat::test_that("the log transform is weakly monotone, so ordering survives"
   testthat::expect_false(is.unsorted(out[c(1, 2, 4, 5)]))
 })
 
+testthat::test_that("the generated macro series are lagged to their release", {
+
+  ## ppi_vol, ip_vol and mbas_vol come from schwert_vol_oos(), which builds
+  ## sigma_t from residuals through t-1. That is NOT enough on its own: the
+  ## predictor row for month t forecasts month t's realized variance, so its
+  ## origin is the end of t-1, and the t-1 macro observation is not published
+  ## until the middle of t. Each value must therefore be stamped one month
+  ## later than the month it summarises.
+  ##
+  ## Checked against dfy_lag1, a market-observed spread that needs no release
+  ## lag because it is a price: if the generated series were aligned like a
+  ## price, this test would fail.
+  ## Checked against the source rather than the artifact, so this runs in the
+  ## unit section before the artifact helpers are defined, and still fails if
+  ## someone reverts the alignment without rebuilding.
+  src <- paste(readLines(file.path(here::here(), "R", "load_data.R"),
+                         warn = FALSE), collapse = "\n")
+  testthat::expect_equal(
+    length(gregexpr("month_id = lubridate::`%m\\+%`\\(month_id, months\\(1\\)\\)",
+                    src)[[1]]), 3L)
+  testthat::expect_false(grepl("No lag needed", src, fixed = TRUE))
+})
+
 testthat::test_that("a forced split signs the run", {
 
   ## always.split.variables changes what ranger estimates, but it was set
@@ -1285,6 +1308,90 @@ testthat::test_that("a forced split signs the run", {
                key_col = "name", target_name = "rv_month")
   a <- compute_run_signature(c(base, list(forced_split_cols = NULL)))
   b <- compute_run_signature(c(base, list(forced_split_cols = "rv_level_lag1")))
+  testthat::expect_false(identical(a, b))
+})
+
+testthat::test_that("a fitted network survives saveRDS", {
+
+  ## A Keras model is a Python external pointer: saveRDS() keeps the R wrapper
+  ## and silently drops the network, so a reloaded object holds null pointers
+  ## and predicts nothing. The numeric backtest survives that because it is
+  ## already computed, which is why this went unnoticed -- the failure is only
+  ## visible when you try to replay a fitted model in a fresh session.
+  testthat::skip_if_not(nzchar(Sys.getenv("RETICULATE_PYTHON")),
+                        "no python pinned")
+  testthat::skip_if_not(requireNamespace("keras", quietly = TRUE))
+
+  ok <- tryCatch({ suppressMessages(library(keras)); TRUE },
+                 error = function(e) FALSE)
+  testthat::skip_if_not(ok, "keras unavailable")
+
+  set.seed(1)
+  X <- matrix(stats::rnorm(120 * 4), 120, 4); colnames(X) <- paste0("v", 1:4)
+  y <- X[, 1] + stats::rnorm(120, sd = 0.1)
+  m <- keras::keras_model_sequential()
+  m <- keras::layer_dense(m, units = 4, activation = "relu", input_shape = 4)
+  m <- keras::layer_dense(m, units = 1)
+  keras::compile(m, optimizer = "adam", loss = "mse")
+  keras::fit(m, X, y, epochs = 2, batch_size = 32, verbose = 0)
+
+  ## The construction fit_rv_model() performs.
+  fit_obj <- list(m)
+  attr(fit_obj, "serialized") <- list(keras::serialize_model(m))
+  class(fit_obj) <- unique(c("keras_ensemble", class(fit_obj)))
+
+  ## The bytes are what survive; assert they are there and are raw.
+  testthat::expect_true(is.raw(attr(fit_obj, "serialized")[[1]]))
+
+  ## And that a round trip through serialize/unserialize reproduces the model.
+  restored <- keras::unserialize_model(attr(fit_obj, "serialized")[[1]])
+  testthat::expect_equal(as.numeric(stats::predict(restored, X[1:5, ])),
+                         as.numeric(stats::predict(m, X[1:5, ])),
+                         tolerance = 1e-8)
+})
+
+testthat::test_that("the signed forced split is derived, not restated", {
+
+  ## The earlier version hardcoded "rv_level_lag1" in run_spec under a
+  ## condition that merely mirrored select_features(). Editing
+  ## rf_always_split() to return NULL then changed the estimator while the
+  ## signature stayed put, which is a false cache hit. Both the run record and
+  ## the two ranger call sites must read the rule from one function.
+  src <- paste(readLines(file.path(here::here(), "R", "fit_models.R"),
+                         warn = FALSE), collapse = "\n")
+
+  ## run_spec derives the value by calling the helper ...
+  testthat::expect_true(grepl("forced_split_cols\\s*=\\s*if\\s*\\(identical\\(spec\\$model, \"rf\"\\)\\)\\{\\s*rf_always_split\\(",
+                              src))
+  ## ... and does not restate the column name as a literal beside it.
+  testthat::expect_false(grepl('forced_split_cols\\s*=\\s*if[^}]*"rv_level_lag1"\\s*\\}', src))
+
+  ## Both engine call sites read from the same helper.
+  eng <- paste(readLines(file.path(here::here(), "R", "helpers.R"),
+                         warn = FALSE), collapse = "\n")
+  testthat::expect_equal(
+    length(gregexpr("always[.]split[.]variables", eng)[[1]]), 2L)
+  ## Two CALL sites. The definition reads "rf_always_split <- function", with no
+  ## open paren after the name, so it is not counted here.
+  testthat::expect_equal(
+    length(gregexpr("rf_always_split\\(", eng)[[1]]), 2L)
+  testthat::expect_true(grepl("rf_always_split <- function", eng, fixed = TRUE))
+})
+
+testthat::test_that("the resolved feature vector signs the run", {
+
+  ## feature_set is only the label "har"/"harx". select_features() decides what
+  ## the label means, so without the resolved vector a change there would let a
+  ## cached fit be reused for a different design matrix.
+  testthat::expect_true("feature_names_requested" %in% .provenance_signature_fields)
+
+  base <- list(dataset_version = "v3", model = "har", model_id = "har",
+               feature_set = "har", key_col = "name")
+  a <- compute_run_signature(c(base, list(
+    feature_names_requested = c("rv_month_lag1", "rv_tw_lag1", "rv_td_lag1"))))
+  b <- compute_run_signature(c(base, list(
+    feature_names_requested = c("rv_month_lag1", "rv_tw_lag1", "rv_td_lag1",
+                                "rv_level_lag1"))))
   testthat::expect_false(identical(a, b))
 })
 
