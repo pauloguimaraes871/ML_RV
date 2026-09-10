@@ -53,3 +53,6 @@ latex_paper/figures/
 # regenerable in principle. Wildcarded so renaming a snapshot cannot silently
 # put 2.8 GB back in front of git.
 models_v3_*/
+
+# Machine-specific R environment settings, notably the reticulate Python pin.
+.Renviron
