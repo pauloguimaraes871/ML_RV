@@ -2965,6 +2965,8 @@ fit_keras_model <- function(
     obj_fun_trans, huber_delta, #Loss Function Parameters
     covariates_matrix_train_clean, target_vector_train, #Data
     n_ensembles = 1L,
+    ### TRUE only for the final refit: see the note at the return below.
+    serialize_fit = FALSE,
     ...
 ){
   
@@ -3166,9 +3168,26 @@ fit_keras_model <- function(
           }
         )
         
-      return(list(model_nn = model_nn,
-                  fit_nn   = fit_nn))
-    
+      ### Serialize HERE, while the model is unambiguously alive.
+      ###
+      ### Doing it in the caller does not work in production. This function
+      ### clears the Keras session on exit, and a tuned run calls it thousands
+      ### of times before the final refit -- nn1 fits about 5,100 models across
+      ### its grid and 19 refits. By the time the caller sees the returned
+      ### models, serialization fails for every member, which is what aborted
+      ### the first production run and what left all ten blobs NULL in the
+      ### second. It cannot be reproduced in a fresh session at any ensemble
+      ### size or data width, so the trigger is accumulated session state.
+      ###
+      ### Only requested for the final refit. Serializing every tuning
+      ### candidate would write thousands of temporary files for models that
+      ### are discarded moments later.
+      return(list(model_nn   = model_nn,
+                  fit_nn     = fit_nn,
+                  serialized = if (isTRUE(serialize_fit)){
+                    serialize_keras_members(model_nn)[[1]]
+                  } else NULL))
+
     }
   
   if (n_ensembles == 1L){
@@ -3183,10 +3202,14 @@ fit_keras_model <- function(
   # Return list of models and fits
   models <- base::lapply(outs, `[[`, "model_nn")
   fits   <- base::lapply(outs, `[[`, "fit_nn")
-  
-  return(list(model_nn = models,
-              fit_nn   = fits,
-              seeds    = seeds))
+  ### One raw vector per member, each produced inside fit_once() while that
+  ### member was still live. NULL throughout when serialize_fit is FALSE.
+  sers   <- base::lapply(outs, `[[`, "serialized")
+
+  return(list(model_nn   = models,
+              fit_nn     = fits,
+              serialized = sers,
+              seeds      = seeds))
   
 }
 
@@ -3851,6 +3874,8 @@ fit_rv_model <- function(
                   #### Architecture
                   keras_architecture_pars = keras_architecture_pars,
                   n_ensembles             = n_ensembles,
+                  ### Final refit: capture the weights while they are live
+                  serialize_fit           = TRUE,
                   
                   #### Hyperparameters
                   ##### Training
@@ -3888,14 +3913,17 @@ fit_rv_model <- function(
                   ##### object rather than in side files that can be separated
                   ##### from it. predict() on rv_model restores from these
                   ##### whenever the live pointer is gone.
-                  ##### Serialized per member and never fatally. A member that
-                  ##### cannot be serialized costs the ability to replay THAT
-                  ##### network; aborting costs the whole run, and the forecasts
-                  ##### it would have produced are unaffected either way. The
-                  ##### warning names the member and its class so a recurrence
-                  ##### is diagnosable from the log rather than by re-running.
+                  ##### Produced inside fit_keras_model(), while each member was
+                  ##### still live. Serializing here instead fails for every
+                  ##### member after a tuned run, because that function clears
+                  ##### the Keras session on exit and has been called thousands
+                  ##### of times by this point.
                   base::attr(fit_obj, "serialized") <-
-                    serialize_keras_members(keras_res$model_nn)
+                    if (base::is.list(keras_res$serialized)){
+                      keras_res$serialized
+                    } else {
+                      base::list(keras_res$serialized)
+                    }
                   if (n_ensembles > 1L) {
                     base::class(fit_obj) <- base::unique(c("keras_ensemble", base::class(fit_obj)))
                   }
