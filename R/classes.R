@@ -106,19 +106,37 @@ setMethod("predict",
                   # alongside the live models; a raw vector does survive
                   # saveRDS. Restore from them only when the live pointer is
                   # gone, so an in-session predict costs nothing.
+                  # Restore only what is both dead and recoverable: a blob may
+                  # be NULL if that member failed to serialize, and a member may
+                  # already be raw if the object was re-saved rather than
+                  # re-fitted. Mirrors serialize_keras_members().
                   blobs <- base::attr(fit_obj, "serialized")
                   if (!base::is.null(blobs)) {
                     is_dead <- function(z) base::tryCatch(
                       reticulate::py_is_null_xptr(z),
                       error = function(e) TRUE)
+                    revive <- function(live, blob) {
+                      if (base::is.raw(live)) {
+                        return(keras::unserialize_model(model = live,
+                                                        compile = TRUE))
+                      }
+                      if (!is_dead(live)) return(live)
+                      if (base::is.null(blob)) {
+                        stop("This network was not serialized when it was fitted",
+                             " and its Python pointer did not survive saving, so",
+                             " it cannot be restored. The stored forecasts in",
+                             " oos_outputs are unaffected.", call. = FALSE)
+                      }
+                      keras::unserialize_model(model = blob, compile = TRUE)
+                    }
                     if (base::is.list(fit_obj)) {
                       for (i in base::seq_along(fit_obj)) {
-                        if (i <= base::length(blobs) && is_dead(fit_obj[[i]])) {
-                          fit_obj[[i]] <- keras::unserialize_model(blobs[[i]])
-                        }
+                        fit_obj[[i]] <- revive(
+                          fit_obj[[i]],
+                          if (i <= base::length(blobs)) blobs[[i]] else NULL)
                       }
-                    } else if (is_dead(fit_obj)) {
-                      fit_obj <- keras::unserialize_model(blobs[[1]])
+                    } else {
+                      fit_obj <- revive(fit_obj, blobs[[1]])
                     }
                   }
 

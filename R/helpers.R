@@ -760,6 +760,48 @@ log_with_floor <- function(x, min_n = 36L) {
 ##
 ## Returns NULL when the column is absent, which is the single-series case,
 ## where there is no cross-sectional level to protect.
+## Serializes a fitted Keras model, or each member of an ensemble, to raw
+## vectors that survive saveRDS.
+##
+## A Keras model is a Python external pointer: saveRDS() writes the R wrapper
+## and loses the network, so a reloaded object holds null pointers and predicts
+## nothing. The numeric backtest survives because it is already computed, which
+## is why this went unnoticed for a long time.
+##
+## Deliberately never fatal. A member that cannot be serialized costs the
+## ability to replay that one network; raising here would cost the entire run,
+## and the forecasts are unaffected either way. An earlier version called
+## lapply(models, serialize_model) directly and aborted a 14-hour fit on the
+## first refit of nn1. The warning names the member and its class so the cause
+## is visible in the log rather than only on a re-run.
+serialize_keras_members <- function(x) {
+
+  members <- if (base::is.list(x)) x else base::list(x)
+
+  base::lapply(base::seq_along(members), function(i) {
+    m <- members[[i]]
+
+    ### Already raw: an object being re-saved, not re-fitted.
+    if (base::is.raw(m)) return(m)
+
+    base::tryCatch(
+      keras::serialize_model(m),
+      error = function(e) {
+        base::warning("Could not serialize Keras member ", i, " of ",
+                      base::length(members), " (class: ",
+                      base::paste(utils::head(base::class(m), 2),
+                                  collapse = "/"),
+                      "; null pointer: ",
+                      base::tryCatch(reticulate::py_is_null_xptr(m),
+                                     error = function(e2) NA),
+                      "). Its forecasts are unaffected, but this network "
+                      , "cannot be replayed. Reason: ",
+                      base::conditionMessage(e), call. = FALSE)
+        NULL
+      })
+  })
+}
+
 rf_always_split <- function(nms) {
   hit <- intersect("rv_level_lag1", janitor::make_clean_names(nms))
   if (length(hit) == 0L) NULL else hit
@@ -3846,12 +3888,14 @@ fit_rv_model <- function(
                   ##### object rather than in side files that can be separated
                   ##### from it. predict() on rv_model restores from these
                   ##### whenever the live pointer is gone.
+                  ##### Serialized per member and never fatally. A member that
+                  ##### cannot be serialized costs the ability to replay THAT
+                  ##### network; aborting costs the whole run, and the forecasts
+                  ##### it would have produced are unaffected either way. The
+                  ##### warning names the member and its class so a recurrence
+                  ##### is diagnosable from the log rather than by re-running.
                   base::attr(fit_obj, "serialized") <-
-                    if (base::is.list(keras_res$model_nn)){
-                      base::lapply(keras_res$model_nn, keras::serialize_model)
-                    } else {
-                      base::list(keras::serialize_model(keras_res$model_nn))
-                    }
+                    serialize_keras_members(keras_res$model_nn)
                   if (n_ensembles > 1L) {
                     base::class(fit_obj) <- base::unique(c("keras_ensemble", base::class(fit_obj)))
                   }
