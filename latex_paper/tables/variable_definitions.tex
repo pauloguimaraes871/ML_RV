@@ -1,0 +1,61 @@
+{\footnotesize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\emergencystretch}{3em}
+\begin{longtable}{>{\raggedright\arraybackslash}m{3.3cm}>{\raggedright\arraybackslash}m{6.2cm}>{\raggedright\arraybackslash}m{2.9cm}}
+\caption[Variable definitions and sources]{\footnotesize \textbf{: Variable definitions and sources.} Every predictor constructed for the models, with its definition and the series it is built from. Predictors marked as available from 1927 enter the long sample; the remainder are available only from 1986. Series identifiers refer to the Federal Reserve Economic Data repository.} \label{tab:vardefs} \\
+\hline
+Predictor & Definition & Source \\
+\hline
+\endfirsthead
+\hline
+Predictor & Definition & Source \\
+\hline
+\endhead
+\hline
+\endfoot
+\multicolumn{3}{@{}l}{\textit{Panel A. Past realized-variance terms}} \\
+Realized variance, daily term & Realized variance of the last trading day of the previous month, scaled to monthly units & CRSP, JKP \\
+Realized variance, weekly term & Realized variance summed over the last five trading days of the previous month, scaled to monthly units & CRSP, JKP \\
+Realized variance, monthly term & Realized variance summed over the previous month & CRSP, JKP \\
+Realized quarticity, daily term & Realized quarticity of the last trading day of the previous month, scaled to monthly units & CRSP, JKP \\
+Realized quarticity, weekly term & Realized quarticity summed over the last five trading days, scaled to monthly units & CRSP, JKP \\
+Realized quarticity, monthly term & Realized quarticity summed over the previous month & CRSP, JKP \\
+Jump variation, daily term & Jump component of the last trading day, scaled to monthly units & CRSP, JKP \\
+Jump variation, weekly term & Jump component summed over the last five trading days, scaled to monthly units & CRSP, JKP \\
+Jump variation, monthly term & Jump component summed over the previous month & CRSP, JKP \\
+Continuous variation, daily term & Continuous component of the last trading day, scaled to monthly units & CRSP, JKP \\
+Continuous variation, weekly term & Continuous component summed over the last five trading days, scaled to monthly units & CRSP, JKP \\
+Continuous variation, monthly term & Continuous component summed over the previous month & CRSP, JKP \\
+Negative return, daily term & Minimum of the last trading day return and zero, scaled to monthly units & CRSP, JKP \\
+Negative return, weekly term & Minimum of the five-day return and zero, scaled to monthly units & CRSP, JKP \\
+Negative return, monthly term & Minimum of the previous month return and zero & CRSP, JKP \\
+\multicolumn{3}{@{}l}{\textit{Panel B. Long-run realized-variance level}} \\
+Long-run realized variance & Expanding mean of lagged monthly realized variance for each forecast series & CRSP, JKP \\
+\multicolumn{3}{@{}l}{\textit{Panel C. Sentiment variables}} \\
+Policy uncertainty growth & Log change in the news-based economic policy uncertainty index & Baker, Bloom and Davis (2016) \\
+Consumer sentiment growth & Log change in the index of consumer sentiment & University of Michigan \\
+Geopolitical risk & News-based geopolitical risk index & Caldara and Iacoviello (2022) \\
+\multicolumn{3}{@{}l}{\textit{Panel D. Macroeconomic variables}} \\
+Producer price volatility & Schwert (1989) out-of-sample volatility of producer price growth & FRED PPIACO \\
+Industrial production volatility & Schwert (1989) out-of-sample volatility of industrial production growth & FRED IPB50001N \\
+Monetary base volatility & Schwert (1989) out-of-sample volatility of monetary base growth & FRED BOGMBASE \\
+\multicolumn{3}{@{}l}{\textit{Panel E. Macrofinancial variables}} \\
+Dividend yield & Trailing dividend yield of the S\&P 500 & Multpl \\
+Earnings yield & Trailing earnings yield of the S\&P 500 & Multpl \\
+Default return spread & Aaa corporate yield less the ten-year Treasury yield & FRED AAA10YM \\
+Default yield spread & Baa corporate yield less the ten-year Treasury yield & FRED BAA10YM \\
+Term spread & Ten-year Treasury yield less the federal funds rate & FRED T10YFFM \\
+Treasury bill rate & Three-month Treasury bill secondary market rate & FRED TB3MS \\
+\multicolumn{3}{@{}l}{\textit{Panel F. Implied variance}} \\
+Implied volatility & Closing level of the volatility index, extended before 1990 with its predecessor & CBOE \\
+\multicolumn{3}{@{}l}{\textit{Panel G. Oil realized variance}} \\
+Crude oil variance, daily & Squared daily return of West Texas Intermediate, last trading day & FRED DCOILWTICO \\
+Crude oil variance, weekly & Five-day mean of daily crude oil realized variance & FRED DCOILWTICO \\
+Crude oil variance, monthly & Monthly mean of daily crude oil realized variance & FRED DCOILWTICO \\
+\multicolumn{3}{@{}l}{\textit{Panel H. Calendar variables}} \\
+Calendar month & Month of the year, entering as twelve indicators & Calendar \\
+Trading days & Square root of the number of trading days in the month. The level falls once Saturday trading ends in 1952 & CRSP \\
+\end{longtable}
+}

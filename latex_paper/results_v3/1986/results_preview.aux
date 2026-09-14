@@ -1,0 +1,128 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Main-paper selection}{2}{section.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Pooled panel: 153 factors and the market series. July 2006--December 2024. Metrics use log realized variance and are read from eval\_metrics. R-squared uses the evaluation-sample mean, not HAR. Bias is target minus forecast. EW averages the seven HARX/ML log forecasts with weight 1/7 each.}}{2}{table.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:rv-performance_panel}{{1}{2}{Pooled panel: 153 factors and the market series. July 2006--December 2024. Metrics use log realized variance and are read from eval\_metrics. R-squared uses the evaluation-sample mean, not HAR. Bias is target minus forecast. EW averages the seven HARX/ML log forecasts with weight 1/7 each}{table.caption.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Standalone market series (\_spx; source index universe unverified). July 2006--December 2024. Metrics use log realized variance and are read from eval\_metrics. R-squared uses the evaluation-sample mean, not HAR. Bias is target minus forecast. EW averages the seven HARX/ML log forecasts with weight 1/7 each.}}{2}{table.caption.3}\protected@file@percent }
+\newlabel{tab:rv-performance_spx}{{2}{2}{Standalone market series (\_spx; source index universe unverified). July 2006--December 2024. Metrics use log realized variance and are read from eval\_metrics. R-squared uses the evaluation-sample mean, not HAR. Bias is target minus forecast. EW averages the seven HARX/ML log forecasts with weight 1/7 each}{table.caption.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Distribution of per-factor RMSE reductions relative to HAR. Positive values indicate improvement. Excludes the market key; no significance claims.}}{3}{table.caption.4}\protected@file@percent }
+\newlabel{tab:rv-factor_gain_summary}{{3}{3}{Distribution of per-factor RMSE reductions relative to HAR. Positive values indicate improvement. Excludes the market key; no significance claims}{table.caption.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Sequential RMSE reductions: HAR to HARX, HARX to each learner, then learner to the same seven-model EW ensemble. Positive values indicate improvement. Differences telescope arithmetically; they are not a causal attribution. ENET adds shrinkage, not nonlinearities.}}{3}{table.caption.5}\protected@file@percent }
+\newlabel{tab:rv-sequential_comparisons}{{4}{3}{Sequential RMSE reductions: HAR to HARX, HARX to each learner, then learner to the same seven-model EW ensemble. Positive values indicate improvement. Differences telescope arithmetically; they are not a causal attribution. ENET adds shrinkage, not nonlinearities}{table.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Predictive RMSE reductions relative to HAR, distinguishing aggregate panel, factors only, standalone market and market from pooled estimation. Negative values are deterioration. No model is selected ex post as the nonlinear representative.}}{3}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:rv-har_relative_gains}{{1}{3}{Predictive RMSE reductions relative to HAR, distinguishing aggregate panel, factors only, standalone market and market from pooled estimation. Negative values are deterioration. No model is selected ex post as the nonlinear representative}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Main appendix}{4}{appendix.A}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Factor-only performance and market forecasts extracted from pooled estimation. Each scope is scored from oos\_outputs using calc\_eval\_metrics.}}{4}{table.caption.7}\protected@file@percent }
+\newlabel{tab:rv-additional_scopes}{{5}{4}{Factor-only performance and market forecasts extracted from pooled estimation. Each scope is scored from oos\_outputs using calc\_eval\_metrics}{table.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Trailing 12-month RMSE. Squared errors are pooled across all target-month observations in each window before taking the square root. Incomplete starting windows are omitted. Market-only monthly RMSE would be absolute error.}}{5}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:rv-rolling_rmse}{{2}{5}{Trailing 12-month RMSE. Squared errors are pooled across all target-month observations in each window before taking the square root. Incomplete starting windows are omitted. Market-only monthly RMSE would be absolute error}{figure.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Selected validation RMSE versus the subsequent test block. Validation windows contain 90 overlapping months; test blocks normally contain 12 months, with partial first/last blocks. NN validation scores one network; test forecasts average ten refitted networks. Differences also reflect refitting and changing market conditions.}}{5}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:rv-validation_test}{{3}{5}{Selected validation RMSE versus the subsequent test block. Validation windows contain 90 overlapping months; test blocks normally contain 12 months, with partial first/last blocks. NN validation scores one network; test forecasts average ten refitted networks. Differences also reflect refitting and changing market conditions}{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Final-refit gross\_share by predictor theme. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate.}}{6}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:rv-final_theme_gross_share}{{4}{6}{Final-refit gross\_share by predictor theme. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate}{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Final-refit net\_share by predictor theme. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate.}}{7}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:rv-final_theme_net_share}{{5}{7}{Final-refit net\_share by predictor theme. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate}{figure.caption.11}{}}
+\gdef \LT@i {\LT@entry 
+    {4}{80.89006pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {1}{31.3466pt}\LT@entry 
+    {1}{30.0608pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Internet appendix}{8}{appendix.B}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Per-factor rmse using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded.}}{8}{table.6}\protected@file@percent }
+\newlabel{tab:rv-factor_rmse}{{6}{8}{Per-factor rmse using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded}{table.6}{}}
+\gdef \LT@ii {\LT@entry 
+    {4}{80.89006pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {1}{30.0608pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {4}{32.438pt}\LT@entry 
+    {4}{29.60536pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Per-factor rss using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded.}}{10}{table.7}\protected@file@percent }
+\newlabel{tab:rv-factor_rss}{{7}{10}{Per-factor rss using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded}{table.7}{}}
+\gdef \LT@iii {\LT@entry 
+    {4}{80.89006pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {1}{31.3466pt}\LT@entry 
+    {1}{30.0608pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}\LT@entry 
+    {4}{29.60536pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Per-factor mae using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded.}}{12}{table.8}\protected@file@percent }
+\newlabel{tab:rv-factor_mae}{{8}{12}{Per-factor mae using the exact calc\_eval\_metrics formula. Full common OOS period; pooled estimates, market excluded}{table.8}{}}
+\gdef \LT@iv {\LT@entry 
+    {1}{37.91306pt}\LT@entry 
+    {4}{31.3466pt}\LT@entry 
+    {1}{30.31213pt}\LT@entry 
+    {4}{33.85432pt}\LT@entry 
+    {1}{44.23235pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces All saved metrics, unaltered. Validation is the average across overlapping selected validation windows. CP is an uncentered cross-product; HR concerns signs of log variance. Undefined or unavailable values are dashes.}}{14}{table.9}\protected@file@percent }
+\newlabel{tab:rv-all_metrics}{{9}{14}{All saved metrics, unaltered. Validation is the average across overlapping selected validation windows. CP is an uncentered cross-product; HR concerns signs of log variance. Undefined or unavailable values are dashes}{table.9}{}}
+\gdef \LT@v {\LT@entry 
+    {1}{37.91306pt}\LT@entry 
+    {4}{31.49379pt}\LT@entry 
+    {4}{78.99469pt}\LT@entry 
+    {4}{38.81839pt}\LT@entry 
+    {4}{76.34395pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Recorded search grids and fixed engine settings. HAR and HARX have no algorithmic hyperparameter search. Values are engine units.}}{16}{table.10}\protected@file@percent }
+\newlabel{tab:rv-hyperparameter_settings}{{10}{16}{Recorded search grids and fixed engine settings. HAR and HARX have no algorithmic hyperparameter search. Values are engine units}{table.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Final surrogate fit, aliased regressors, and recoverable serialized NN members. A zero count indicates unavailable fitted weights; stored numeric forecasts remain usable. Blanks/dashes for non-NN serialization are not failures.}}{17}{table.caption.33}\protected@file@percent }
+\newlabel{tab:rv-model_diagnostics}{{11}{17}{Final surrogate fit, aliased regressors, and recoverable serialized NN members. A zero count indicates unavailable fitted weights; stored numeric forecasts remain usable. Blanks/dashes for non-NN serialization are not failures}{table.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 1 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{18}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_01}{{6}{18}{Per-factor trailing 12-month RMSE, alphabetical page 1 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 2 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{19}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_02}{{7}{19}{Per-factor trailing 12-month RMSE, alphabetical page 2 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 3 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{20}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_03}{{8}{20}{Per-factor trailing 12-month RMSE, alphabetical page 3 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 4 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{21}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_04}{{9}{21}{Per-factor trailing 12-month RMSE, alphabetical page 4 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.15}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 5 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{22}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_05}{{10}{22}{Per-factor trailing 12-month RMSE, alphabetical page 5 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 6 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{23}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_06}{{11}{23}{Per-factor trailing 12-month RMSE, alphabetical page 6 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 7 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{24}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_07}{{12}{24}{Per-factor trailing 12-month RMSE, alphabetical page 7 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.18}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 8 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{25}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_08}{{13}{25}{Per-factor trailing 12-month RMSE, alphabetical page 8 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.19}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 9 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{26}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_09}{{14}{26}{Per-factor trailing 12-month RMSE, alphabetical page 9 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.20}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 10 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{27}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_10}{{15}{27}{Per-factor trailing 12-month RMSE, alphabetical page 10 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 11 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{28}{figure.caption.22}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_11}{{16}{28}{Per-factor trailing 12-month RMSE, alphabetical page 11 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.22}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 12 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{29}{figure.caption.23}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_12}{{17}{29}{Per-factor trailing 12-month RMSE, alphabetical page 12 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.23}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Per-factor trailing 12-month RMSE, alphabetical page 13 of 13 . Fixed axes within each page; forecasts from pooled estimation.}}{30}{figure.caption.24}\protected@file@percent }
+\newlabel{fig:rv-factor_rmse_13}{{18}{30}{Per-factor trailing 12-month RMSE, alphabetical page 13 of 13 . Fixed axes within each page; forecasts from pooled estimation}{figure.caption.24}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces Selected glmnet hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{31}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_glmnet}{{19}{31}{Selected glmnet hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.25}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Selected rf hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{31}{figure.caption.26}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_rf}{{20}{31}{Selected rf hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.26}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Selected xgb hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{32}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_xgb}{{21}{32}{Selected xgb hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.27}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Selected nn1 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{32}{figure.caption.28}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_nn1}{{22}{32}{Selected nn1 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.28}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Selected nn2 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{33}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_nn2}{{23}{33}{Selected nn2 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.29}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Selected nn3 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit.}}{33}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:rv-hyperparameters_nn3}{{24}{33}{Selected nn3 hyperparameters at each refit. Early-stopping counts and selected elastic-net lambda are included where available. Lines retain each choice until the next refit}{figure.caption.30}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Theme loading history for panel estimation. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate.}}{34}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:rv-theme_history_panel}{{25}{34}{Theme loading history for panel estimation. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate}{figure.caption.31}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces Theme loading history for spx estimation. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate.}}{35}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:rv-theme_history_spx}{{26}{35}{Theme loading history for spx estimation. Descriptive OLS surrogate loadings, not causal effects or permutation importance. The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients. Gross shares sum absolute loadings within themes; net shares retain signs. Aliases are zero under the stored parameterization, not evidence of irrelevance; predictor scales differ. Own-series terms refer to each factor's returns, not S\&P 500 returns. EW has no fitted surrogate}{figure.caption.32}{}}
+\gdef \@abspage@last{35}

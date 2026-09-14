@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\centering\footnotesize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\caption[Distribution of out-of-sample RMSE gains across the 153 equity factors.]{\footnotesize \textbf{: Distribution of out-of-sample RMSE gains across the 153 equity factors.} Gains are measured relative to HAR, and positive values indicate lower forecast error. The table reports the number of factors for which each model outperforms HAR and the cross-sectional distribution of percentage RMSE gains.}\label{tab:rv-factor_gain_summary}
+\begin{tabular}{lrrrrr}
+\hline
+Model & Factors & Beating HAR & Median gain (\%) & P25 (\%) & P75 (\%) \\
+\hline
+HAR & 153 & 0 & 0.00 & 0.00 & 0.00 \\
+HARX & 153 & 74 & -0.57 & -5.65 & 6.82 \\
+ENET & 153 & 107 & 3.49 & -0.93 & 8.63 \\
+RF & 153 & 112 & 4.49 & -0.63 & 7.80 \\
+XGB & 153 & 101 & 3.19 & -1.68 & 7.35 \\
+NN1 & 153 & 76 & -0.09 & -5.57 & 6.63 \\
+NN2 & 153 & 69 & -0.92 & -6.89 & 5.83 \\
+NN3 & 153 & 77 & 0.28 & -6.44 & 6.32 \\
+EW & 153 & 110 & 4.00 & -0.56 & 10.46 \\
+\hline
+\end{tabular}
+\end{table}
