@@ -119,7 +119,7 @@ coefficients nonnegative. The unconditional benchmark (UMV) sets `b_k = 0`.
 There is no budget constraint on these zero-cost factor exposures. Gamma is 5
 by default and determines the allocations, unlike the MM evaluation-only gamma.
 
-`R/oos_ports.R` runs this analysis for each pooled-panel forecast model and the
+`R/allocation_ports.R` now runs this analysis for each pooled-panel forecast model and the
 shared EW forecast. The standalone market estimation universe is not pooled
 with these factors. Samples remain separate (1986 and, when complete, 1927).
 The current sample switch is preserved. The factor universe is fixed to the
@@ -176,7 +176,10 @@ Outputs live in the `multifactor/` subdirectory alongside the MM results:
 `all_multifactor.rds` (including weights/settings), `strategy_summary.csv`,
 `monthly_returns.csv`, `diagnostics.csv` and `input_manifest.csv`. Existing paper
 tables continue to describe the individual-factor MM analysis. Run with
-`multifactor_enabled = TRUE` in `R/oos_ports.R` to regenerate the new outputs.
+the second-stage `R/allocation_ports.R` workflow for current comparisons. Its
+expanded CMV/FCMV, Cederburg and robust-allocation conventions are documented in
+`docs/ALLOCATION_METHODS.md`; the `multifactor/` files above describe the original
+DeMiguel implementation checkpoint.
 
 ## References
 
