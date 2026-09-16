@@ -109,6 +109,75 @@ are implied. MVO, oracle, predicted-mean scaling and the market-only 60/40 strat
 have been removed from the individual-factor analysis. The separate multifactor
 analysis below uses DeMiguel's constrained mean-variance specification.
 
+## DeMiguel multifactor specification
+
+`R/multifactor_helpers.R` implements equations (3)-(6) of DeMiguel, Martin-Utrera
+and Uppal (2024), DOI 10.1111/jofi.13395. It jointly fits the unmanaged excess
+returns and their market-volatility-scaled counterparts, `[f, f / sigma]`.
+The conditional portfolio (CMV) has weights `a_k + b_k / sigma`, with both
+coefficients nonnegative. The unconditional benchmark (UMV) sets `b_k = 0`.
+There is no budget constraint on these zero-cost factor exposures. Gamma is 5
+by default and determines the allocations, unlike the MM evaluation-only gamma.
+
+`R/oos_ports.R` runs this analysis for each pooled-panel forecast model and the
+shared EW forecast. The standalone market estimation universe is not pooled
+with these factors. Samples remain separate (1986 and, when complete, 1927).
+The current sample switch is preserved. The factor universe is fixed to the
+saved panel forecast universe, including the market; it is not selected by
+multifactor performance. This differs from the paper's nine-factor universe.
+
+The paper benchmark uses the previous calendar month's sample standard deviation
+of daily market returns. The ML extension uses the square root of the inverse
+log-transformed monthly market RV forecast. Monthly sum-of-squares volatility is
+not the paper's daily sample SD, so this is labelled as an extension. All factors
+use the same market signal; this is not an average of individual MM strategies.
+
+Every allocation is fitted on an expanding window ending before its holding
+month. All signals, including the historical benchmark, use the same saved OOS
+forecast calendar so the benchmark does not receive extra estimation history.
+At least 120 prior common months are required, giving July 2016 as the first
+portfolio month for forecasts beginning July 2006. No in-sample ML forecasts are
+substituted. Earlier incomplete history is excluded up to the latest series start
+and recorded in settings; subsequent gaps or truncated evaluation returns fail.
+
+The cost model is an explicit factor-level adaptation. With fixed nonnegative
+coefficients, target-exposure turnover is `sum(b) * abs(diff(1 / sigma))`.
+Its historical mean times `cost_per_unit` enters the optimization as a linear
+penalty. Actual OOS costs charge entry from cash and all subsequent changes in
+factor exposure, including changes caused by re-estimating `a` and `b`. Those
+future coefficient-refit costs are not anticipated by the training proxy.
+Internal factor trading, stock weight drift, trade netting, borrow and financing
+remain unavailable. These outputs do not replicate the paper's stock-level
+transaction-cost objective or its trading-diversification benefits.
+
+Sample covariance is used without a ridge or inverse. The nonnegative convex
+problem is solved after rescaling the columns for numerical accuracy, then
+coefficients are returned in their original units. Singular covariance is allowed
+(the full panel has 308 extended columns versus 120 initial observations); failure
+of convergence or first-order optimality checks aborts. Singular problems can
+have nonunique weights, and large exposures remain possible. Fit diagnostics
+record training endpoints, dimensions and optimality residuals.
+
+The raw solution follows the unconstrained-exposure specification. A separate
+capped diagnostic scales the whole portfolio proportionally when its sum of
+factor exposures exceeds 1.5. This preserves relative factor weights and differs
+from the individual-factor MM cap. It is neither a stock gross-leverage cap nor
+an optimized constrained CMV. Raw and capped turnover/costs are computed separately.
+
+Both portfolios use identical evaluation dates. `sharpe_paper` follows footnote 24:
+annualized mean net excess return divided by gross-return volatility. `sharpe_net`
+uses net-return volatility instead. `cer_paper_ann` likewise penalizes gross
+variance. RF is retained separately and insolvency counts use `1 + RF + net`;
+no wealth curve is compounded through insolvency. No inference or significance
+claims are produced. The existing compounded monthly factor returns are retained;
+this is another data convention difference from an exact paper replication.
+
+Outputs live in the `multifactor/` subdirectory alongside the MM results:
+`all_multifactor.rds` (including weights/settings), `strategy_summary.csv`,
+`monthly_returns.csv`, `diagnostics.csv` and `input_manifest.csv`. Existing paper
+tables continue to describe the individual-factor MM analysis. Run with
+`multifactor_enabled = TRUE` in `R/oos_ports.R` to regenerate the new outputs.
+
 ## References
 
 - Moreira and Muir (2017), equations (1)-(2), Table IV:

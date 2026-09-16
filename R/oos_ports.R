@@ -12,6 +12,7 @@
   source(file.path(project_dir, "R", "helpers.R"))
   source(file.path(project_dir, "R", "reporting_helpers.R"))
   source(file.path(project_dir, "R", "portfolio_helpers.R"))
+  source(file.path(project_dir, "R", "multifactor_helpers.R"))
 
 # Configuration
 # ------------------------------------------------------------------------------
@@ -28,6 +29,13 @@
   cost_per_unit <- .001  # 10 bp per unit of exposure; alternatives .0001/.0014
   initial_weight <- 0    # Charge entry from cash; no forced terminal liquidation
   cer_gamma <- 5          # Evaluation metric only; no MVO strategy
+
+  ## DeMiguel equation (6): gamma controls ALLOCATION in this separate analysis.
+  ## Use the pooled factor forecasts, including their market forecast, and keep
+  ## the standalone market estimation universe out of a multifactor allocation.
+  multifactor_enabled <- TRUE
+  multifactor_gamma <- 5
+  multifactor_min_history <- 120L
 
   data_dir <- file.path(project_dir, "data")
 
@@ -234,5 +242,60 @@
       writeLines(capture.output(utils::sessionInfo()), file.path(output_dir, "session_info.txt"))
       message("Saved ", nrow(summary), " strategy summaries to ", output_dir)
 
+      if (multifactor_enabled && universe == "panel") {
+
+        ## Restrict every conditioning strategy to the same saved OOS history.
+        ## In particular, the historical-volatility benchmark does not receive
+        ## extra training returns unavailable to the ML-conditioned strategies.
+        ## The first 120 forecast months train the allocation; they are not OOS
+        ## portfolio observations. This addresses the second estimation layer.
+        multifactor_names <- base::sort(base::unique(reference$name))
+        forecast_dates <- base::sort(base::unique(reference$month_id))
+        historical_signal <- prepare_market_sigma(crsp) %>%
+          dplyr::filter(month_id %in% forecast_dates)
+
+        signals <- purrr::map(forecasts, function(forecast) {
+          market_forecast <- forecast %>% dplyr::filter(name == "spx_vw")
+          if (base::nrow(market_forecast) != base::length(forecast_dates)) {
+            rlang::abort("Multifactor timing requires a market forecast for every month.")
+          }
+
+          ## This is an ML extension: sqrt(predicted monthly sum of squares),
+          ## not the paper's daily sample SD. The distinction is kept in labels.
+          market_forecast %>% dplyr::transmute(
+            month_id, sigma = base::sqrt(base::exp(pred) - 1e-8)
+          )
+        })
+        signals <- base::c(base::list(lagged_market_sd = historical_signal), signals)
+
+        multifactor <- purrr::imap(signals, function(signal, label) {
+          message("Multifactor backtest: ", sample_id, " / panel / ", label)
+          run_multifactor_ports(
+            factor_returns, signal, multifactor_names,
+            evaluation_start = base::min(forecast_dates),
+            min_history = multifactor_min_history, gamma = multifactor_gamma,
+            cost_per_unit = cost_per_unit, exposure_cap = weight_cap,
+            signal_label = label
+          )
+        })
+
+        ## Store separately from all_ports.rds: existing individual-factor
+        ## reporting retains its schema. These files compare CMV with UMV.
+        multifactor_dir <- base::file.path(output_dir, "multifactor")
+        base::dir.create(multifactor_dir, recursive = TRUE, showWarnings = FALSE)
+        base::saveRDS(multifactor, base::file.path(multifactor_dir, "all_multifactor.rds"))
+        purrr::walk(c("strategy_summary", "monthly_returns", "diagnostics"), function(field) {
+          combined <- purrr::imap_dfr(multifactor, function(result, label) {
+            dplyr::mutate(result[[field]], signal = label, .before = 1)
+          })
+          utils::write.csv(combined, base::file.path(multifactor_dir,
+            base::paste0(field, ".csv")), row.names = FALSE)
+        })
+        multifactor_inputs <- base::c(inputs,
+          base::file.path(project_dir, "R", "multifactor_helpers.R"))
+        utils::write.csv(tibble::tibble(file = multifactor_inputs,
+          sha256 = purrr::map_chr(multifactor_inputs, hash_artifact)),
+          base::file.path(multifactor_dir, "input_manifest.csv"), row.names = FALSE)
+      }
     }
   }
