@@ -2,6 +2,7 @@
 # ------------------------------------------------------------------------------
 
   `%>%` <- dplyr::`%>%`
+  base::source(base::file.path(here::here(), "R", "allocation_helpers.R"))
 
 #' Solve the nonnegative extended-factor mean-variance problem
 #'
@@ -104,12 +105,19 @@ prepare_market_sigma <- function(market_daily) {
 run_multifactor_ports <- function(
     factor_returns, signal, factor_names, evaluation_start,
     min_history = 120L, gamma = 5, cost_per_unit = .001,
-    exposure_cap = 1.5, signal_label = "lagged_market_sd"
+    exposure_cap = 1.5, signal_label = "lagged_market_sd",
+    allocation = "mvo", signal_scope = "market", cluster_map = NULL,
+    managed_normalization = if (allocation == "mvo") "none" else "training_vol"
 ) {
+
+  allocation <- base::match.arg(allocation, c("mvo", "ew", "hew"))
+  signal_scope <- base::match.arg(signal_scope, c("market", "factor"))
+  managed_normalization <- base::match.arg(managed_normalization, c("none", "training_vol"))
 
   validate_port_data(factor_returns, c("name", "month_id"), c("factor_exc", "rf"),
                      consecutive = FALSE)
-  validate_port_data(signal, "month_id", "sigma")
+  signal_keys <- if (signal_scope == "factor") c("name", "month_id") else "month_id"
+  validate_port_data(signal, signal_keys, "sigma")
   if (!base::is.character(factor_names) || !base::length(factor_names) ||
       base::anyNA(factor_names) || base::anyDuplicated(factor_names) ||
       !base::all(factor_names %in% factor_returns$name)) {
@@ -129,6 +137,20 @@ run_multifactor_ports <- function(
   if (min_history < 2 || min_history != base::as.integer(min_history) ||
       gamma <= 0 || cost_per_unit < 0 || exposure_cap <= 0 || base::any(signal$sigma <= 0)) {
     rlang::abort("Invalid history, risk aversion, cost, cap or volatility.")
+  }
+
+  if (signal_scope == "factor" && !base::setequal(signal$name, factor_names)) {
+    rlang::abort("Own-factor signals must cover exactly the selected factor names.")
+  }
+  if (allocation == "hew") {
+    if (!base::is.data.frame(cluster_map) ||
+        !base::all(c("name", "cluster") %in% base::names(cluster_map)) ||
+        base::anyNA(cluster_map) || base::anyDuplicated(cluster_map$name) ||
+        !base::all(factor_names %in% cluster_map$name)) {
+      rlang::abort("HEW requires one explicit cluster for every factor.")
+    }
+  } else {
+    cluster_map <- tibble::tibble(name = factor_names, cluster = "all")
   }
 
   ## Use a common fixed universe. No pairwise covariance or missing-return
@@ -153,10 +175,13 @@ run_multifactor_ports <- function(
   validate_port_data(data, c("name", "month_id"), c("factor_exc", "rf"))
   cash <- dplyr::distinct(data, month_id, rf)
   if (base::anyDuplicated(cash$month_id)) rlang::abort("RF must agree across factors.")
-  timing <- dates %>%
-    dplyr::left_join(signal, by = "month_id", relationship = "one-to-one") %>%
-    dplyr::left_join(cash, by = "month_id", relationship = "one-to-one")
-  validate_port_data(timing, "month_id", c("sigma", "rf"))
+  timing <- dates %>% dplyr::left_join(cash, by = "month_id", relationship = "one-to-one")
+  signal_panel <- if (signal_scope == "factor") {
+    keys %>% dplyr::left_join(signal, by = c("name", "month_id"), relationship = "one-to-one")
+  } else {
+    keys %>% dplyr::left_join(signal, by = "month_id", relationship = "many-to-one")
+  }
+  validate_port_data(signal_panel, c("name", "month_id"), "sigma")
 
   ## Pivot using explicit names, then select those same names when entering
   ## matrix algebra. Input row order never determines factor alignment.
@@ -165,7 +190,10 @@ run_multifactor_ports <- function(
     tidyr::pivot_wider(names_from = name, values_from = factor_exc) %>%
     dplyr::arrange(month_id)
   returns <- base::as.matrix(dplyr::select(wide, dplyr::all_of(factor_names)))
-  inverse_sigma <- 1 / timing$sigma
+  sigma_wide <- signal_panel %>%
+    tidyr::pivot_wider(names_from = name, values_from = sigma) %>% dplyr::arrange(month_id)
+  sigma <- base::as.matrix(dplyr::select(sigma_wide, dplyr::all_of(factor_names)))
+  inverse_sigma <- 1 / sigma
   if (base::any(!base::is.finite(inverse_sigma))) rlang::abort("Inverse sigma overflow.")
   indices <- base::which(dates$month_id >= evaluation_start &
                           base::seq_len(base::nrow(dates)) > min_history)
@@ -174,21 +202,43 @@ run_multifactor_ports <- function(
   fitted <- purrr::map(indices, function(i) {
     past <- base::seq_len(i - 1L)
     f <- returns[past, , drop = FALSE]
-    z <- inverse_sigma[past]
+    z <- inverse_sigma[past, , drop = FALSE]
     k <- base::length(factor_names)
 
+    ## A fixed normalization within each training window is a harmless change
+    ## of units for MVO, but ESSENTIAL to interpret EW on comparable sleeves.
+    ## It uses prior returns only, and is applied to the current scaler as well.
+    normalization <- base::rep(1, k)
+    if (managed_normalization == "training_vol") {
+      normalization <- base::apply(f, 2, stats::sd) / base::apply(f * z, 2, stats::sd)
+      if (base::any(!base::is.finite(normalization) | normalization <= 0)) {
+        rlang::abort("Cannot match managed/unmanaged training volatility.")
+      }
+    }
+    z <- base::sweep(z, 2, normalization, "*")
+    current_scaler <- inverse_sigma[i, ] * normalization
+
     ##Following DeMiguel, UMV = "Unconditional Mean Variance MF", CMV = "Conditional Mean Variance MF"
-    purrr::map_dfr(c("umv", "cmv"), function(method) {
+    conditional_method <- if (signal_scope == "factor") "fcmv" else "cmv"
+    purrr::map_dfr(c("umv", conditional_method), function(method) {
       x <- if (method == "umv") f else base::cbind(f, f * z)
       costs <- if (method == "umv") base::rep(0, k) else
-        base::c(base::rep(0, k), base::rep(cost_per_unit * base::mean(base::abs(base::diff(z))), k))
-      fit <- fit_multifactor(x, costs, gamma)
+        base::c(base::rep(0, k), cost_per_unit * base::colMeans(base::abs(z[-1, , drop = FALSE] -
+          z[-base::nrow(z), , drop = FALSE])))
+      basis <- tibble::tibble(name = factor_names, sleeve = "unmanaged")
+      if (method != "umv") basis <- dplyr::bind_rows(basis,
+        tibble::tibble(name = factor_names, sleeve = "managed"))
+      basis <- basis %>% dplyr::left_join(cluster_map, by = "name", relationship = "many-to-one") %>%
+        dplyr::mutate(id = base::paste(name, sleeve, sep = ":"))
+      base::colnames(x) <- basis$id
+      fit <- allocate_portfolio(x, basis, allocation, gamma, costs)
       a <- fit$coef[base::seq_len(k)]
       b <- if (method == "umv") base::rep(0, k) else fit$coef[k + base::seq_len(k)]
 
       tibble::tibble(
         month_id = dates$month_id[i], name = factor_names, method = method,
-        a = a, b = b, sigma = timing$sigma[i], w_raw = a + b * inverse_sigma[i],
+        a = a, b = b, sigma = sigma[i, ], scaler = current_scaler,
+        normalizer = normalization, w_raw = a + b * current_scaler,
         factor_exc = returns[i, ], rf = timing$rf[i], n_train = i - 1L,
         n_basis = base::ncol(x), train_end = dates$month_id[i - 1L],
         kkt_residual = fit$kkt_residual
@@ -248,6 +298,8 @@ run_multifactor_ports <- function(
     diagnostics = dplyr::distinct(weights, month_id, method, train_end,
                                  n_train, n_basis, kkt_residual),
     settings = base::list(signal = signal_label, factor_names = factor_names,
+      allocation = allocation, signal_scope = signal_scope,
+      managed_normalization = managed_normalization,
       common_start = common_start, common_end = common_end,
       requested_start = evaluation_start, first_evaluated = base::min(monthly$month_id),
       min_history = min_history, gamma = gamma, cost_per_unit = cost_per_unit,
