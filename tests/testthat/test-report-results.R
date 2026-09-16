@@ -51,6 +51,46 @@ testthat::test_that("EW rejects incomplete, duplicated or inconsistent members",
   testthat::expect_error(build_ew_ensemble(models, c("harx", "glmnet")), "incompatible")
 })
 
+testthat::test_that("reporting and portfolios reuse one source-checked EW artifact", {
+  models <- make_reporting_fixture()
+  models$har <- models$harx
+  models <- purrr::imap(models, function(model, name) {
+    model$source <- tibble::tibble(
+      file = paste0(name, ".rds"),
+      sha256 = paste0("hash-", name)
+    )
+    model
+  })
+  path <- tempfile(fileext = ".rds")
+
+  first <- testthat::expect_message(
+    load_or_build_ew_ensemble(models, path, c("harx", "glmnet")),
+    "Building EW ensemble"
+  )
+  testthat::expect_true(file.exists(path))
+
+  cached <- readRDS(path)
+  cached$cache_marker <- TRUE
+  saveRDS(cached, path)
+  reused <- testthat::expect_message(
+    load_or_build_ew_ensemble(models, path, c("harx", "glmnet")),
+    "Reusing EW ensemble"
+  )
+  testthat::expect_true(reused$cache_marker)
+  testthat::expect_equal(reused$oos_outputs, first$oos_outputs)
+
+  models$glmnet$source$sha256 <- "replacement-hash"
+  rebuilt <- testthat::expect_message(
+    load_or_build_ew_ensemble(models, path, c("harx", "glmnet")),
+    "Rebuilding stale EW ensemble"
+  )
+  testthat::expect_null(rebuilt$cache_marker)
+  testthat::expect_equal(
+    dplyr::filter(rebuilt$backtest_meta$sources, model == "glmnet")$sha256,
+    "replacement-hash"
+  )
+})
+
 testthat::test_that("forecast validation fails early on unusable inputs", {
   observations <- make_reporting_fixture()$harx$oos_outputs
   testthat::expect_error(validate_forecasts(observations[0, ], c("month_id", "name")), "empty")
@@ -139,4 +179,56 @@ testthat::test_that("cluster tables identify HAR improvements and row winners", 
   testthat::expect_error(
     write_cluster_metric_table(dplyr::select(data, -HAR), path, "Caption.", "tab:test", "min"),
     "HAR")
+})
+
+testthat::test_that("portfolio summaries use excess returns and total-return drawdowns", {
+  data <- tibble::tibble(
+    universe = "Panel",
+    strategy = "EW",
+    month_id = as.Date(c("2020-01-01", "2020-02-01", "2020-03-01")),
+    excess_return = c(.01, -.02, .03),
+    total_return = c(.011, -.019, .031)
+  )
+  actual <- summarise_portfolio_returns(data, c("universe", "strategy"))
+  expected_wealth <- cumprod(1 + data$total_return)
+  expected_drawdown <- min(expected_wealth / cummax(c(1, expected_wealth))[-1] - 1)
+  testthat::expect_equal(actual$annualized_excess_return, 12 * mean(data$excess_return))
+  testthat::expect_equal(actual$annualized_volatility, sqrt(12) * stats::sd(data$excess_return))
+  testthat::expect_equal(actual$sharpe_ratio,
+    sqrt(12) * mean(data$excess_return) / stats::sd(data$excess_return))
+  testthat::expect_equal(actual$max_drawdown, expected_drawdown)
+  data$total_return[2] <- -1
+  testthat::expect_error(summarise_portfolio_returns(data, c("universe", "strategy")), "above -100")
+})
+
+testthat::test_that("portfolio aggregation equally weights factors within each month", {
+  data <- tidyr::expand_grid(
+    universe = "Panel", strategy = "EW", name = c("a", "b"),
+    month_id = as.Date(c("2020-01-01", "2020-02-01"))
+  ) %>%
+    dplyr::mutate(excess_return = c(.01, .03, .02, .04),
+      total_return = excess_return + .001)
+  actual <- aggregate_portfolio_returns(
+    data, c("universe", "strategy"), c("excess_return", "total_return"))
+  expected <- data %>% dplyr::group_by(universe, strategy, month_id) %>%
+    dplyr::summarise(dplyr::across(c(excess_return, total_return), mean), .groups = "drop")
+  testthat::expect_equal(actual, expected)
+  testthat::expect_error(
+    aggregate_portfolio_returns(data[-1, ], c("universe", "strategy"),
+      c("excess_return", "total_return")),
+    "balanced")
+})
+
+testthat::test_that("cluster tables can compare learning models with several benchmarks", {
+  path <- tempfile(fileext = ".tex")
+  data <- tibble::tibble(
+    cluster = "Value", Factor = "Cluster aggregate", row_type = "aggregate",
+    Unmanaged = .4, RW = .5, HAR = .45, HARX = .55, ENET = .54, EW = .6
+  )
+  write_cluster_metric_table(data, path, "Portfolio Sharpe ratios. Details.", "tab:test",
+    direction = "max", benchmark_columns = c("Unmanaged", "RW", "HAR", "HARX"),
+    shade_columns = c("ENET", "EW"))
+  output <- paste(readLines(path), collapse = "\n")
+  testthat::expect_false(grepl("cellcolor\\{blue!10\\}0.5400", output))
+  testthat::expect_match(output, "\\\\textbf\\{\\\\cellcolor\\{blue!10\\}0.6000\\}")
 })

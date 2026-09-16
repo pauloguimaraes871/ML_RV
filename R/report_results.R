@@ -41,14 +41,20 @@
                        caption, paste0("tab:rv-", filename), long, digits)
     register_output(section, paste0(filename, ".tex"))
   }
-  save_panel_table <- function(panels, section, filename, caption, digits = 4) {
+  save_panel_table <- function(panels, section, filename, caption, digits = 4,
+                               font_size = "footnotesize", tabcolsep = 4,
+                               landscape = FALSE, placement = "p") {
     write_report_panel_table(panels, file.path(output_dir, section, paste0(filename, ".tex")),
-                             caption, paste0("tab:rv-", filename), digits)
+                             caption, paste0("tab:rv-", filename), digits,
+                             font_size, tabcolsep, landscape, placement)
     register_output(section, paste0(filename, ".tex"))
   }
-  save_cluster_table <- function(data, section, filename, caption, direction, digits = 4) {
+  save_cluster_table <- function(data, section, filename, caption, direction, digits = 4,
+                                 benchmark_columns = "HAR", shade_columns = NULL,
+                                 landscape = FALSE) {
     write_cluster_metric_table(data, file.path(output_dir, section, paste0(filename, ".tex")),
-                               caption, paste0("tab:rv-", filename), direction, digits)
+                               caption, paste0("tab:rv-", filename), direction, digits,
+                               benchmark_columns, shade_columns, landscape)
     register_output(section, paste0(filename, ".tex"))
   }
   palette <- stats::setNames(c("#222222", "#888888", "#0072B2", "#009E73", "#E69F00",
@@ -58,11 +64,28 @@
                    plot.title = ggplot2::element_text(face = "bold", size = 12),
                    strip.background = ggplot2::element_rect(fill = "grey95"))
   save_figure <- function(plot, section, filename, caption, width = 9, height = 5) {
-    for (extension in c("pdf", "png")) {
-      ggplot2::ggsave(file.path(output_dir, section, paste0(filename, ".", extension)),
-                      plot = plot, width = width, height = height, dpi = 180,
-                      bg = "white", limitsize = TRUE)
+    extensions <- c("pdf", "png")
+    targets <- stats::setNames(
+      file.path(output_dir, section, paste0(filename, ".", extensions)), extensions
+    )
+    temporary <- stats::setNames(
+      purrr::map_chr(extensions, ~ tempfile(pattern = paste0(filename, "-"),
+                                            fileext = paste0(".", .x))), extensions
+    )
+    purrr::iwalk(temporary, ~ ggplot2::ggsave(
+      .x, plot = plot, width = width, height = height, dpi = 180,
+      bg = "white", limitsize = TRUE
+    ))
+    unchanged <- file.exists(targets[["png"]]) &&
+      identical(hash_artifact(targets[["png"]]), hash_artifact(temporary[["png"]]))
+    if (!unchanged) {
+      purrr::iwalk(temporary, function(source, extension) {
+        if (!file.copy(source, targets[[extension]], overwrite = TRUE)) {
+          rlang::abort(paste("Could not replace generated figure:", targets[[extension]]))
+        }
+      })
     }
+    unlink(temporary)
     relative <- paste("results_v3", sample_id, section, paste0(filename, ".pdf"), sep = "/")
     caption_tex <- format_report_caption(caption)
     placement <- if (section == "main_appendix") "htbp" else "p"
@@ -108,17 +131,16 @@
 # Equal-weight ensemble---------------------------------------------------------
 
   for (universe in names(results)) {
-    ensemble <- build_ew_ensemble(results[[universe]], ensemble_members)
-    # Also verify HAR coverage, although it is excluded from the combination.
-    reference <- results[[universe]]$har$oos_outputs
-    keys <- c("month_id", ensemble$backtest_meta$key_col)
-    paired <- dplyr::full_join(reference, ensemble$oos_outputs, by = keys,
-                               suffix = c("_har", "_ew"), relationship = "one-to-one")
-    if (anyNA(paired) || any(paired$target_har != paired$target_ew)) {
-      rlang::abort("HAR and ensemble need identical forecast coverage and targets.")
-    }
-    ensemble$backtest_meta$sources <- dplyr::filter(audit, .data$universe == .env$universe,
-                                                    model %in% ensemble_members)
+    ensemble_path <- file.path(
+      model_dir,
+      "ensembles",
+      paste0("ew_", universe, "_", preprocessing, "_", tuning, "_", sample_id, ".rds")
+    )
+    ensemble <- load_or_build_ew_ensemble(
+      results[[universe]],
+      ensemble_path,
+      ensemble_members
+    )
     results[[universe]]$ew <- ensemble
     saveRDS(ensemble, file.path(output_dir, "data", paste0("ew_", universe, "_", sample_id, ".rds")))
   }
@@ -159,10 +181,8 @@
   cluster_order <- sort(unique(cluster_map$cluster))
   factor_forecasts <- factor_forecasts %>%
     dplyr::left_join(cluster_map, by = "name", relationship = "many-to-one")
-  factor_only <- summarise_forecasts(factor_forecasts, "model")
   scope_forecasts <- dplyr::bind_rows(
     dplyr::mutate(forecasts, scope = ifelse(universe == "panel", "Pooled panel", "Market portfolio, separate model")),
-    dplyr::mutate(factor_forecasts, scope = "Factors only"),
     forecasts %>% dplyr::filter(universe == "panel", name == "spx_vw") %>%
       dplyr::mutate(scope = "Market portfolio, pooled model")
   )
@@ -170,23 +190,22 @@
   save_data(consolidated, "consolidated_metrics")
   save_data(forecasts, "oos_forecasts")
   save_data(per_target, "per_target_metrics")
-  save_data(factor_only, "factor_only_metrics")
   save_data(scope_metrics, "scope_metrics")
   save_data(cluster_map, "jkp_cluster_map")
+  unlink(file.path(output_dir, "data", "factor_only_metrics.csv"))
 
-  performance_panels <- stats::setNames(purrr::map(c("panel", "spx"), function(universe) {
-    consolidated %>% dplyr::filter(.data$universe == .env$universe,
-                                   metric %in% c("rmse", "mae", "rss", "mb")) %>%
-      dplyr::select(model, metric, cons_oos) %>%
-      tidyr::pivot_wider(names_from = metric, values_from = cons_oos) %>%
+  performance_scopes <- c("Pooled panel", "Market portfolio, pooled model")
+  performance_panels <- stats::setNames(purrr::map(performance_scopes, function(current_scope) {
+    scope_metrics %>%
+      dplyr::filter(scope == current_scope) %>%
       dplyr::mutate(model = as_model_label(model)) %>% dplyr::arrange(model) %>%
       dplyr::select(Model = model, RMSE = rmse, MAE = mae, `R-squared` = rss, Bias = mb)
   }), c("Panel A. Pooled factor and market panel",
-        "Panel B. Market portfolio estimated separately"))
+        "Panel B. Market portfolio from pooled estimation"))
   save_panel_table(performance_panels, "main", "performance", paste(
     "Out-of-sample predictive performance.",
     "Panel A pools forecast errors across all factor-month and market-month observations before computing each statistic.",
-    "Panel B evaluates forecasts from models estimated only on the market portfolio.",
+    "Panel B evaluates the market-portfolio forecasts from the same pooled estimation.",
     "The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance.",
     "R-squared is computed relative to the mean in each evaluation sample. Bias is realized minus predicted log variance.",
     "The equal-weighted forecast averages HARX, elastic net, random forest, XGBoost, and the three neural networks."))
@@ -238,10 +257,13 @@
       "For this statistic,", comparison_note, "values indicate better predictive performance."),
       if (metric == "rmse") "min" else "max")
   }
-  save_table(scope_metrics %>% dplyr::filter(scope %in% c("Factors only", "Market portfolio, pooled model")) %>%
+  save_table(scope_metrics %>% dplyr::filter(scope == "Market portfolio, separate model") %>%
     dplyr::mutate(model = as_model_label(model)) %>% dplyr::arrange(scope, model) %>%
-    dplyr::select(Sample = scope, Model = model, RMSE = rmse, MAE = mae, `R-squared` = rss),
-    "internet_appendix", "additional_scopes", "Out-of-sample predictive performance within the pooled estimation sample. The first sample evaluates the 153 equity factors, while the second evaluates the market-portfolio observations from the same pooled model.")
+    dplyr::select(Model = model, RMSE = rmse, MAE = mae, `R-squared` = rss),
+    "internet_appendix", "additional_scopes", paste(
+      "Out-of-sample predictive performance for the market portfolio estimated separately.",
+      "Each forecasting model is estimated only on the market-portfolio time series.",
+      "The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance."))
 
 # Sequential predictive comparisons---------------------------------------------
 
@@ -282,12 +304,33 @@
   relative <- scope_metrics %>% dplyr::left_join(dplyr::select(baselines, scope, har),
                                                  by = "scope", relationship = "many-to-one") %>%
     dplyr::mutate(gain = 100 * (1 - rmse / har), model = as_model_label(model))
-  plot <- ggplot2::ggplot(relative, ggplot2::aes(model, gain, colour = model)) +
+  main_relative <- relative %>%
+    dplyr::filter(scope %in% c("Pooled panel", "Market portfolio, pooled model")) %>%
+    dplyr::mutate(scope = factor(scope,
+      levels = c("Pooled panel", "Market portfolio, pooled model"),
+      labels = c("Pooled factor and market panel", "Market portfolio from pooled estimation")))
+  plot <- ggplot2::ggplot(main_relative, ggplot2::aes(model, gain, colour = model)) +
     ggplot2::geom_hline(yintercept = 0, colour = "grey60") + ggplot2::geom_point(size = 2.5) +
     ggplot2::facet_wrap(~ scope, ncol = 2) + ggplot2::scale_colour_manual(values = palette, drop = FALSE) +
     ggplot2::labs(x = NULL, y = "RMSE reduction relative to HAR (%)") + paper_theme +
     ggplot2::theme(legend.position = "none")
-  save_figure(plot, "main", "har_relative_gains", "Out-of-sample RMSE gains relative to HAR. Pooled-panel and factor-only results take the square root after pooling squared errors across all available target-month observations. They are not averages of factor-level RMSE. The two market-portfolio results evaluate a single monthly series. Positive values indicate lower RMSE than HAR.")
+  save_figure(plot, "main", "har_relative_gains", paste(
+    "Out-of-sample RMSE gains relative to HAR.",
+    "The pooled-panel result takes the square root after pooling squared errors across all factor-month and market-month observations and is not an average of target-level RMSE.",
+    "The market-portfolio result evaluates that target within the same pooled estimation.",
+    "Positive values indicate lower RMSE than HAR."))
+  separate_relative <- relative %>%
+    dplyr::filter(scope == "Market portfolio, separate model") %>%
+    dplyr::mutate(scope = "Market portfolio estimated separately")
+  plot <- ggplot2::ggplot(separate_relative, ggplot2::aes(model, gain, colour = model)) +
+    ggplot2::geom_hline(yintercept = 0, colour = "grey60") + ggplot2::geom_point(size = 2.5) +
+    ggplot2::facet_wrap(~ scope) + ggplot2::scale_colour_manual(values = palette, drop = FALSE) +
+    ggplot2::labs(x = NULL, y = "RMSE reduction relative to HAR (%)") + paper_theme +
+    ggplot2::theme(legend.position = "none")
+  save_figure(plot, "internet_appendix", "har_relative_gains_market_separate", paste(
+    "Out-of-sample RMSE gains relative to HAR for the market portfolio estimated separately.",
+    "Each model is estimated only on the market-portfolio time series.",
+    "Positive values indicate lower RMSE than HAR."))
 
 # Forecast error through time---------------------------------------------------
 
@@ -299,7 +342,7 @@
     ggplot2::ggplot(ggplot2::aes(month_id, rmse, colour = model)) + ggplot2::geom_line(linewidth = 0.55) +
     ggplot2::facet_wrap(~ scope, ncol = 2) + ggplot2::scale_colour_manual(values = palette, drop = FALSE) +
     ggplot2::labs(x = NULL, y = "Trailing 12-month RMSE (log RV)", colour = NULL) + paper_theme
-  save_figure(plot, "internet_appendix", "rolling_rmse", "Trailing 12-month out-of-sample RMSE. For pooled-panel and factor-only results, squared forecast errors are pooled across all available target-month observations in each window before taking the square root. The market-portfolio results evaluate a single monthly series. The figure omits incomplete initial windows.", height = 6)
+  save_figure(plot, "internet_appendix", "rolling_rmse", "Trailing 12-month out-of-sample RMSE. For the pooled-panel result, squared forecast errors are pooled across all available target-month observations in each window before taking the square root. The market-portfolio results evaluate a single monthly series. The figure omits incomplete initial windows.", height = 6)
   factor_rolling <- rolling_forecast_rmse(factor_forecasts, c("model", "name"), rolling_months)
   save_data(factor_rolling, "factor_rolling_rmse")
   cluster_rolling <- rolling_forecast_rmse(
@@ -450,6 +493,454 @@
     save_figure(plot, "internet_appendix", paste0("theme_history_", universe),
       paste("Predictor-theme loading shares over time for the", universe_label, "estimation.", loading_note), width = 10, height = 10)
   }
+
+# Economic performance of volatility-managed portfolios-----------------------
+
+  portfolio_headings <- c(
+    main_appendix = paste("\\clearpage",
+                          "\\subsubsection{Portfolio Performance by Forecasting Method}", sep = "\n")
+  )
+  purrr::iwalk(portfolio_headings, function(heading, section) {
+    writeLines(heading, file.path(output_dir, section, "portfolio_section.tex"))
+    register_output(section, "portfolio_section.tex")
+  })
+
+  portfolio_root <- file.path(project_dir, "ports", "v3", sample_id)
+  portfolio_paths <- c(
+    panel = file.path(portfolio_root, "panel", "expanding_rv_10bps", "all_ports.rds"),
+    spx = file.path(portfolio_root, "spx", "expanding_rv_10bps", "all_ports.rds")
+  )
+  if (any(!file.exists(portfolio_paths))) {
+    rlang::abort(paste("Missing V3 portfolio results:",
+                       paste(portfolio_paths[!file.exists(portfolio_paths)], collapse = ", ")))
+  }
+  portfolio_results <- purrr::map(portfolio_paths, readRDS)
+  portfolio_model_order <- c("glmnet", "har", "harx", "nn1", "nn2", "nn3", "rf", "xgb", "ew")
+  required_portfolio_columns <- c(
+    "name", "month_id", "method", "w_raw", "w_capped", "turnover_raw", "turnover",
+    "tc_raw", "tc", "r_exc_fwd1_raw", "r_exc_fwd1_capped", "r_exc_fwd1_net_raw",
+    "r_exc_fwd1_net_capped", "r_strat_fwd1_raw", "r_strat_fwd1_capped",
+    "r_strat_fwd1_net_raw", "r_strat_fwd1_net_capped"
+  )
+  purrr::iwalk(portfolio_results, function(models, source_universe) {
+    if (!setequal(names(models), portfolio_model_order)) {
+      rlang::abort(paste("Unexpected portfolio models for", source_universe))
+    }
+    reference_settings <- models$ew$settings
+    purrr::iwalk(models, function(result, model) {
+      weights <- result$w_compiled_df
+      numeric_columns <- setdiff(required_portfolio_columns, c("name", "month_id", "method"))
+      if (!is.data.frame(weights) || !all(required_portfolio_columns %in% names(weights)) ||
+          anyDuplicated(weights[c("name", "month_id", "method")]) ||
+          !inherits(weights$month_id, "Date") ||
+          any(!is.finite(as.matrix(weights[numeric_columns])))) {
+        rlang::abort(paste("Invalid portfolio output for", source_universe, model))
+      }
+      if (!identical(result$settings, reference_settings)) {
+        rlang::abort(paste("Portfolio settings differ across models for", source_universe))
+      }
+    })
+    if (!isTRUE(reference_settings$implementable) ||
+        !identical(reference_settings$normalization, "expanding_rv") ||
+        !isTRUE(all.equal(reference_settings$weight_cap, 1.5)) ||
+        !isTRUE(all.equal(reference_settings$cost_per_unit, 0.001))) {
+      rlang::abort(paste("Unexpected portfolio design for", source_universe))
+    }
+  })
+  panel_names <- unique(portfolio_results$panel$ew$w_compiled_df$name)
+  spx_names <- unique(portfolio_results$spx$ew$w_compiled_df$name)
+  if (!setequal(panel_names, c(cluster_map$name, "spx_vw")) ||
+      !identical(spx_names, "spx_vw")) {
+    rlang::abort("Portfolio universes do not match the forecast universes.")
+  }
+
+  principal_strategy_order <- c("unmanaged", "rw", "har", "harx", "ew")
+  detailed_strategy_order <- c("unmanaged", "rw", "har", "harx", "glmnet",
+                               "rf", "xgb", "nn1", "nn2", "nn3", "ew")
+  portfolio_strategy_labels <- c(
+    unmanaged = "Unmanaged", rw = "Random walk", har = "HAR", harx = "HARX",
+    glmnet = "ENET", rf = "RF", xgb = "XGB", nn1 = "NN1", nn2 = "NN2",
+    nn3 = "NN3", ew = "EW"
+  )
+  principal_palette <- c(
+    Unmanaged = "#222222", `Random walk` = "#8C8C8C", HAR = "#D55E00",
+    HARX = "#E69F00", EW = "#0072B2"
+  )
+  universe_labels <- c(
+    market_separate = "Market portfolio, separate estimation",
+    market_pooled = "Market portfolio, pooled estimation",
+    factor_panel = "Equal-weighted factor panel"
+  )
+  universe_order <- names(universe_labels)
+
+  select_portfolio_strategies <- function(models, names_to_keep, strategies) {
+    benchmark_rows <- dplyr::bind_rows(
+      models$ew$w_compiled_df %>%
+        dplyr::filter(method == "buyhold", name %in% names_to_keep) %>%
+        dplyr::mutate(strategy = "unmanaged"),
+      models$ew$w_compiled_df %>%
+        dplyr::filter(method == "rw", name %in% names_to_keep) %>%
+        dplyr::mutate(strategy = "rw")
+    )
+    managed_rows <- purrr::map_dfr(intersect(strategies, names(models)), function(model) {
+      models[[model]]$w_compiled_df %>%
+        dplyr::filter(method == "vol_scaled", name %in% names_to_keep) %>%
+        dplyr::mutate(strategy = model)
+    })
+    dplyr::bind_rows(benchmark_rows, managed_rows) %>%
+      dplyr::filter(strategy %in% strategies) %>%
+      dplyr::arrange(strategy, name, month_id)
+  }
+  principal_returns <- dplyr::bind_rows(
+    select_portfolio_strategies(portfolio_results$spx, "spx_vw", principal_strategy_order) %>%
+      dplyr::mutate(universe = "market_separate"),
+    select_portfolio_strategies(portfolio_results$panel, "spx_vw", principal_strategy_order) %>%
+      dplyr::mutate(universe = "market_pooled"),
+    select_portfolio_strategies(portfolio_results$panel, cluster_map$name, principal_strategy_order) %>%
+      dplyr::mutate(universe = "factor_panel")
+  )
+  detailed_factor_returns <- select_portfolio_strategies(
+    portfolio_results$panel, cluster_map$name, detailed_strategy_order
+  ) %>%
+    dplyr::left_join(cluster_map, by = "name", relationship = "many-to-one")
+  if (anyDuplicated(principal_returns[c("universe", "strategy", "name", "month_id")]) ||
+      anyNA(detailed_factor_returns$cluster)) {
+    rlang::abort("Portfolio strategy keys or Jensen, Kelly, and Pedersen clusters are invalid.")
+  }
+
+  return_versions <- tibble::tribble(
+    ~version, ~excess_column, ~total_column,
+    "raw", "r_exc_fwd1_raw", "r_strat_fwd1_raw",
+    "capped", "r_exc_fwd1_capped", "r_strat_fwd1_capped",
+    "net_raw", "r_exc_fwd1_net_raw", "r_strat_fwd1_net_raw",
+    "net_capped", "r_exc_fwd1_net_capped", "r_strat_fwd1_net_capped"
+  )
+  stack_return_versions <- function(data) {
+    purrr::pmap_dfr(return_versions, function(version, excess_column, total_column) {
+      data %>%
+        dplyr::mutate(version = version, excess_return = .data[[excess_column]],
+                      total_return = .data[[total_column]])
+    })
+  }
+  principal_versions <- stack_return_versions(principal_returns)
+  principal_aggregate <- aggregate_portfolio_returns(
+    principal_versions, c("universe", "strategy", "version"),
+    c("excess_return", "total_return")
+  )
+  portfolio_summary <- summarise_portfolio_returns(
+    principal_aggregate, c("universe", "strategy", "version")
+  )
+  save_data(principal_returns, "portfolio_principal_returns")
+  save_data(portfolio_summary, "portfolio_summary")
+  save_data(tibble::tibble(
+    source_universe = names(portfolio_paths), file = unname(portfolio_paths),
+    sha256 = purrr::map_chr(portfolio_paths, hash_artifact)
+  ), "portfolio_input_manifest")
+
+  summary_table <- portfolio_summary %>%
+    dplyr::select(universe, strategy, version, sharpe_ratio, cer_ann) %>%
+    tidyr::pivot_longer(c(sharpe_ratio, cer_ann), names_to = "statistic", values_to = "value") %>%
+    dplyr::mutate(
+      universe = factor(universe, levels = universe_order),
+      strategy = factor(strategy, levels = principal_strategy_order),
+      statistic = factor(statistic, levels = c("sharpe_ratio", "cer_ann")),
+      value = ifelse(statistic == "cer_ann", 100 * value, value),
+      Model = portfolio_strategy_labels[as.character(strategy)],
+      Statistic = ifelse(statistic == "sharpe_ratio", "Sharpe ratio", "CER (%)")
+    ) %>%
+    dplyr::select(universe, strategy, statistic, Model, Statistic, version, value) %>%
+    tidyr::pivot_wider(names_from = version, values_from = value) %>%
+    dplyr::arrange(universe, strategy, statistic) %>%
+    dplyr::select(universe, Model, Statistic, Raw = raw, Capped = capped,
+                  `Net raw` = net_raw, `Net capped` = net_capped)
+  main_universes <- c("market_pooled", "factor_panel")
+  summary_panels <- stats::setNames(
+    purrr::map(main_universes, ~ summary_table %>%
+                 dplyr::filter(universe == .x) %>% dplyr::select(-universe)),
+    paste0("Panel ", LETTERS[seq_along(main_universes)], ". ", universe_labels[main_universes])
+  )
+  save_panel_table(
+    summary_panels, "main", "portfolio_performance",
+    paste(
+      "Economic performance of volatility-managed portfolios.",
+      "Panel A uses market-portfolio forecasts from the pooled estimation.",
+      "Panel B equal-weights the 153 factor strategies each month.",
+      "SR denotes the annualized excess-return Sharpe ratio.",
+      "CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five.",
+      "Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure.",
+      "EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks."
+    ), digits = 3, font_size = "scriptsize", placement = "htbp"
+  )
+  separate_market_panel <- stats::setNames(
+    list(summary_table %>%
+      dplyr::filter(universe == "market_separate") %>%
+      dplyr::select(-universe)),
+    "Market portfolio estimated separately"
+  )
+
+  cumulative_returns <- principal_aggregate %>%
+    dplyr::filter(version == "net_capped") %>%
+    dplyr::group_by(universe, strategy) %>%
+    dplyr::arrange(month_id, .by_group = TRUE) %>%
+    dplyr::mutate(wealth = cumprod(1 + total_return)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(strategy_label = portfolio_strategy_labels[strategy])
+  if (any(cumulative_returns$wealth <= 0)) {
+    rlang::abort("Portfolio wealth is nonpositive and cannot be displayed on a log scale.")
+  }
+  cumulative_captions <- c(
+    market_separate = paste(
+      "Cumulative wealth for the market portfolio from separate forecasts.",
+      "Forecasting models are estimated only on the market portfolio.",
+      "Returns are net of transaction costs and exposure is capped at 1.5."
+    ),
+    market_pooled = paste(
+      "Cumulative wealth for the market portfolio from pooled forecasts.",
+      "Forecasting models are estimated on the pooled factor and market panel.",
+      "Returns are net of transaction costs and exposure is capped at 1.5."
+    ),
+    factor_panel = paste(
+      "Cumulative wealth for the factor panel.",
+      "Monthly returns are equal-weighted across the 153 factor strategies, net of transaction costs, and capped at 1.5."
+    )
+  )
+  cumulative_filenames <- c(
+    market_separate = "portfolio_wealth_market_separate",
+    market_pooled = "portfolio_wealth_market_pooled",
+    factor_panel = "portfolio_wealth_factor_panel"
+  )
+  unlink(file.path(output_dir, "main_appendix",
+                   paste0("portfolio_wealth_market_separate.", c("pdf", "png", "tex"))))
+  purrr::walk(universe_order, function(current_universe) {
+    plot_data <- cumulative_returns %>% dplyr::filter(universe == current_universe)
+    comparison <- plot_data %>%
+      dplyr::filter(strategy != "ew") %>%
+      dplyr::group_by(month_id) %>%
+      dplyr::summarise(best_benchmark = max(wealth), .groups = "drop") %>%
+      dplyr::left_join(
+        plot_data %>% dplyr::filter(strategy == "ew") %>%
+          dplyr::select(month_id, ew_wealth = wealth),
+        by = "month_id", relationship = "one-to-one"
+      ) %>%
+      dplyr::mutate(
+        ew_outperforms = ew_wealth >= best_benchmark,
+        run = cumsum(ew_outperforms != dplyr::lag(ew_outperforms,
+                                                  default = dplyr::first(ew_outperforms))),
+        lower = pmin(ew_wealth, best_benchmark), upper = pmax(ew_wealth, best_benchmark)
+      )
+    plot <- ggplot2::ggplot() +
+      ggplot2::geom_ribbon(
+        data = comparison,
+        ggplot2::aes(month_id, ymin = lower, ymax = upper,
+                     fill = ew_outperforms, group = interaction(ew_outperforms, run)),
+        alpha = 0.28
+      ) +
+      ggplot2::geom_line(
+        data = plot_data,
+        ggplot2::aes(month_id, wealth, colour = strategy_label), linewidth = 0.65
+      ) +
+      ggplot2::scale_y_log10() +
+      ggplot2::scale_colour_manual(values = principal_palette) +
+      ggplot2::scale_fill_manual(
+        values = c(`TRUE` = "#56B4E9", `FALSE` = "#E69F00"), guide = "none"
+      ) +
+      ggplot2::labs(x = NULL, y = "Cumulative wealth, log scale", colour = NULL) + paper_theme
+    figure_section <- if (current_universe == "market_separate") {
+      "internet_appendix"
+    } else {
+      "main_appendix"
+    }
+    save_figure(
+      plot, figure_section, cumulative_filenames[[current_universe]],
+      paste(
+        cumulative_captions[[current_universe]],
+        "Lines show the unmanaged, random-walk, HAR, HARX, and equal-weighted forecast strategies.",
+        "Blue shading marks dates when EW wealth exceeds the strongest benchmark. Orange shading marks dates when it does not."
+      ), width = 9, height = 5
+    )
+  })
+
+  detailed_factor_versions <- stack_return_versions(detailed_factor_returns) %>%
+    dplyr::filter(version == "net_capped")
+  factor_portfolio_metrics <- summarise_portfolio_returns(
+    detailed_factor_versions, c("cluster", "strategy", "name")
+  )
+  cluster_portfolio_returns <- aggregate_portfolio_returns(
+    detailed_factor_versions, c("cluster", "strategy"),
+    c("excess_return", "total_return")
+  )
+  cluster_portfolio_metrics <- summarise_portfolio_returns(
+    cluster_portfolio_returns, c("cluster", "strategy")
+  )
+  save_data(factor_portfolio_metrics, "portfolio_factor_metrics")
+  save_data(cluster_portfolio_metrics, "portfolio_cluster_metrics")
+
+  cluster_aggregate_table <- cluster_portfolio_metrics %>%
+    dplyr::mutate(strategy = portfolio_strategy_labels[strategy]) %>%
+    dplyr::select(cluster, strategy, value = sharpe_ratio) %>%
+    tidyr::pivot_wider(names_from = strategy, values_from = value) %>%
+    dplyr::mutate(Factor = "Cluster aggregate", row_type = "aggregate")
+  cluster_detail_table <- factor_portfolio_metrics %>%
+    dplyr::mutate(strategy = portfolio_strategy_labels[strategy]) %>%
+    dplyr::select(cluster, Factor = name, strategy, value = sharpe_ratio) %>%
+    tidyr::pivot_wider(names_from = strategy, values_from = value) %>%
+    dplyr::mutate(row_type = "factor")
+  detailed_labels <- unname(portfolio_strategy_labels[detailed_strategy_order])
+  cluster_portfolio_table <- dplyr::bind_rows(cluster_aggregate_table, cluster_detail_table) %>%
+    dplyr::mutate(
+      cluster = factor(cluster, levels = cluster_order),
+      row_order = ifelse(row_type == "aggregate", 0L, 1L)
+    ) %>%
+    dplyr::arrange(cluster, row_order, Factor) %>%
+    dplyr::mutate(cluster = as.character(cluster)) %>%
+    dplyr::select(cluster, Factor, row_type, dplyr::all_of(detailed_labels))
+  save_cluster_table(
+    cluster_portfolio_table, "internet_appendix", "portfolio_factor_sharpe",
+    paste(
+      "Net Sharpe ratios of volatility-managed factor portfolios by Jensen, Kelly, and Pedersen factor cluster.",
+      "The first row of each panel reports the Sharpe ratio of an equal-weighted portfolio of the factors in that cluster.",
+      "The remaining rows report individual factor strategies.",
+      "All managed strategies cap exposure at 1.5 and deduct 10 basis points per unit change in factor exposure.",
+      "Light blue cells identify strategies that outperform the strongest result between the unmanaged and random-walk benchmarks. Bold cells identify the highest Sharpe ratio in each row."
+    ), "max", digits = 3,
+    benchmark_columns = c("Unmanaged", "Random walk"),
+    shade_columns = c("HAR", "HARX", "ENET", "RF", "XGB", "NN1", "NN2", "NN3", "EW"),
+    landscape = TRUE
+  )
+  save_panel_table(
+    separate_market_panel, "internet_appendix", "portfolio_performance_market_separate",
+    paste(
+      "Economic performance of volatility-managed portfolios for the market portfolio estimated separately.",
+      "Each forecasting model is estimated only on the market-portfolio time series.",
+      "SR denotes the annualized excess-return Sharpe ratio.",
+      "CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five.",
+      "Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure.",
+      "EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks."
+    ), digits = 3, font_size = "scriptsize", placement = "htbp"
+  )
+
+  cluster_plot_data <- factor_portfolio_metrics %>%
+    dplyr::filter(strategy %in% principal_strategy_order) %>%
+    dplyr::mutate(
+      cluster = factor(cluster, levels = cluster_order),
+      strategy_label = factor(portfolio_strategy_labels[strategy],
+                              levels = unname(portfolio_strategy_labels[principal_strategy_order]))
+    )
+  plot <- ggplot2::ggplot(
+      cluster_plot_data, ggplot2::aes(strategy_label, sharpe_ratio, fill = strategy_label)
+    ) +
+    ggplot2::geom_hline(yintercept = 0, colour = "grey75", linewidth = 0.35) +
+    ggplot2::geom_boxplot(width = 0.72, linewidth = 0.35, outlier.alpha = 0.35,
+                         outlier.size = 0.7) +
+    ggplot2::facet_wrap(~ cluster, ncol = 3, scales = "free_y") +
+    ggplot2::scale_fill_manual(values = principal_palette) +
+    ggplot2::labs(x = NULL, y = "Annualized net Sharpe ratio", fill = NULL) + paper_theme +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+                   legend.position = "none")
+  save_figure(
+    plot, "main_appendix", "portfolio_cluster_sharpe",
+    paste(
+      "Cross-sectional distribution of net Sharpe ratios for volatility-managed factor portfolios by Jensen, Kelly, and Pedersen factor cluster.",
+      "Each box summarizes the factor-level Sharpe ratios within the indicated cluster. The center line is the median, the box spans the interquartile range, and the whiskers extend to the most extreme observations within 1.5 interquartile ranges.",
+      "Managed strategies cap exposure at 1.5 and deduct 10 basis points per unit change in factor exposure."
+    ), width = 10, height = 11
+  )
+
+  ew_factor_metrics <- summarise_portfolio_returns(
+    stack_return_versions(dplyr::filter(detailed_factor_returns, strategy == "ew")),
+    c("name", "version")
+  ) %>%
+    dplyr::select(name, version, sharpe_ratio) %>%
+    tidyr::pivot_wider(names_from = version, values_from = sharpe_ratio)
+  waterfall_data <- ew_factor_metrics %>%
+    dplyr::summarise(
+      raw = mean(raw), capped = mean(capped), net_capped = mean(net_capped),
+      raw_p25 = stats::quantile(raw, 0.25), raw_p75 = stats::quantile(raw, 0.75),
+      cap_p25 = stats::quantile(capped - raw, 0.25),
+      cap_p75 = stats::quantile(capped - raw, 0.75),
+      cost_p25 = stats::quantile(net_capped - capped, 0.25),
+      cost_p75 = stats::quantile(net_capped - capped, 0.75),
+      net_p25 = stats::quantile(net_capped, 0.25),
+      net_p75 = stats::quantile(net_capped, 0.75)
+    )
+  waterfall_plot_data <- tibble::tibble(
+    step = factor(c("Raw", "Exposure cap", "Transaction costs", "Net capped"),
+                  levels = c("Raw", "Exposure cap", "Transaction costs", "Net capped")),
+    start = c(0, waterfall_data$raw, waterfall_data$capped, 0),
+    end = c(waterfall_data$raw, waterfall_data$capped,
+            waterfall_data$net_capped, waterfall_data$net_capped),
+    lower = c(waterfall_data$raw_p25, waterfall_data$raw + waterfall_data$cap_p25,
+              waterfall_data$capped + waterfall_data$cost_p25, waterfall_data$net_p25),
+    upper = c(waterfall_data$raw_p75, waterfall_data$raw + waterfall_data$cap_p75,
+              waterfall_data$capped + waterfall_data$cost_p75, waterfall_data$net_p75)
+  ) %>%
+    dplyr::mutate(effect = ifelse(end >= start, "Increase", "Decrease"))
+  save_data(ew_factor_metrics, "portfolio_ew_factor_sharpe_decomposition")
+  save_data(waterfall_plot_data, "portfolio_ew_sharpe_waterfall")
+  plot <- ggplot2::ggplot(waterfall_plot_data, ggplot2::aes(step)) +
+    ggplot2::geom_linerange(
+      ggplot2::aes(ymin = pmin(start, end), ymax = pmax(start, end), colour = effect),
+      linewidth = 14, lineend = "butt"
+    ) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = lower, ymax = upper), width = 0.18) +
+    ggplot2::geom_hline(yintercept = 0, colour = "grey50", linewidth = 0.35) +
+    ggplot2::scale_colour_manual(values = c(Increase = "#0072B2", Decrease = "#D55E00"),
+                                guide = "none") +
+    ggplot2::labs(x = NULL, y = "Cross-sectional mean Sharpe ratio", colour = NULL) + paper_theme
+  save_figure(
+    plot, "internet_appendix", "portfolio_ew_sharpe_waterfall",
+    paste(
+      "Decomposition of the equal-weighted forecast strategy's Sharpe ratio across the 153 factors.",
+      "The bars show the cross-sectional mean raw Sharpe ratio, the change associated with capping exposure at 1.5, the change associated with transaction costs, and the resulting net capped Sharpe ratio.",
+      "Error bars report the interquartile range across factors for the raw and final levels and for each intermediate change."
+    ), width = 8, height = 5
+  )
+
+  implementation_metrics <- portfolio_summary %>%
+    dplyr::filter(version == "net_capped") %>%
+    dplyr::select(universe, strategy, annualized_excess_return, annualized_volatility,
+                  sharpe_ratio, cer_ann, max_drawdown)
+  implementation_trading <- principal_returns %>%
+    dplyr::group_by(universe, strategy) %>%
+    dplyr::summarise(
+      annualized_cost = 12 * mean(tc), average_turnover = mean(turnover),
+      maximum_raw_exposure = max(w_raw), cap_fraction = mean(w_raw > 1.5),
+      .groups = "drop"
+    )
+  implementation_table <- implementation_metrics %>%
+    dplyr::left_join(implementation_trading, by = c("universe", "strategy"),
+                     relationship = "one-to-one") %>%
+    dplyr::mutate(
+      universe = factor(universe, levels = universe_order),
+      strategy = factor(strategy, levels = principal_strategy_order),
+      Model = portfolio_strategy_labels[as.character(strategy)]
+    ) %>%
+    dplyr::arrange(universe, strategy) %>%
+    dplyr::transmute(
+      universe, Model, `Return (%)` = 100 * annualized_excess_return,
+      `Volatility (%)` = 100 * annualized_volatility, Sharpe = sharpe_ratio,
+      `CER (%)` = 100 * cer_ann, `Max drawdown (%)` = 100 * max_drawdown,
+      `Cost (%)` = 100 * annualized_cost, Turnover = average_turnover,
+      `Maximum exposure` = maximum_raw_exposure, `Capped (%)` = 100 * cap_fraction
+    )
+  implementation_panels <- stats::setNames(
+    purrr::map(universe_order, ~ implementation_table %>%
+                 dplyr::filter(universe == .x) %>% dplyr::select(-universe)),
+    paste0("Panel ", LETTERS[seq_along(universe_order)], ". ", universe_labels)
+  )
+  save_data(implementation_table, "portfolio_implementation_metrics")
+  save_panel_table(
+    implementation_panels, "internet_appendix", "portfolio_implementation",
+    paste(
+      "Implementation statistics for net capped volatility-managed portfolios.",
+      "Return, volatility, certainty-equivalent return, transaction cost, and maximum drawdown are reported in percent.",
+      "Sharpe ratios use excess returns and maximum drawdowns use total returns.",
+      "Turnover is the average monthly absolute change in factor exposure. Maximum exposure is measured before capping.",
+      "The capped percentage is the share of factor-month observations for which uncapped exposure exceeds 1.5.",
+      "Panel C first equal-weights factor-strategy returns within each month. Its implementation statistics summarize the underlying factor-month exposures."
+    ), digits = 3, font_size = "scriptsize", tabcolsep = 2.5, landscape = TRUE
+  )
+
 # LaTeX integration and reproducibility record----------------------------------
 
   for (section in names(generated)) {
@@ -465,12 +956,15 @@
     "EW gives HARX, ENET, RF, XGB, NN1, NN2 and NN3 one-seventh each within each target-month, on the log scale. Each NN architecture counts once despite its ten internal members. Exponentiating this average is not the arithmetic mean of variance-level forecasts. No missing-member renormalization is allowed.",
     "Validation scores describe selected hyperparameters on overlapping 90-month windows. Neural network tuning evaluates one network, while test forecasts average ten refitted networks. The comparison may also reflect refitting, window length, and changes in volatility conditions.",
     "Feature summaries are descriptive linear surrogate loadings. Gross and net shares exclude the intercept. Exact collinearity can produce zero loadings and does not establish economic irrelevance. Predictor scales differ, and the equal-weighted forecast has no fitted surrogate model.",
-    "The sequential RMSE differences are arithmetic comparisons across model classes. They should not be interpreted as causal contributions. Elastic net adds shrinkage, while nonlinear learners also change regularization and estimation."
+    "The sequential RMSE differences are arithmetic comparisons across model classes. They should not be interpreted as causal contributions. Elastic net adds shrinkage, while nonlinear learners also change regularization and estimation.",
+    "Portfolio Sharpe ratios and certainty-equivalent returns use excess returns. Cumulative wealth and maximum drawdowns use total returns, including the risk-free collateral return. Factor-panel portfolio returns are equal-weighted across the 153 factors within each month.",
+    "Managed exposure is normalized by expanding realized volatility estimated from information available before the forecast month. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors."
   )
   writeLines(notes, file.path(output_dir, "notes.tex"))
   preview <- c("\\documentclass[11pt]{article}",
     "\\usepackage[a4paper,margin=18mm]{geometry}", "\\usepackage[T1]{fontenc}",
-    "\\usepackage{graphicx,longtable,hyperref,caption}", "\\usepackage[table]{xcolor}",
+    "\\usepackage{graphicx,longtable,hyperref,caption,pdflscape}", "\\usepackage[table]{xcolor}",
+    "\\DeclareCaptionLabelFormat{boldlabel}{\\textbf{#1 #2}}",
     "\\captionsetup{justification=raggedright,singlelinecheck=false}", "\\begin{document}",
     "\\title{ML RV: Forecast Results}", "\\author{}", "\\date{}", "\\maketitle",
     paste0("\\input{results_v3/", sample_id, "/notes.tex}"), "\\clearpage",
@@ -484,7 +978,7 @@
     "Regenerate from the ML_RV project with source('R/report_results.R'). No estimation is performed.",
     "The project R library must be available. The script stops on inconsistent inputs.", "",
     "Compile from latex_paper: pdflatex -interaction=nonstopmode -halt-on-error -output-directory=results_v3/1986 results_v3/1986/results_preview.tex", "",
-    "Integration: manuscript.tex reads main.tex, main_appendix.tex and internet_appendix.tex from this directory. The snippets require graphicx and longtable.",
+    "Integration: manuscript.tex reads main.tex, main_appendix.tex and internet_appendix.tex from this directory. The snippets require graphicx, longtable and pdflscape.",
     "See notes.tex for units, aggregation, validation, ensemble and surrogate conventions.",
     "data/ contains the EW RDS objects, forecasts, all metrics, tuning choices, feature coefficients and source hashes.",
     "main/, main_appendix/ and internet_appendix/ contain generated LaTeX tables and figure wrappers plus PDF/PNG figures.",

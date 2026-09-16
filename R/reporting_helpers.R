@@ -199,6 +199,107 @@ build_ew_ensemble <- function(models,
        ))
 }
 
+#' Load or build one provenance-checked equal-weight ensemble
+#'
+#' The cache is shared by reporting and portfolio scripts. It is reused only
+#' when every member model has the same filename and SHA-256 hash recorded when
+#' the ensemble was built. A changed member triggers an explicit rebuild.
+load_or_build_ew_ensemble <- function(models, path,
+                                      members = c("harx", "glmnet", "rf", "xgb",
+                                                  "nn1", "nn2", "nn3"),
+                                      reference_model = "har") {
+
+  if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
+    rlang::abort("Ensemble cache path must be one nonempty string.")
+  }
+  if (!is.character(members) || !length(members) || anyNA(members) || anyDuplicated(members)) {
+    rlang::abort("Ensemble members must be nonempty and unique.")
+  }
+  if (is.null(names(models)) || anyDuplicated(names(models))) {
+    rlang::abort("Models need unique names.")
+  }
+
+  missing <- setdiff(c(reference_model, members), names(models))
+  if (length(missing)) {
+    rlang::abort(paste("Missing models required for the EW ensemble:",
+                       paste(missing, collapse = ", ")))
+  }
+
+  missing_sources <- purrr::map_lgl(
+    models[members],
+    ~ is.null(.x$source) ||
+      !is.data.frame(.x$source) ||
+      !identical(names(.x$source), c("file", "sha256")) ||
+      nrow(.x$source) != 1L ||
+      anyNA(.x$source)
+  )
+  if (any(missing_sources)) {
+    rlang::abort("Ensemble members require one audited source file and hash.")
+  }
+
+  sources <- purrr::imap_dfr(
+    models[members],
+    ~ dplyr::mutate(.x$source, model = .y, .before = 1)
+  ) %>%
+    dplyr::arrange(model)
+  ## Hash syntax only. Hashing the closure would include its session environment
+  ## and make an unchanged constructor appear stale in a fresh R process.
+  builder_sha256 <- digest::digest(
+    list(formals(build_ew_ensemble), body(build_ew_ensemble)),
+    algo = "sha256"
+  )
+
+  validate_reference <- function(ensemble) {
+    reference <- models[[reference_model]]$oos_outputs
+    keys <- c("month_id", ensemble$backtest_meta$key_col)
+    validate_forecasts(ensemble$oos_outputs, keys)
+
+    paired <- dplyr::full_join(
+      dplyr::select(reference, dplyr::all_of(keys), target),
+      dplyr::select(ensemble$oos_outputs, dplyr::all_of(keys), target),
+      by = keys,
+      suffix = c("_reference", "_ew"),
+      relationship = "one-to-one"
+    )
+    if (anyNA(paired) || any(paired$target_reference != paired$target_ew)) {
+      rlang::abort("Reference model and ensemble need identical coverage and targets.")
+    }
+
+    invisible(ensemble)
+  }
+
+  if (file.exists(path)) {
+    cached <- readRDS(path)
+    cache_matches <- is.list(cached) &&
+      is.list(cached$backtest_meta) &&
+      identical(cached$backtest_meta$model, "ew") &&
+      identical(cached$backtest_meta$sources, sources) &&
+      identical(cached$backtest_meta$builder_sha256, builder_sha256) &&
+      identical(cached$backtest_meta$weights$model, members) &&
+      isTRUE(all.equal(cached$backtest_meta$weights$weight,
+                      rep(1 / length(members), length(members))))
+
+    if (cache_matches) {
+      validate_reference(cached)
+      message("Reusing EW ensemble: ", path)
+      return(cached)
+    }
+
+    message("Rebuilding stale EW ensemble: ", path)
+  } else {
+    message("Building EW ensemble: ", path)
+  }
+
+  ensemble <- build_ew_ensemble(models, members)
+  validate_reference(ensemble)
+  ensemble$backtest_meta$sources <- sources
+  ensemble$backtest_meta$builder_sha256 <- builder_sha256
+
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(ensemble, path)
+  ensemble
+}
+
 #' Assign each test month to its most recent fitted model
 assign_refit_dates <- function(data, rebal_dates) {
   if (!inherits(rebal_dates, "Date") || !length(rebal_dates) || anyNA(rebal_dates) ||
@@ -272,6 +373,105 @@ summarise_theme_loadings <- function(importance, theme_map) {
     )
 }
 
+#' Equal-weight factor returns within each portfolio and month
+#'
+#' The input must contain one row per group, factor, and month. Every group must
+#' retain the same number of factors in every month so changing coverage cannot
+#' silently change the economic portfolio.
+aggregate_portfolio_returns <- function(data, groups, return_cols) {
+  required <- unique(c(groups, "name", "month_id", return_cols))
+  if (!is.data.frame(data) || !all(required %in% names(data))) {
+    rlang::abort(paste("Portfolio aggregation requires:", paste(required, collapse = ", ")))
+  }
+  if (!nrow(data)) rlang::abort("Portfolio aggregation input is empty.")
+  if (!inherits(data$month_id, "Date") || anyNA(data$month_id) ||
+      any(format(data$month_id, "%d") != "01")) {
+    rlang::abort("Portfolio months must be nonmissing first-of-month Date values.")
+  }
+  keys <- c(groups, "name", "month_id")
+  if (anyNA(data[keys]) || anyDuplicated(data[keys])) {
+    rlang::abort("Portfolio aggregation keys must be complete and unique.")
+  }
+  if (any(!purrr::map_lgl(data[return_cols], is.numeric)) ||
+      any(!is.finite(as.matrix(data[return_cols])))) {
+    rlang::abort("Portfolio returns must be numeric and finite.")
+  }
+  counts <- data %>%
+    dplyr::count(dplyr::across(dplyr::all_of(c(groups, "month_id"))), name = "n_factors") %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(groups))) %>%
+    dplyr::summarise(min_factors = min(n_factors), max_factors = max(n_factors), .groups = "drop")
+  if (any(counts$min_factors != counts$max_factors)) {
+    rlang::abort("Each portfolio group must have balanced factor coverage over time.")
+  }
+  data %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(groups, "month_id")))) %>%
+    dplyr::summarise(dplyr::across(dplyr::all_of(return_cols), mean), .groups = "drop") %>%
+    dplyr::arrange(dplyr::across(dplyr::all_of(c(groups, "month_id"))))
+}
+
+#' Summarize implementable portfolio returns
+#'
+#' Sharpe ratios and volatility use excess returns. Drawdowns use total returns,
+#' which include the risk-free collateral return recorded by the portfolio code.
+summarise_portfolio_returns <- function(data, groups,
+                                        excess_col = "excess_return",
+                                        total_col = "total_return",
+                                        cer_gamma = 5) {
+  required <- unique(c(groups, "month_id", excess_col, total_col))
+  if (!is.data.frame(data) || !all(required %in% names(data)) || !nrow(data)) {
+    rlang::abort("Portfolio summaries require nonempty grouped monthly return data.")
+  }
+  if (!is.numeric(cer_gamma) || length(cer_gamma) != 1L ||
+      !is.finite(cer_gamma) || cer_gamma <= 0) {
+    rlang::abort("cer_gamma must be a finite positive scalar.")
+  }
+  if (!inherits(data$month_id, "Date") || anyNA(data$month_id)) {
+    rlang::abort("Portfolio summary months must be nonmissing Date values.")
+  }
+  if (anyNA(data[groups]) || anyDuplicated(data[c(groups, "month_id")])) {
+    rlang::abort("Portfolio summary group-month keys must be complete and unique.")
+  }
+  if (!is.numeric(data[[excess_col]]) || !is.numeric(data[[total_col]]) ||
+      any(!is.finite(data[[excess_col]])) || any(!is.finite(data[[total_col]]))) {
+    rlang::abort("Portfolio summary returns must be numeric and finite.")
+  }
+  if (any(data[[total_col]] <= -1)) {
+    rlang::abort("Portfolio total returns must remain above -100 percent.")
+  }
+  score <- function(x) {
+    x <- dplyr::arrange(x, month_id)
+    excess <- x[[excess_col]]
+    total <- x[[total_col]]
+    volatility_monthly <- stats::sd(excess)
+    wealth <- cumprod(1 + total)
+    drawdown <- wealth / cummax(c(1, wealth))[-1] - 1
+    centered <- excess - mean(excess)
+    tibble::tibble(
+      n = length(excess),
+      start = min(x$month_id),
+      end = max(x$month_id),
+      annualized_excess_return = 12 * mean(excess),
+      annualized_volatility = sqrt(12) * volatility_monthly,
+      sharpe_ratio = if (is.finite(volatility_monthly) && volatility_monthly > 0) {
+        sqrt(12) * mean(excess) / volatility_monthly
+      } else NA_real_,
+      cer_ann = 12 * (mean(excess) - cer_gamma / 2 * stats::var(excess)),
+      max_drawdown = min(drawdown),
+      skewness = if (length(excess) >= 3L && volatility_monthly > 0) {
+        mean(centered^3) / volatility_monthly^3
+      } else NA_real_,
+      excess_kurtosis = if (length(excess) >= 4L && volatility_monthly > 0) {
+        mean(centered^4) / volatility_monthly^4 - 3
+      } else NA_real_
+    )
+  }
+  if (!length(groups)) return(score(data))
+  data %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(groups))) %>%
+    dplyr::group_modify(~ score(.x)) %>%
+    dplyr::ungroup()
+}
+
 # LaTeX output------------------------------------------------------------------
 
 escape_report_tex <- function(x) {
@@ -332,7 +532,9 @@ write_report_table <- function(data, path, caption, label, long = FALSE, digits 
   writeLines(lines, path, useBytes = TRUE)
 }
 
-write_report_panel_table <- function(panels, path, caption, label, digits = 4) {
+write_report_panel_table <- function(panels, path, caption, label, digits = 4,
+                                     font_size = "footnotesize", tabcolsep = 4,
+                                     landscape = FALSE, placement = "p") {
   if (!is.list(panels) || !length(panels) || is.null(names(panels)) || any(!nzchar(names(panels)))) {
     rlang::abort("Panel tables require a named, nonempty list of data frames.")
   }
@@ -353,28 +555,42 @@ write_report_panel_table <- function(panels, path, caption, label, digits = 4) {
   }
   caption_tex <- format_report_caption(caption)
   spec <- paste0("l", paste(rep("r", ncol(panels[[1]]) - 1L), collapse = ""))
-  lines <- c("\\begin{table}[p]", "\\centering\\footnotesize",
+  if (!font_size %in% c("footnotesize", "scriptsize") ||
+      !is.numeric(tabcolsep) || length(tabcolsep) != 1L ||
+      !is.finite(tabcolsep) || tabcolsep <= 0 ||
+      !placement %in% c("p", "htbp")) {
+    rlang::abort("Panel table sizing options are invalid.")
+  }
+  lines <- c(if (landscape) "\\begin{landscape}" else character(),
+    paste0("\\begin{table}[", placement, "]"), paste0("\\centering\\", font_size),
     "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
-    "\\renewcommand{\\arraystretch}{1.1}", "\\setlength{\\tabcolsep}{4pt}",
+    "\\renewcommand{\\arraystretch}{1.1}", paste0("\\setlength{\\tabcolsep}{", tabcolsep, "pt}"),
     paste0("\\caption[", caption_tex$short, "]{", caption_tex$full, "}\\label{", label, "}"),
     paste0("\\begin{tabular}{", spec, "}"),
     unlist(purrr::imap(panels, format_panel), use.names = FALSE),
-    "\\end{tabular}", "\\end{table}")
+    "\\end{tabular}", "\\end{table}",
+    if (landscape) "\\end{landscape}" else character())
   writeLines(lines, path, useBytes = TRUE)
 }
 
 write_cluster_metric_table <- function(data, path, caption, label,
-                                       direction = c("min", "max"), digits = 4) {
+                                       direction = c("min", "max"), digits = 4,
+                                       benchmark_columns = "HAR",
+                                       shade_columns = NULL,
+                                       landscape = FALSE) {
   direction <- match.arg(direction)
   required <- c("cluster", "Factor", "row_type")
   if (!is.data.frame(data) || !all(required %in% names(data))) {
     rlang::abort("Cluster metric tables require cluster, Factor, and row_type columns.")
   }
   model_columns <- setdiff(names(data), required)
-  if (!length(model_columns) || !"HAR" %in% model_columns ||
+  if (!length(model_columns) || !all(benchmark_columns %in% model_columns) ||
       any(!purrr::map_lgl(data[model_columns], is.numeric))) {
-    rlang::abort("Cluster metric tables require numeric model columns including HAR.")
+    rlang::abort(paste("Cluster metric tables require numeric model columns including benchmarks:",
+                       paste(benchmark_columns, collapse = ", ")))
   }
+  if (is.null(shade_columns)) shade_columns <- model_columns
+  if (!all(shade_columns %in% model_columns)) rlang::abort("Unknown shade columns.")
   if (anyNA(data[c("cluster", "Factor", "row_type")]) || anyDuplicated(data[c("cluster", "Factor")])) {
     rlang::abort("Cluster metric table keys must be complete and unique.")
   }
@@ -386,13 +602,15 @@ write_cluster_metric_table <- function(data, path, caption, label,
     panel <- dplyr::filter(data, cluster == cluster_name)
     rows <- purrr::map_chr(seq_len(nrow(panel)), function(index) {
       values <- as.numeric(panel[index, model_columns])
-      benchmark <- values[match("HAR", model_columns)]
+      benchmark_values <- values[match(benchmark_columns, model_columns)]
+      benchmark <- if (direction == "min") min(benchmark_values, na.rm = TRUE) else max(benchmark_values, na.rm = TRUE)
       best <- if (direction == "min") min(values, na.rm = TRUE) else max(values, na.rm = TRUE)
       cells <- purrr::map2_chr(values, model_columns, function(value, model) {
         if (!is.finite(value)) return("--")
         cell <- formatC(value, format = "f", digits = digits)
-        beats_har <- if (direction == "min") value < benchmark else value > benchmark
-        if (beats_har) cell <- paste0("\\cellcolor{blue!10}", cell)
+        beats_benchmark <- model %in% shade_columns &&
+          if (direction == "min") value < benchmark else value > benchmark
+        if (beats_benchmark) cell <- paste0("\\cellcolor{blue!10}", cell)
         if (isTRUE(all.equal(value, best, tolerance = 1e-12))) cell <- paste0("\\textbf{", cell, "}")
         cell
       })
@@ -406,12 +624,14 @@ write_cluster_metric_table <- function(data, path, caption, label,
   })
   spec <- paste0(">{\\raggedright\\arraybackslash}p{2.6cm}",
                  paste(rep("r", length(model_columns)), collapse = ""))
-  lines <- c("\\begingroup\\scriptsize",
+  lines <- c(if (landscape) "\\begin{landscape}" else character(),
+    "\\begingroup\\scriptsize",
     "\\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}",
     "\\setlength{\\tabcolsep}{2.5pt}", paste0("\\begin{longtable}{", spec, "}"),
     paste0("\\caption[", caption_tex$short, "]{", caption_tex$full, "}\\label{", label, "}\\\\"),
     "\\hline", heading, "\\hline\\endfirsthead", "\\hline", heading,
     "\\hline\\endhead", "\\hline\\endfoot", unlist(body, use.names = FALSE),
-    "\\end{longtable}", "\\endgroup")
+    "\\end{longtable}", "\\endgroup",
+    if (landscape) "\\end{landscape}" else character())
   writeLines(lines, path, useBytes = TRUE)
 }
