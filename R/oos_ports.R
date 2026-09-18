@@ -22,8 +22,10 @@
   preprocessing <- "range"
   tuning <- "grid"
   ensemble_members <- c("harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
-  normalization <- "full_sample"
-  min_history <- 120L
+  ## Primary results use real-time volatility matching. Full-sample results
+  ## already saved under full_sample_10bps remain an ex-post appendix exercise.
+  normalization <- "expanding_vol"
+  min_history <- 60L
   weight_cap <- 1.5
   cost_per_unit <- .001  # 10 bp per unit of exposure; alternatives .0001/.0014
   initial_weight <- 0    # Charge entry from cash; no forced terminal liquidation
@@ -200,7 +202,8 @@
       })
       output_dir <- file.path(
         project_dir, "ports", "v3", sample_id, universe,
-        paste0(normalization, "_", format(cost_per_unit * 10000, trim = TRUE), "bps")
+        paste0(normalization, "_", format(cost_per_unit * 10000, trim = TRUE),
+          "bps_", min_history, "m")
       )
 
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)

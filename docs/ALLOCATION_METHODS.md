@@ -15,7 +15,7 @@ or estimation universes is allowed.
 
 Set `models_to_run <- "ew"` for a smaller complete comparison; the default lists
 all nine forecast methods. Results are saved separately for every specification
-in `ports/v3/<sample>/allocations/<mm_run>/`, alongside a combined `summary.csv`,
+in `ports/v3/<sample>/allocations/<mm_run>_alloc_<EW-history>_<MVO-history>_<Cederburg-history>m/`, alongside a combined `summary.csv`,
 settings, input manifest and session information. Both entry scripts save an
 `*_executed.R` snapshot with effective configuration replacing file defaults;
 the manifest hashes this snapshot and settings.rds. Existing paper tables do not yet consume these
@@ -36,7 +36,8 @@ paper's equation (16), the real-time counterpart of equation (11).
 
 Equal variances are **not** required by equations (7), (11), (15) or (16).
 They enter the simplification in equations (9)-(10). Thus the general covariance
-implementation works with `expanding_rv`. Two explicit versions are saved:
+implementation works with `expanding_rv`. The helper supports two versions;
+the primary runner now saves only `training_vol`:
 
 - `training_vol`: at each formation month calculate one constant
   `c_t = sd(f_past) / sd(f_past / own_variance_signal_past)` and apply it to all
@@ -45,6 +46,15 @@ implementation works with `expanding_rv`. Two explicit versions are saved:
 - `saved`: reuse the saved historical MM `w_raw` series, including its original
   time-varying normalization. This is the requested existing-MM-path extension,
   not an exact reproduction of the paper's window-specific rescaling.
+
+The primary MM run is `expanding_vol_10bps_60m`. Its `calibration_data` retains
+the exact return/signal observations used for MM's normalizer, including the
+ML forecast warm-up and earlier RW history. Cederburg uses that panel but
+evaluates on the saved MM dates. Thus its current c_t and scaler equal MM's
+for both ML and RW. For MVO, it still applies ONE current c_t to the entire
+training window; reusing a path of historical c_s would be a different strategy.
+The `saved` option rejects ex-post full-sample weights. Completed historical
+full-sample artifacts remain separate appendix evidence and are not overwritten.
 
 Each version contains signed MVO, 50/50 EW, and an original-factor-only MVO
 benchmark on identical dates. The latter estimates its exposure from the same
@@ -142,18 +152,17 @@ rescaled consistently. No future or full-sample volatility estimate is used.
 
 ## Timing, costs and practical limits
 
-Multifactor EW and HEW start after 60 prior common saved OOS months. This gives
-the expanding managed/unmanaged volatility normalizer five years of history
-without requiring MVO's ten-year moment-estimation window. Multifactor MVO and
-all Cederburg allocations retain 120 prior months. Comparisons with MVO must
+All new allocations use 60 prior observations as their minimum expanding
+history, not a rolling 60-month lookback. Multifactor inputs include the initial
+ML calibration observations, so there is no second warm-up after MM evaluation
+begins. MVO remains appendix evidence. Comparisons with historical MVO runs must
 use their common evaluation dates. Every monthly coefficient is fitted before
 that month's return is observed. Both the pooled and standalone forecasts must
 cover the same calendar. Changes to future returns/signals cannot alter earlier
 weights.
 
-The saved expanding_vol run currently has only 102 months, fewer than the 120
-needed for MVO and Cederburg training. Keep expanding_rv as the source for this
-stage. On IDENTICAL dates/history, multifactor allocations and Cederburg training_vol
+Old artifacts without calibration_data must be regenerated for the new runner.
+On IDENTICAL dates/history, multifactor allocations and Cederburg training_vol
 depend only on signal_rv, factor_exc and rf, not saved MM w_raw. Only Cederburg
 `saved` inherits that normalization. Matching overlapping inputs does not justify
 changing the training window or silently reducing the selected min_history.

@@ -14,13 +14,14 @@
   ## Restrict models_to_run to "ew" for a quick complete specification comparison.
   sample_ids <- c("1986")
   models_to_run <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3", "ew")
-  mm_run <- "full_sample_10bps"
+  mm_run <- "expanding_vol_10bps_60m"
   ## EW and HEW only estimate the trailing volatility normalizer. Five years
   ## provides a stable estimate while preserving a longer OOS evaluation window.
   robust_min_history <- 60L
-  ## MVO remains an appendix comparison and retains the paper's ten-year window.
-  mvo_min_history <- 120L
-  cederburg_min_history <- 120L
+  ## Use the same initial history across allocations; MVO is reported in the
+  ## appendix. All training windows expand after these first sixty months.
+  mvo_min_history <- 60L
+  cederburg_min_history <- 60L
   gamma <- 5
   cost_per_unit <- .001
   multifactor_cap <- 1.5
@@ -55,23 +56,33 @@
       }
     })
 
-    panel_reference <- saved$panel[[models_to_run[1]]]$w_compiled_df %>%
+    ## Require the new calibration panel rather than losing the MM warm-up
+    ## period a second time. Legacy appendix outputs remain in their own folders.
+    purrr::walk(saved, function(models) {
+      purrr::walk(models[models_to_run], function(result) {
+        if (is.null(result$calibration_data)) {
+          rlang::abort("Rerun oos_ports.R to save the complete calibration observations.")
+        }
+      })
+    })
+    panel_reference <- saved$panel[[models_to_run[1]]]$calibration_data %>%
       dplyr::filter(method == "vol_scaled") %>% dplyr::arrange(name, month_id)
     factor_returns <- dplyr::select(panel_reference, name, month_id, factor_exc, rf)
     factor_names <- sort(unique(factor_returns$name))
     dates <- sort(unique(factor_returns$month_id))
 
-    output_dir <- file.path(project_dir, "ports", "v3", sample_id, "allocations", mm_run)
+    output_dir <- file.path(project_dir, "ports", "v3", sample_id, "allocations",
+      paste0(mm_run, "_alloc_", robust_min_history, "_", mvo_min_history, "_", cederburg_min_history, "m"))
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     summaries <- list()
 
     for (model in models_to_run) {
-      panel <- saved$panel[[model]]$w_compiled_df %>%
+      panel <- saved$panel[[model]]$calibration_data %>%
         dplyr::filter(method == "vol_scaled") %>% dplyr::arrange(name, month_id)
       if (!identical(dplyr::select(panel, name, month_id, factor_exc, rf), factor_returns)) {
         rlang::abort("Model portfolios must use identical factor returns and dates.")
       }
-      market <- saved$spx[[model]]$w_compiled_df %>%
+      market <- saved$spx[[model]]$calibration_data %>%
         dplyr::filter(method == "vol_scaled", name == "spx_vw") %>% dplyr::arrange(month_id)
       if (!identical(market$month_id, dates)) {
         rlang::abort("Pooled and standalone market forecasts must cover identical months.")
@@ -86,8 +97,9 @@
         fcmv = panel %>% dplyr::transmute(name, month_id, sigma = sqrt(signal_rv)),
         ## Saved lagged market RV avoids a raw-data dependency. This is a
         ## second-moment signal, NOT exactly DeMiguel's demeaned daily SD.
-        lagged_market = saved$panel[[model]]$w_compiled_df %>%
+        lagged_market = saved$panel[[model]]$calibration_data %>%
           dplyr::filter(method == "rw", name == "spx_vw") %>%
+          dplyr::filter(month_id %in% dates) %>%
           dplyr::transmute(month_id, sigma = sqrt(signal_rv))
       )
 
@@ -114,7 +126,9 @@
       ## here too. Both variants use the factor's OWN variance estimate.
       for (universe in names(saved)) {
         for (managed_method in c("vol_scaled", "rw")) {
-          for (normalization in c("training_vol", "saved")) {
+          ## The primary managed sleeve uses the same history and current c_t
+          ## as MM. Saved historical c_s is a different MVO training basis.
+          for (normalization in "training_vol") {
             ## A full-sample MM scale is valid input for signal-based allocations
             ## and for Cederburg's re-estimated c_t. It cannot be reused directly.
             if (normalization == "saved" &&

@@ -32,16 +32,19 @@ For each factor independently, the managed excess return is `c_t / v_t * f_t`.
 The ML strategy uses that factor's predicted RV; `rw` uses its previous month's
 RV; `buyhold` is an exposure of one to the same factor, not always the market.
 
-- `expanding_rv` (default): `c_t` is the arithmetic mean of the factor's observed
+- `expanding_rv` (legacy helper default; sensitivity): `c_t` is the arithmetic mean of the factor's observed
   RV through the preceding month. This is a past-only, factor-specific exposure
   anchor. It does **not** promise equality of managed and unmanaged volatility.
-- `expanding_vol`: `c_t = sd(f_s) / sd(f_s / v_s)` on earlier usable observations.
+- `expanding_vol` (primary runner): `c_t = sd(f_s) / sd(f_s / v_s)` on earlier usable observations.
   This implements the historical volatility-matching calibration described in
   Cederburg section 4.3.1. For ML it uses only saved prior OOS forecasts, not final
-  in-sample predictions. With the default 120-observation requirement, the first
-  ten years of ML forecasts are calibration observations and are reported as
+  in-sample predictions. With the primary 60-observation requirement, the first
+  five years of ML forecasts are calibration observations and are reported as
   warm-up. RW uses historical lagged RV; all three strategies are evaluated on
   the same remaining dates within each factor.
+  The saved calibration_data retains these observations for second-stage
+  allocation, including earlier RW history. Cederburg training_vol uses these
+  same pairs, giving identical current c_t without another warm-up period.
 - `full_sample`: constant risk matching over the evaluation sample, an explicitly
   **ex post** diagnostic (`settings$implementable = FALSE`). It is not the default
   and is not evidence of a feasible real-time allocation. Equality is for raw
@@ -138,7 +141,7 @@ in ALLOCATION_METHODS.md.
 Every allocation is fitted on an expanding window ending before its holding
 month. All signals, including the historical benchmark, use the same saved OOS
 forecast calendar so the benchmark does not receive extra estimation history.
-At least 120 prior common months are required, giving July 2016 as the first
+At least 60 prior common months are required in the primary run, giving July 2011 as the first
 portfolio month for forecasts beginning July 2006. No in-sample ML forecasts are
 substituted. Earlier incomplete history is excluded up to the latest series start
 and recorded in settings; subsequent gaps or truncated evaluation returns fail.

@@ -507,8 +507,8 @@
 
   portfolio_root <- file.path(project_dir, "ports", "v3", sample_id)
   portfolio_paths <- c(
-    panel = file.path(portfolio_root, "panel", "expanding_rv_10bps", "all_ports.rds"),
-    spx = file.path(portfolio_root, "spx", "expanding_rv_10bps", "all_ports.rds")
+    panel = file.path(portfolio_root, "panel", "expanding_vol_10bps_60m", "all_ports.rds"),
+    spx = file.path(portfolio_root, "spx", "expanding_vol_10bps_60m", "all_ports.rds")
   )
   if (any(!file.exists(portfolio_paths))) {
     rlang::abort(paste("Missing V3 portfolio results:",
@@ -541,7 +541,8 @@
       }
     })
     if (!isTRUE(reference_settings$implementable) ||
-        !identical(reference_settings$normalization, "expanding_rv") ||
+        !identical(reference_settings$normalization, "expanding_vol") ||
+        reference_settings$min_history != 60L ||
         !isTRUE(all.equal(reference_settings$weight_cap, 1.5)) ||
         !isTRUE(all.equal(reference_settings$cost_per_unit, 0.001))) {
       rlang::abort(paste("Unexpected portfolio design for", source_universe))
@@ -965,7 +966,7 @@
     "Feature summaries are descriptive linear surrogate loadings. Gross and net shares exclude the intercept. Exact collinearity can produce zero loadings and does not establish economic irrelevance. Predictor scales differ, and the equal-weighted forecast has no fitted surrogate model.",
     "The sequential RMSE differences are arithmetic comparisons across model classes. They should not be interpreted as causal contributions. Elastic net adds shrinkage, while nonlinear learners also change regularization and estimation.",
     "Portfolio Sharpe ratios and certainty-equivalent returns use excess returns. Cumulative wealth and maximum drawdowns use total returns, including the risk-free collateral return. Factor-panel portfolio returns are equal-weighted across the 153 factors within each month.",
-    "Managed exposure is normalized by expanding realized volatility estimated from information available before the forecast month. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors."
+    "Managed exposure uses expanding volatility matching with at least 60 prior calibration observations. At each formation date, the normalizer matches unmanaged and inverse-variance-managed volatility over the available past observations. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors."
   )
   writeLines(notes, file.path(output_dir, "notes.tex"))
   preview <- c("\\documentclass[11pt]{article}",

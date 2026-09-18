@@ -52,21 +52,42 @@ run_cederburg_ports <- function(portfolio, managed_method = "vol_scaled",
     rlang::abort("Invalid managed variance/exposure.")
   }
 
+  ## New MM artifacts retain their calibration observations before evaluation.
+  ## Use those for training_vol, but evaluate only on the saved MM holding dates.
+  ## Legacy artifacts still use their available history. The saved sensitivity
+  ## needs actual historical managed weights, so it keeps its original path.
+  if (normalization == "training_vol" && !is.null(portfolio$calibration_data)) {
+    evaluation_keys <- data %>% dplyr::transmute(name, month_id, evaluate = TRUE)
+    data <- portfolio$calibration_data %>% dplyr::filter(method == managed_method)
+    validate_port_data(data, c("name", "month_id"), c("factor_exc", "rf", "signal_rv"),
+      consecutive = FALSE)
+    if (any(data$signal_rv <= 0) ||
+        nrow(dplyr::anti_join(evaluation_keys, data, by = c("name", "month_id")))) {
+      rlang::abort("Invalid or incomplete MM calibration history.")
+    }
+    data <- data %>% dplyr::left_join(evaluation_keys,
+      by = c("name", "month_id"), relationship = "one-to-one") %>%
+      dplyr::mutate(evaluate = dplyr::coalesce(evaluate, FALSE))
+  } else {
+    data <- data %>% dplyr::mutate(evaluate = TRUE)
+  }
+
 # Form portfolios using strictly prior returns ----------------------------------
 
   weights <- data %>% dplyr::group_by(name) %>% dplyr::group_split() %>%
     purrr::map_dfr(function(factor) {
       factor <- dplyr::arrange(factor, month_id)
-      if (nrow(factor) < min_history + 2L) {
+      indices <- which(seq_len(nrow(factor)) > min_history & factor$evaluate)
+      if (length(indices) < 2L) {
         rlang::abort(paste("Insufficient Cederburg history:", factor$name[1]))
       }
-      purrr::map_dfr(seq.int(min_history + 1L, nrow(factor)), function(i) {
+      purrr::map_dfr(indices, function(i) {
         past <- seq_len(i - 1L)
         f <- factor$factor_exc[past]
 
         ## The saved scaler is used only for the explicit saved-normalization
         ## sensitivity. Cederburg's real-time specification re-estimates c_t.
-        scale <- factor$w_raw
+        scale <- if (normalization == "saved") factor$w_raw else NULL
         c_t <- NA_real_
         if (normalization == "training_vol") {
           c_t <- stats::sd(f) / stats::sd(f / factor$signal_rv[past])

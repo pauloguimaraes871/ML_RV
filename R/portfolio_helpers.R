@@ -315,6 +315,17 @@ run_oos_ports <- function(
         ) - nrow(history)
       )
 
+      ## Preserve the exact finite return/signal pairs used by calibrate(),
+      ## including warm-up observations. RW can have history before the first
+      ## ML forecast; keep that history so Cederburg obtains the same c_t.
+      ## No managed weights or fitted in-sample predictions are invented here.
+      calibration_data <- purrr::map_dfr(c("rw", "vol_scaled"), function(method) {
+        signal <- if (method == "rw") history$rv_lag else history$pred_level
+        history %>% dplyr::transmute(name, month_id, method = method,
+          factor_exc, rf, signal_rv = signal) %>%
+          dplyr::filter(is.finite(factor_exc), is.finite(signal_rv))
+      })
+
       evaluation <- dplyr::filter(evaluation, eligible)
       weights <- purrr::map_dfr(c("buyhold", "rw", "vol_scaled"), function(method) {
         normalizer <- switch(
@@ -342,7 +353,7 @@ run_oos_ports <- function(
             w_raw = normalizer / signal
           )
       })
-      list(weights = weights, coverage = coverage)
+      list(weights = weights, coverage = coverage, calibration_data = calibration_data)
     })
   weights <- purrr::map_dfr(results, "weights")
   if (any(!is.finite(weights$w_raw) | weights$w_raw < 0)) rlang::abort("Invalid managed exposure.")
@@ -430,6 +441,7 @@ run_oos_ports <- function(
   }
   list(
     w_compiled_df = weights,
+    calibration_data = purrr::map_dfr(results, "calibration_data"),
     strategy_summary = summary,
     coverage = purrr::map_dfr(results, "coverage"),
     settings = list(
