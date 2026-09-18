@@ -34,9 +34,13 @@ testthat::test_that("HEW respects cluster, factor and sleeve hierarchy", {
     dplyr::mutate(cluster = dplyr::if_else(name == "a", "one", "two"),
                   id = base::paste(name, sleeve, sep = ":"))
   x <- base::matrix(base::seq_len(30) / 100, ncol = 6, dimnames = base::list(NULL, basis$id))
-  testthat::expect_equal(allocate_portfolio(x, basis, "hew")$coef, c(.25, .125, .125, .25, .125, .125))
-  testthat::expect_equal(allocate_portfolio(x, basis, "ew")$coef, base::rep(1/6, 6))
-  testthat::expect_error(allocate_portfolio(x, basis[6:1, ], "hew"), "match")
+  hew <- allocate_portfolio(x, basis, allocation = "hew")$coef
+  ew <- allocate_portfolio(x, basis, allocation = "ew")$coef
+  testthat::expect_equal(hew, c(.25, .125, .125, .25, .125, .125))
+  testthat::expect_equal(ew, base::rep(1/6, 6))
+  testthat::expect_equal(sum(hew), 1)
+  testthat::expect_equal(sum(ew), 1)
+  testthat::expect_error(allocate_portfolio(x, basis[6:1, ], allocation = "hew"), "match")
 })
 
 testthat::test_that("own-factor timing reduces to common timing when signals agree", {
@@ -100,5 +104,7 @@ testthat::test_that("Cederburg reuses saved scaling and calibrates only on prior
                            dplyr::filter(later, month_id <= cutoff)$w_raw)
   }
   p$settings$implementable <- FALSE
-  testthat::expect_error(run_cederburg_ports(p), "implementable")
+  testthat::expect_silent(run_cederburg_ports(p, normalization = "training_vol", min_history = 15L))
+  testthat::expect_error(run_cederburg_ports(p, normalization = "saved", min_history = 15L),
+    "ex-post MM scale")
 })

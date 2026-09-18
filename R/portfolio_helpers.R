@@ -221,14 +221,13 @@ run_oos_ports <- function(
     rlang::abort("Risk-free returns must agree across factors within month.")
   }
   if (any(target_gold$rv_month <= 0)) rlang::abort("RV must be strictly positive.")
-  pred_level <- exp(oos_outputs$pred) - 1e-8
-  if (any(!is.finite(pred_level) | pred_level <= 0)) {
-    rlang::abort("Back-transformed forecasts must be finite and positive.")
-  }
   observed <- oos_outputs %>%
     dplyr::select(dplyr::all_of(c(keys, "target", "pred"))) %>%
-    dplyr::mutate(pred_level = pred_level) %>%
+    dplyr::mutate(pred_level = exp(pred) - 1e-8) %>%
     dplyr::left_join(target_gold, by = keys, relationship = "one-to-one")
+  if (any(!is.finite(observed$pred_level) | observed$pred_level <= 0)) {
+    rlang::abort("Back-transformed forecasts must be finite and positive.")
+  }
   if (anyNA(observed$rv_month)) rlang::abort("Missing target coverage for forecasts.")
   if (any(
     abs(observed$target - log(observed$rv_month + 1e-8)) > 1e-10
@@ -387,10 +386,14 @@ run_oos_ports <- function(
       metrics <- purrr::map(c("raw", "capped", "net_raw", "net_capped"), function(version) {
         returns <- data[[paste0("r_exc_fwd1_", version)]]
         volatility <- stats::sd(returns)
+        ## Compare the same holding months to the unscaled factor. Net versions
+        ## retain cost-induced variation in risk; the denominator is gross f.
+        unmanaged_vol <- stats::sd(data$factor_exc)
         stats::setNames(list(mean(returns), volatility,
           if (volatility > 0) sqrt(12) * mean(returns) / volatility else NA_real_,
-          12 * (mean(returns) - cer_gamma / 2 * stats::var(returns))),
-          paste0(c("avg_exc_ret_", "sd_return_", "sharpe_ratio_", "cer_ann_"), version))
+          12 * (mean(returns) - cer_gamma / 2 * stats::var(returns)),
+          if (unmanaged_vol > 0) volatility / unmanaged_vol else NA_real_),
+          paste0(c("avg_exc_ret_", "sd_return_", "sharpe_ratio_", "cer_ann_", "vol_ratio_"), version))
       })
       tibble::as_tibble(
         c(
@@ -400,6 +403,7 @@ run_oos_ports <- function(
             end = max(data$month_id),
             avg_turnover_raw = mean(data$turnover_raw),
             avg_turnover_capped = mean(data$turnover),
+            avg_weight_raw = mean(data$w_raw),
             max_weight_raw = max(data$w_raw),
             cap_fraction = mean(data$w_raw > weight_cap),
             insolvency_months_raw = sum(data$r_strat_fwd1_net_raw <= -1)
@@ -446,4 +450,50 @@ run_oos_ports <- function(
       )
     )
   )
+}
+# Verify saved MM inputs before second-stage allocation. Changed model/data
+# artifacts invalidate the return paths. Historical code may legitimately differ
+# (for example after splitting the entry scripts), but must not pass silently.
+validate_port_manifest <- function(path) {
+  manifest <- utils::read.csv(path)
+  if (!all(c("file", "sha256") %in% names(manifest)) ||
+      anyNA(manifest[c("file", "sha256")]) || anyDuplicated(manifest$file)) {
+    rlang::abort("Invalid saved MM input manifest.")
+  }
+  model_data <- manifest %>% dplyr::filter(grepl("/(models_v3|data)/",
+    gsub("\\", "/", file, fixed = TRUE)))
+  if (!nrow(model_data) || !all(file.exists(model_data$file)) ||
+      !identical(purrr::map_chr(model_data$file, hash_artifact), model_data$sha256)) {
+    rlang::abort("Saved MM model/data inputs have changed; regenerate MM results first.")
+  }
+  code <- manifest %>% dplyr::filter(grepl("\\.R$", file))
+  changed <- purrr::map_lgl(seq_len(nrow(code)), function(i) {
+    !file.exists(code$file[i]) || hash_artifact(code$file[i]) != code$sha256[i]
+  })
+  if (any(changed)) warning(paste("Saved MM code differs from current files:",
+    paste(code$file[changed], collapse = ", ")), call. = FALSE)
+  invisible(manifest)
+}
+
+# Save the script with its effective top-level configuration, not merely the
+# on-disk defaults. This also captures overrides made by an execution harness.
+# The snapshot is replayable R; settings and snapshot are both hashed inputs.
+write_port_run_provenance <- function(script, settings, output_dir, inputs) {
+  expressions <- parse(script, keep.source = FALSE)
+  for (i in seq_along(expressions)) {
+    e <- expressions[[i]]
+    if (is.call(e) && identical(e[[1]], as.name("<-")) && is.symbol(e[[2]])) {
+      name <- as.character(e[[2]])
+      if (name %in% names(settings)) expressions[[i]][[3]] <- settings[[name]]
+    }
+  }
+  snapshot <- file.path(output_dir, sub("\\.R$", "_executed.R", basename(script)))
+  writeLines(c("# Effective configuration captured at execution.",
+    unlist(purrr::map(as.list(expressions), ~ c(deparse(.x, width.cutoff = 100L), "")))), snapshot)
+  settings_path <- file.path(output_dir, "settings.rds")
+  saveRDS(settings, settings_path)
+  files <- unique(c(inputs, settings_path, snapshot))
+  utils::write.csv(tibble::tibble(file = files, sha256 = purrr::map_chr(files, hash_artifact)),
+    file.path(output_dir, "input_manifest.csv"), row.names = FALSE)
+  invisible(files)
 }

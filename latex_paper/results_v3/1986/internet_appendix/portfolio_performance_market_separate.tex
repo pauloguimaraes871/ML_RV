@@ -1,0 +1,24 @@
+\begin{table}[htbp]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{4pt}
+\caption[Economic performance of volatility-managed portfolios for the market portfolio estimated separately.]{\footnotesize \textbf{: Economic performance of volatility-managed portfolios for the market portfolio estimated separately.} Each forecasting model is estimated only on the market-portfolio time series. SR denotes the annualized excess-return Sharpe ratio. CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five. Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure. EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks.}\label{tab:rv-portfolio_performance_market_separate}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Market portfolio estimated separately}} \\
+\hline
+Model & Statistic & Raw & Capped & Net raw & Net capped \\
+\hline
+Unmanaged & Sharpe ratio & 0.589 & 0.589 & 0.588 & 0.588 \\
+Unmanaged & CER (\%) & 2.999 & 2.999 & 2.993 & 2.993 \\
+Random walk & Sharpe ratio & 0.549 & 0.756 & 0.496 & 0.738 \\
+Random walk & CER (\%) & -10.486 & 5.709 & -12.348 & 5.432 \\
+HAR & Sharpe ratio & 0.603 & 0.745 & 0.559 & 0.730 \\
+HAR & CER (\%) & -0.635 & 5.510 & -1.734 & 5.270 \\
+HARX & Sharpe ratio & 0.549 & 0.586 & 0.511 & 0.573 \\
+HARX & CER (\%) & -3.770 & 2.582 & -4.805 & 2.335 \\
+EW & Sharpe ratio & 0.608 & 0.625 & 0.577 & 0.614 \\
+EW & CER (\%) & -0.206 & 3.283 & -0.975 & 3.083 \\
+\hline
+\end{tabular}
+\end{table}

@@ -116,7 +116,8 @@ and Uppal (2024), DOI 10.1111/jofi.13395. It jointly fits the unmanaged excess
 returns and their market-volatility-scaled counterparts, `[f, f / sigma]`.
 The conditional portfolio (CMV) has weights `a_k + b_k / sigma`, with both
 coefficients nonnegative. The unconditional benchmark (UMV) sets `b_k = 0`.
-There is no budget constraint on these zero-cost factor exposures. Gamma is 5
+There is no sum-to-one budget on these zero-cost factor exposures. The production
+optimizer now imposes an explicit factor-exposure limit (see below). Gamma is 5
 by default and determines the allocations, unlike the MM evaluation-only gamma.
 
 `R/allocation_ports.R` now runs this analysis for each pooled-panel forecast model and the
@@ -126,11 +127,13 @@ The current sample switch is preserved. The factor universe is fixed to the
 saved panel forecast universe, including the market; it is not selected by
 multifactor performance. This differs from the paper's nine-factor universe.
 
-The paper benchmark uses the previous calendar month's sample standard deviation
-of daily market returns. The ML extension uses the square root of the inverse
-log-transformed monthly market RV forecast. Monthly sum-of-squares volatility is
-not the paper's daily sample SD, so this is labelled as an extension. All factors
-use the same market signal; this is not an average of individual MM strategies.
+The production lagged-market comparator uses the square root of the previous
+month's saved market RV. This sum-of-squares signal is not the paper's demeaned
+daily sample SD: trading-day counts and daily means prevent an exact constant
+conversion. `prepare_market_sigma()` remains available and tested for exact
+daily-SD research, but the allocation script requires only saved MM inputs.
+The ML alternatives use market forecasts or own-factor forecasts as documented
+in ALLOCATION_METHODS.md.
 
 Every allocation is fitted on an expanding window ending before its holding
 month. All signals, including the historical benchmark, use the same saved OOS
@@ -155,31 +158,41 @@ problem is solved after rescaling the columns for numerical accuracy, then
 coefficients are returned in their original units. Singular covariance is allowed
 (the full panel has 308 extended columns versus 120 initial observations); failure
 of convergence or first-order optimality checks aborts. Singular problems can
-have nonunique weights, and large exposures remain possible. Fit diagnostics
-record training endpoints, dimensions and optimality residuals.
+have nonunique weights even with a bounded feasible set. Fit diagnostics record
+training endpoints, dimensions, raw covariance rank/rcond, exposure limits and
+optimality residuals. KKT convergence alone does not establish identification.
 
-The raw solution follows the unconstrained-exposure specification. A separate
-capped diagnostic scales the whole portfolio proportionally when its sum of
-factor exposures exceeds 1.5. This preserves relative factor weights and differs
-from the individual-factor MM cap. It is neither a stock gross-leverage cap nor
-an optimized constrained CMV. Raw and capped turnover/costs are computed separately.
+The default MVO solution now constrains current factor exposure inside the
+optimizer: UMV at 1.5 and CMV/FCMV at min(1.5, 1.2 * UMV exposure). This is a
+factor-level adaptation of the paper's relative-leverage check, not stock-level
+leverage. Setting `mvo_exposure_limit = NULL` explicitly retains the old unbounded
+experiment. The `capped` version remains a proportional-rescaling diagnostic for
+compatibility and robust rules; `implementation` identifies it in summaries.
+For default constrained MVO it is redundant. Both mean exposure levels are
+reported and raw/capped costs are still calculated separately.
 
 Both portfolios use identical evaluation dates. `sharpe_paper` follows footnote 24:
 annualized mean net excess return divided by gross-return volatility. `sharpe_net`
 uses net-return volatility instead. `cer_paper_ann` likewise penalizes gross
 variance. RF is retained separately and insolvency counts use `1 + RF + net`;
-no wealth curve is compounded through insolvency. No inference or significance
+Sharpe and CER are NA when any insolvency occurs, and no wealth curve is
+compounded through insolvency. No inference or significance
 claims are produced. The existing compounded monthly factor returns are retained;
 this is another data convention difference from an exact paper replication.
 
-Outputs live in the `multifactor/` subdirectory alongside the MM results:
-`all_multifactor.rds` (including weights/settings), `strategy_summary.csv`,
-`monthly_returns.csv`, `diagnostics.csv` and `input_manifest.csv`. Existing paper
-tables continue to describe the individual-factor MM analysis. Run with
-the second-stage `R/allocation_ports.R` workflow for current comparisons. Its
-expanded CMV/FCMV, Cederburg and robust-allocation conventions are documented in
-`docs/ALLOCATION_METHODS.md`; the `multifactor/` files above describe the original
-DeMiguel implementation checkpoint.
+Current outputs live in `ports/v3/<sample>/allocations/<mm_run>/`, with individual
+RDS results, `summary.csv`, `settings.rds`, an executed-script snapshot and a
+manifest hashing the effective settings and snapshot as well as input files.
+Historical checkpoints are not consumed by this workflow. See
+`docs/ALLOCATION_METHODS.md` for all baseline and allocation identifiers.
+
+MM summaries and reporting tables expose average raw weight and volatility
+relative to the gross unmanaged return on identical dates. Each return version
+has its own risk ratio, displayed beside CER. The factor-panel ratio is computed
+after aggregating factor returns. Expanding mean RV does not ensure unit average
+exposure or matched return volatility; no forecast bias adjustment is added.
+Sharpe is invariant only to constant scaling of a return series, not generally
+to changing time-varying normalizers, caps, costs, or evaluation windows.
 
 ## References
 

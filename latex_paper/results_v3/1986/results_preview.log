@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.7.25)  13 SEP 2026 17:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.7.25)  15 SEP 2026 18:06
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -203,6 +203,7 @@ Package hyperref Info: Backreferencing OFF on input line 4215.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4462.
 \c@Hy@tempcnt=\count296
+
 (C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
 \Urlmuskip=\muskip17
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
@@ -280,33 +281,90 @@ Package caption Info: longtable package is loaded.
 ion.sty
 Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
 ))
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdfl
+scape.sty
+Package: pdflscape 2022-10-27 v0.13 Display of landscape pages in PDF
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdfl
+scape-nometadata.sty
+Package: pdflscape-nometadata 2022-10-28 v0.13 Display of landscape pages in PD
+F (HO)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\lscap
+e.sty
+Package: lscape 2020/05/28 v3.02 Landscape Pages (DPC)
+)
+Package pdflscape Info: Auto-detected driver: pdftex on input line 81.
+))
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.
+sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\c
+olor.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathc
+olor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/colortbl\color
+tbl.sty
+Package: colortbl 2026/05/01 v1.0l Color table columns (DPC)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.st
+y
+Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
+\col@sep=\dimen172
+\ar@mcellbox=\box58
+\extrarowheight=\dimen173
+\NC@list=\toks20
+\extratabsurround=\skip56
+\backup@length=\skip57
+\ar@cellbox=\box59
+)
+\everycr=\toks21
+\minrowclearance=\skip58
+\rownum=\count305
+)
 (C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3ba
 ckend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count305
+\l__color_backend_stack_int=\count306
 )
 (C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutorado\ML_RV\latex_pap
 er\results_v3\1986\results_preview.aux)
 \openout1 = `results_preview.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 6.
-LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 8.
+LaTeX Font Info:    ... okay on input line 8.
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -345,17 +403,17 @@ LaTeX Font Info:    ... okay on input line 6.
 (C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\su
 pp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count306
-\scratchdimen=\dimen172
-\scratchbox=\box58
-\nofMPsegments=\count307
-\nofMParguments=\count308
-\everyMPshowfont=\toks20
-\MPscratchCnt=\count309
-\MPscratchDim=\dimen173
-\MPnumerator=\count310
-\makeMPintoPDFobject=\count311
-\everyMPtoPDFconversion=\toks21
+\scratchcounter=\count307
+\scratchdimen=\dimen174
+\scratchbox=\box60
+\nofMPsegments=\count308
+\nofMParguments=\count309
+\everyMPshowfont=\toks22
+\MPscratchCnt=\count310
+\MPscratchDim=\dimen175
+\MPnumerator=\count311
+\makeMPintoPDFobject=\count312
+\everyMPtoPDFconversion=\toks23
 )
 (C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\e
 pstopdf-base.sty
@@ -367,7 +425,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 pdf-sys.cfg
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
-Package hyperref Info: Link coloring OFF on input line 6.
+Package hyperref Info: Link coloring OFF on input line 8.
 
 (C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutorado\ML_RV\latex_pap
 er\results_v3\1986\results_preview.out)
@@ -379,295 +437,214 @@ er\results_v3\1986\results_preview.out)
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 11.
+(Font)              <12> on input line 13.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 11.
+(Font)              <8> on input line 13.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 11.
-(results_v3/1986/notes.tex) [1
+(Font)              <6> on input line 13.
+ (results_v3/1986/notes.tex) [1
 
-{C:/Users/paulo.fonteles/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] (re
-sults_v3/1986/main.tex (results_v3/1986/main/performance_panel.tex
+{C:/Users/paulo.fonteles/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
+(results_v3/1986/main.tex (results_v3/1986/main/performance.tex
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <9> on input line 6.
+(Font)              <9> on input line 7.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 6.
-) (results_v3/1986/main/performance_spx.tex) (results_v3/1986/main/factor_gain_
-summary.tex) (results_v3/1986/main/sequential_comparisons.tex) (results_v3/1986
-/main/har_relative_gains.tex
+(Font)              <5> on input line 7.
+)
+(results_v3/1986/main/factor_gain_summary.tex)
+(results_v3/1986/main/har_relative_gains.tex
 <results_v3/1986/main/har_relative_gains.pdf, id=24, 650.43pt x 361.35pt>
 File: results_v3/1986/main/har_relative_gains.pdf Graphic file (type pdf)
 <use results_v3/1986/main/har_relative_gains.pdf>
 Package pdftex.def Info: results_v3/1986/main/har_relative_gains.pdf  used on i
-nput line 3.
+nput line 5.
 (pdftex.def)             Requested size: 495.08621pt x 275.0479pt.
-)) [2
+)
+(results_v3/1986/main/portfolio_performance.tex)) [2
 
-] [3 <./results_v3/1986/main/har_relative_gains.pdf>] (results_v3/1986/main_app
-endix.tex (results_v3/1986/main_appendix/additional_scopes.tex) (results_v3/198
-6/main_appendix/rolling_rmse.tex
-<results_v3/1986/main_appendix/rolling_rmse.pdf, id=44, 650.43pt x 433.62pt>
-File: results_v3/1986/main_appendix/rolling_rmse.pdf Graphic file (type pdf)
-<use results_v3/1986/main_appendix/rolling_rmse.pdf>
-Package pdftex.def Info: results_v3/1986/main_appendix/rolling_rmse.pdf  used o
-n input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/main_appendix/validation_test.tex
-<results_v3/1986/main_appendix/validation_test.pdf, id=45, 867.24pt x 397.485pt
->
-File: results_v3/1986/main_appendix/validation_test.pdf Graphic file (type pdf)
-
-<use results_v3/1986/main_appendix/validation_test.pdf>
-Package pdftex.def Info: results_v3/1986/main_appendix/validation_test.pdf  use
-d on input line 3.
-(pdftex.def)             Requested size: 495.08623pt x 226.9145pt.
-) (results_v3/1986/main_appendix/final_theme_gross_share.tex
-<results_v3/1986/main_appendix/final_theme_gross_share.pdf, id=46, 650.43pt x 5
+] [3] [4 <./results_v3/1986/main/har_relative_gains.pdf>] (results_v3/1986/main
+_appendix.tex
+(results_v3/1986/main_appendix/final_theme_gross_share.tex
+<results_v3/1986/main_appendix/final_theme_gross_share.pdf, id=52, 650.43pt x 5
 05.89pt>
 File: results_v3/1986/main_appendix/final_theme_gross_share.pdf Graphic file (t
 ype pdf)
 <use results_v3/1986/main_appendix/final_theme_gross_share.pdf>
 Package pdftex.def Info: results_v3/1986/main_appendix/final_theme_gross_share.
-pdf  used on input line 3.
+pdf  used on input line 5.
 (pdftex.def)             Requested size: 495.08621pt x 385.06705pt.
-) (results_v3/1986/main_appendix/final_theme_net_share.tex
-<results_v3/1986/main_appendix/final_theme_net_share.pdf, id=47, 650.43pt x 505
-.89pt>
-File: results_v3/1986/main_appendix/final_theme_net_share.pdf Graphic file (typ
-e pdf)
-<use results_v3/1986/main_appendix/final_theme_net_share.pdf>
-Package pdftex.def Info: results_v3/1986/main_appendix/final_theme_net_share.pd
-f  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 385.06705pt.
-)) [4
+)
+(results_v3/1986/main_appendix/portfolio_wealth_market_separate.tex
+<results_v3/1986/main_appendix/portfolio_wealth_market_separate.pdf, id=53, 650
+.43pt x 361.35pt>
+File: results_v3/1986/main_appendix/portfolio_wealth_market_separate.pdf Graphi
+c file (type pdf)
+<use results_v3/1986/main_appendix/portfolio_wealth_market_separate.pdf>
+Package pdftex.def Info: results_v3/1986/main_appendix/portfolio_wealth_market_
+separate.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08621pt x 275.0479pt.
+)
+(results_v3/1986/main_appendix/portfolio_wealth_market_pooled.tex
+<results_v3/1986/main_appendix/portfolio_wealth_market_pooled.pdf, id=54, 650.4
+3pt x 361.35pt>
+File: results_v3/1986/main_appendix/portfolio_wealth_market_pooled.pdf Graphic 
+file (type pdf)
+<use results_v3/1986/main_appendix/portfolio_wealth_market_pooled.pdf>
+Package pdftex.def Info: results_v3/1986/main_appendix/portfolio_wealth_market_
+pooled.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08621pt x 275.0479pt.
+)
+(results_v3/1986/main_appendix/portfolio_wealth_factor_panel.tex
+<results_v3/1986/main_appendix/portfolio_wealth_factor_panel.pdf, id=55, 650.43
+pt x 361.35pt>
+File: results_v3/1986/main_appendix/portfolio_wealth_factor_panel.pdf Graphic f
+ile (type pdf)
+<use results_v3/1986/main_appendix/portfolio_wealth_factor_panel.pdf>
+Package pdftex.def Info: results_v3/1986/main_appendix/portfolio_wealth_factor_
+panel.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08621pt x 275.0479pt.
+)
+(results_v3/1986/main_appendix/portfolio_cluster_sharpe.tex
+<results_v3/1986/main_appendix/portfolio_cluster_sharpe.pdf, id=56, 650.43pt x 
+433.62pt>
+File: results_v3/1986/main_appendix/portfolio_cluster_sharpe.pdf Graphic file (
+type pdf)
+<use results_v3/1986/main_appendix/portfolio_cluster_sharpe.pdf>
+Package pdftex.def Info: results_v3/1986/main_appendix/portfolio_cluster_sharpe
+.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
+)) [5
 
-] [5 <./results_v3/1986/main_appendix/rolling_rmse.pdf> <./results_v3/1986/main
-_appendix/validation_test.pdf>] [6 <./results_v3/1986/main_appendix/final_theme
-_gross_share.pdf>] [7 <./results_v3/1986/main_appendix/final_theme_net_share.pd
-f>] (results_v3/1986/internet_appendix.tex (results_v3/1986/internet_appendix/f
-actor_rmse.tex
-ignored error: Infinite glue shrinkage found in box being split [8
+ <./results_v3/1986/main_appendix/final_theme_gross_share.pdf>] [6 <./results_v
+3/1986/main_appendix/portfolio_wealth_market_separate.pdf> <./results_v3/1986/m
+ain_appendix/portfolio_wealth_market_pooled.pdf>] [7 <./results_v3/1986/main_ap
+pendix/portfolio_wealth_factor_panel.pdf>] [8 <./results_v3/1986/main_appendix/
+portfolio_cluster_sharpe.pdf>] (results_v3/1986/internet_appendix.tex
+(results_v3/1986/internet_appendix/factor_rmse.tex
+Overfull \hbox (0.91272pt too wide) in paragraph at lines 92--92
+[]|\T1/cmr/m/n/8 earnings_variability|  
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [9
 
 ]
-ignored error: Infinite glue shrinkage found in box being split [9]) (results_v
-3/1986/internet_appendix/factor_rss.tex
-ignored error: Infinite glue shrinkage found in box being split [10]
-ignored error: Infinite glue shrinkage found in box being split [11]) (results_
-v3/1986/internet_appendix/factor_mae.tex
+ignored error: Infinite glue shrinkage found in box being split [10])
+(results_v3/1986/internet_appendix/factor_rss.tex
+Overfull \hbox (0.91272pt too wide) in paragraph at lines 92--92
+[]|\T1/cmr/m/n/8 earnings_variability|  
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [11]
 ignored error: Infinite glue shrinkage found in box being split [12]
-ignored error: Infinite glue shrinkage found in box being split [13]) (results_
-v3/1986/internet_appendix/all_metrics.tex
-ignored error: Infinite glue shrinkage found in box being split [14]
-ignored error: Infinite glue shrinkage found in box being split [15]) (results_
-v3/1986/internet_appendix/factor_rmse_01.tex
-<results_v3/1986/internet_appendix/factor_rmse_01.pdf, id=130, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_01.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_01.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_01.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_02.tex
-<results_v3/1986/internet_appendix/factor_rmse_02.pdf, id=131, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_02.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_02.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_02.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_03.tex
-<results_v3/1986/internet_appendix/factor_rmse_03.pdf, id=132, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_03.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_03.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_03.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_04.tex
-<results_v3/1986/internet_appendix/factor_rmse_04.pdf, id=133, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_04.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_04.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_04.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_05.tex
-<results_v3/1986/internet_appendix/factor_rmse_05.pdf, id=134, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_05.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_05.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_05.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_06.tex
-<results_v3/1986/internet_appendix/factor_rmse_06.pdf, id=135, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_06.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_06.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_06.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_07.tex
-<results_v3/1986/internet_appendix/factor_rmse_07.pdf, id=136, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_07.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_07.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_07.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_08.tex
-<results_v3/1986/internet_appendix/factor_rmse_08.pdf, id=137, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_08.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_08.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_08.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_09.tex
-<results_v3/1986/internet_appendix/factor_rmse_09.pdf, id=138, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_09.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_09.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_09.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_10.tex
-<results_v3/1986/internet_appendix/factor_rmse_10.pdf, id=139, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_10.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_10.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_10.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_11.tex
-<results_v3/1986/internet_appendix/factor_rmse_11.pdf, id=140, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_11.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_11.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_11.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_12.tex
-<results_v3/1986/internet_appendix/factor_rmse_12.pdf, id=141, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_12.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_12.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_12.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/factor_rmse_13.tex
-<results_v3/1986/internet_appendix/factor_rmse_13.pdf, id=142, 722.7pt x 650.43
-pt>
-File: results_v3/1986/internet_appendix/factor_rmse_13.pdf Graphic file (type p
-df)
-<use results_v3/1986/internet_appendix/factor_rmse_13.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/factor_rmse_13.pdf  
-used on input line 3.
-(pdftex.def)             Requested size: 495.07959pt x 445.57164pt.
-) (results_v3/1986/internet_appendix/hyperparameter_settings.tex
-ignored error: Infinite glue shrinkage found in box being split [16]) (results_
-v3/1986/internet_appendix/hyperparameters_glmnet.tex
-<results_v3/1986/internet_appendix/hyperparameters_glmnet.pdf, id=148, 650.43pt
- x 433.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_glmnet.pdf Graphic file
- (type pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_glmnet.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_glmn
-et.pdf  used on input line 3.
+ignored error: Infinite glue shrinkage found in box being split [13])
+(results_v3/1986/internet_appendix/additional_scopes.tex)
+(results_v3/1986/internet_appendix/sequential_waterfall.tex
+<results_v3/1986/internet_appendix/sequential_waterfall.pdf, id=138, 867.24pt x
+ 433.62pt>
+File: results_v3/1986/internet_appendix/sequential_waterfall.pdf Graphic file (
+type pdf)
+<use results_v3/1986/internet_appendix/sequential_waterfall.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/sequential_waterfall
+.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08623pt x 247.5431pt.
+)
+(results_v3/1986/internet_appendix/rolling_rmse.tex
+<results_v3/1986/internet_appendix/rolling_rmse.pdf, id=139, 650.43pt x 433.62p
+t>
+File: results_v3/1986/internet_appendix/rolling_rmse.pdf Graphic file (type pdf
+)
+<use results_v3/1986/internet_appendix/rolling_rmse.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/rolling_rmse.pdf  us
+ed on input line 5.
 (pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/hyperparameters_rf.tex
-<results_v3/1986/internet_appendix/hyperparameters_rf.pdf, id=149, 650.43pt x 4
-33.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_rf.pdf Graphic file (ty
-pe pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_rf.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_rf.p
-df  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/hyperparameters_xgb.tex
-<results_v3/1986/internet_appendix/hyperparameters_xgb.pdf, id=150, 650.43pt x 
-433.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_xgb.pdf Graphic file (t
+)
+(results_v3/1986/internet_appendix/cluster_rolling_rmse.tex
+<results_v3/1986/internet_appendix/cluster_rolling_rmse.pdf, id=140, 794.97pt x
+ 578.16pt>
+File: results_v3/1986/internet_appendix/cluster_rolling_rmse.pdf Graphic file (
+type pdf)
+<use results_v3/1986/internet_appendix/cluster_rolling_rmse.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/cluster_rolling_rmse
+.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.09615pt x 360.06992pt.
+)
+(results_v3/1986/internet_appendix/validation_test.tex
+<results_v3/1986/internet_appendix/validation_test.pdf, id=141, 867.24pt x 397.
+485pt>
+File: results_v3/1986/internet_appendix/validation_test.pdf Graphic file (type 
+pdf)
+<use results_v3/1986/internet_appendix/validation_test.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/validation_test.pdf 
+ used on input line 5.
+(pdftex.def)             Requested size: 495.08623pt x 226.9145pt.
+)
+(results_v3/1986/internet_appendix/hyperparameters_all.tex
+<results_v3/1986/internet_appendix/hyperparameters_all.pdf, id=142, 794.97pt x 
+614.295pt>
+File: results_v3/1986/internet_appendix/hyperparameters_all.pdf Graphic file (t
 ype pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_xgb.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_xgb.
-pdf  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/hyperparameters_nn1.tex
-<results_v3/1986/internet_appendix/hyperparameters_nn1.pdf, id=151, 650.43pt x 
-433.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_nn1.pdf Graphic file (t
-ype pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_nn1.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_nn1.
-pdf  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/hyperparameters_nn2.tex
-<results_v3/1986/internet_appendix/hyperparameters_nn2.pdf, id=152, 650.43pt x 
-433.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_nn2.pdf Graphic file (t
-ype pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_nn2.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_nn2.
-pdf  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/hyperparameters_nn3.tex
-<results_v3/1986/internet_appendix/hyperparameters_nn3.pdf, id=153, 650.43pt x 
-433.62pt>
-File: results_v3/1986/internet_appendix/hyperparameters_nn3.pdf Graphic file (t
-ype pdf)
-<use results_v3/1986/internet_appendix/hyperparameters_nn3.pdf>
-Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_nn3.
-pdf  used on input line 3.
-(pdftex.def)             Requested size: 495.08621pt x 330.05748pt.
-) (results_v3/1986/internet_appendix/theme_history_panel.tex
-<results_v3/1986/internet_appendix/theme_history_panel.pdf, id=154, 722.7pt x 7
+<use results_v3/1986/internet_appendix/hyperparameters_all.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/hyperparameters_all.
+pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.09615pt x 382.57428pt.
+)
+(results_v3/1986/internet_appendix/final_theme_net_share.tex
+<results_v3/1986/internet_appendix/final_theme_net_share.pdf, id=143, 650.43pt 
+x 505.89pt>
+File: results_v3/1986/internet_appendix/final_theme_net_share.pdf Graphic file 
+(type pdf)
+<use results_v3/1986/internet_appendix/final_theme_net_share.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/final_theme_net_shar
+e.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.08621pt x 385.06705pt.
+)
+(results_v3/1986/internet_appendix/theme_history_panel.tex
+<results_v3/1986/internet_appendix/theme_history_panel.pdf, id=144, 722.7pt x 7
 22.7pt>
 File: results_v3/1986/internet_appendix/theme_history_panel.pdf Graphic file (t
 ype pdf)
 <use results_v3/1986/internet_appendix/theme_history_panel.pdf>
 Package pdftex.def Info: results_v3/1986/internet_appendix/theme_history_panel.
-pdf  used on input line 3.
+pdf  used on input line 5.
 (pdftex.def)             Requested size: 495.07959pt x 495.07959pt.
-) (results_v3/1986/internet_appendix/theme_history_spx.tex
-<results_v3/1986/internet_appendix/theme_history_spx.pdf, id=155, 722.7pt x 722
+)
+(results_v3/1986/internet_appendix/theme_history_spx.tex
+<results_v3/1986/internet_appendix/theme_history_spx.pdf, id=145, 722.7pt x 722
 .7pt>
 File: results_v3/1986/internet_appendix/theme_history_spx.pdf Graphic file (typ
 e pdf)
 <use results_v3/1986/internet_appendix/theme_history_spx.pdf>
 Package pdftex.def Info: results_v3/1986/internet_appendix/theme_history_spx.pd
-f  used on input line 3.
+f  used on input line 5.
 (pdftex.def)             Requested size: 495.07959pt x 495.07959pt.
-) (results_v3/1986/internet_appendix/model_diagnostics.tex)) [17] [18 <./result
-s_v3/1986/internet_appendix/factor_rmse_01.pdf>] [19 <./results_v3/1986/interne
-t_appendix/factor_rmse_02.pdf>] [20 <./results_v3/1986/internet_appendix/factor
-_rmse_03.pdf>] [21 <./results_v3/1986/internet_appendix/factor_rmse_04.pdf>] [2
-2 <./results_v3/1986/internet_appendix/factor_rmse_05.pdf>] [23 <./results_v3/1
-986/internet_appendix/factor_rmse_06.pdf>] [24 <./results_v3/1986/internet_appe
-ndix/factor_rmse_07.pdf>] [25 <./results_v3/1986/internet_appendix/factor_rmse_
-08.pdf>] [26 <./results_v3/1986/internet_appendix/factor_rmse_09.pdf>] [27 <./r
-esults_v3/1986/internet_appendix/factor_rmse_10.pdf>] [28 <./results_v3/1986/in
-ternet_appendix/factor_rmse_11.pdf>] [29 <./results_v3/1986/internet_appendix/f
-actor_rmse_12.pdf>] [30 <./results_v3/1986/internet_appendix/factor_rmse_13.pdf
->] [31 <./results_v3/1986/internet_appendix/hyperparameters_glmnet.pdf> <./resu
-lts_v3/1986/internet_appendix/hyperparameters_rf.pdf>] [32 <./results_v3/1986/i
-nternet_appendix/hyperparameters_xgb.pdf> <./results_v3/1986/internet_appendix/
-hyperparameters_nn1.pdf>] [33 <./results_v3/1986/internet_appendix/hyperparamet
-ers_nn2.pdf> <./results_v3/1986/internet_appendix/hyperparameters_nn3.pdf>] [34
- <./results_v3/1986/internet_appendix/theme_history_panel.pdf>] [35 <./results_
-v3/1986/internet_appendix/theme_history_spx.pdf>]
+)
+(results_v3/1986/internet_appendix/portfolio_factor_sharpe.tex [14] [15 <./resu
+lts_v3/1986/internet_appendix/sequential_waterfall.pdf>] [16 <./results_v3/1986
+/internet_appendix/rolling_rmse.pdf>] [17 <./results_v3/1986/internet_appendix/
+cluster_rolling_rmse.pdf> <./results_v3/1986/internet_appendix/validation_test.
+pdf>] [18 <./results_v3/1986/internet_appendix/hyperparameters_all.pdf>]
+[19 <./results_v3/1986/internet_appendix/final_theme_net_share.pdf>] [20 <./res
+ults_v3/1986/internet_appendix/theme_history_panel.pdf>] [21 <./results_v3/1986
+/internet_appendix/theme_history_spx.pdf>]
+Overfull \hbox (0.91272pt too wide) in paragraph at lines 93--93
+[]|\T1/cmr/m/n/8 earnings_variability|  
+ []
+
+[22
+
+] [23] [24] [25] [26])
+(results_v3/1986/internet_appendix/portfolio_ew_sharpe_waterfall.tex
+<results_v3/1986/internet_appendix/portfolio_ew_sharpe_waterfall.pdf, id=256, 5
+78.16pt x 361.35pt>
+File: results_v3/1986/internet_appendix/portfolio_ew_sharpe_waterfall.pdf Graph
+ic file (type pdf)
+<use results_v3/1986/internet_appendix/portfolio_ew_sharpe_waterfall.pdf>
+Package pdftex.def Info: results_v3/1986/internet_appendix/portfolio_ew_sharpe_
+waterfall.pdf  used on input line 5.
+(pdftex.def)             Requested size: 495.07298pt x 309.42061pt.
+)
+(results_v3/1986/internet_appendix/portfolio_implementation.tex [27 <./results_
+v3/1986/internet_appendix/portfolio_ew_sharpe_waterfall.pdf>] [28]))
 (C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutorado\ML_RV\latex_pap
 er\results_v3\1986\results_preview.aux)
  ***********
@@ -678,24 +655,30 @@ Package rerunfilecheck Info: File `results_preview.out' has not changed.
 (rerunfilecheck)             Checksum: 21B8C00D11D48762FAE4B6B1A2D71CD7;390.
  ) 
 Here is how much of TeX's memory you used:
- 11132 strings out of 467871
- 200162 string characters out of 5414020
- 712621 words of memory out of 5000000
- 39711 multiletter control sequences out of 15000+600000
- 637042 words of font info for 60 fonts, out of 8000000 for 9000
+ 11648 strings out of 467871
+ 202103 string characters out of 5414020
+ 927701 words of memory out of 5000000
+ 40260 multiletter control sequences out of 15000+600000
+ 640749 words of font info for 65 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,9n,79p,748b,636s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,10n,83p,1007b,693s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dp
-i600\ecrm0800.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour
-/jknappen/ec/dpi600\ecrm0900.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\
-fonts/pk/ljfour/jknappen/ec/dpi600\ecrm1095.pk> <C:\Users\paulo.fonteles\AppDat
-a\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx1440.pk> <C:\Users\paulo.
-fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm1728.pk>
+i600\ecbx0800.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour
+/jknappen/ec/dpi600\ecrm0800.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\
+fonts/pk/ljfour/jknappen/ec/dpi600\ecti0800.pk> <C:\Users\paulo.fonteles\AppDat
+a\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecti0900.pk> <C:\Users\paulo.
+fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm0900.pk> <
+C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600
+\ecbx0900.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jkn
+appen/ec/dpi600\ecbx1095.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\font
+s/pk/ljfour/jknappen/ec/dpi600\ecrm1095.pk> <C:\Users\paulo.fonteles\AppData\Lo
+cal\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx1440.pk> <C:\Users\paulo.font
+eles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm1728.pk>
 Output written on "C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutora
-do\ML_RV\latex_paper\results_v3\1986\results_preview.pdf" (35 pages, 1725724 by
-tes).
+do\ML_RV\latex_paper\results_v3\1986\results_preview.pdf" (28 pages, 461637 byt
+es).
 PDF statistics:
- 635 PDF objects out of 1000 (max. 8388607)
- 77 named destinations out of 1000 (max. 500000)
- 155 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 710 PDF objects out of 1000 (max. 8388607)
+ 56 named destinations out of 1000 (max. 500000)
+ 100 words of extra memory for PDF output out of 10000 (max. 10000000)
 

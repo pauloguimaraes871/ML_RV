@@ -3,7 +3,7 @@
 \captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
 \renewcommand{\arraystretch}{1.1}
 \setlength{\tabcolsep}{4pt}
-\caption[Out-of-sample predictive performance.]{\footnotesize \textbf{: Out-of-sample predictive performance.} Panel A pools forecast errors across all factor-month and market-month observations before computing each statistic. Panel B evaluates forecasts from models estimated only on the market portfolio. The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance. R-squared is computed relative to the mean in each evaluation sample. Bias is realized minus predicted log variance. The equal-weighted forecast averages HARX, elastic net, random forest, XGBoost, and the three neural networks.}\label{tab:rv-performance}
+\caption[Out-of-sample predictive performance.]{\footnotesize \textbf{: Out-of-sample predictive performance.} Panel A pools forecast errors across all factor-month and market-month observations before computing each statistic. Panel B evaluates the market-portfolio forecasts from the same pooled estimation. The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance. R-squared is computed relative to the mean in each evaluation sample. Bias is realized minus predicted log variance. The equal-weighted forecast averages HARX, elastic net, random forest, XGBoost, and the three neural networks.}\label{tab:rv-performance}
 \begin{tabular}{lrrrr}
 \multicolumn{5}{@{}l}{\textit{Panel A. Pooled factor and market panel}} \\
 \hline
@@ -19,19 +19,19 @@ NN2 & 0.7284 & 0.5627 & 0.6746 & 0.1108 \\
 NN3 & 0.7267 & 0.5595 & 0.6760 & 0.1158 \\
 EW & 0.6936 & 0.5352 & 0.7049 & 0.0915 \\
 \hline
-\multicolumn{5}{@{}l}{\textit{Panel B. Market portfolio estimated separately}} \\
+\multicolumn{5}{@{}l}{\textit{Panel B. Market portfolio from pooled estimation}} \\
 \hline
 Model & RMSE & MAE & R-squared & Bias \\
 \hline
-HAR & 0.8074 & 0.6317 & 0.3844 & -0.0043 \\
-HARX & 0.7599 & 0.5896 & 0.4548 & 0.1166 \\
-ENET & 0.7007 & 0.5422 & 0.5364 & 0.0709 \\
-RF & 0.7496 & 0.5775 & 0.4694 & 0.0855 \\
-XGB & 0.7544 & 0.5861 & 0.4627 & -0.0488 \\
-NN1 & 0.9239 & 0.7161 & 0.1939 & 0.2700 \\
-NN2 & 0.8287 & 0.6325 & 0.3515 & 0.1456 \\
-NN3 & 0.7782 & 0.6033 & 0.4281 & 0.0878 \\
-EW & 0.7523 & 0.5803 & 0.4657 & 0.1039 \\
+HAR & 0.8205 & 0.6279 & 0.3643 & 0.1755 \\
+HARX & 0.8246 & 0.6371 & 0.3580 & 0.2488 \\
+ENET & 0.8254 & 0.6472 & 0.3566 & 0.2916 \\
+RF & 0.8206 & 0.6346 & 0.3641 & 0.2195 \\
+XGB & 0.8465 & 0.6512 & 0.3234 & 0.3353 \\
+NN1 & 0.8600 & 0.6601 & 0.3017 & 0.2897 \\
+NN2 & 0.8759 & 0.6704 & 0.2755 & 0.3411 \\
+NN3 & 0.9040 & 0.6812 & 0.2283 & 0.3809 \\
+EW & 0.8289 & 0.6321 & 0.3512 & 0.3010 \\
 \hline
 \end{tabular}
 \end{table}

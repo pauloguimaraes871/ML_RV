@@ -413,11 +413,14 @@ aggregate_portfolio_returns <- function(data, groups, return_cols) {
 #'
 #' Sharpe ratios and volatility use excess returns. Drawdowns use total returns,
 #' which include the risk-free collateral return recorded by the portfolio code.
+#' Optional unmanaged_col and weight_col identify gross unmanaged excess returns
+#' and raw exposures on the same monthly rows; they add vol_ratio/avg_weight_raw.
 summarise_portfolio_returns <- function(data, groups,
                                         excess_col = "excess_return",
                                         total_col = "total_return",
-                                        cer_gamma = 5) {
-  required <- unique(c(groups, "month_id", excess_col, total_col))
+                                        cer_gamma = 5,
+                                        unmanaged_col = NULL, weight_col = NULL) {
+  required <- unique(c(groups, "month_id", excess_col, total_col, unmanaged_col, weight_col))
   if (!is.data.frame(data) || !all(required %in% names(data)) || !nrow(data)) {
     rlang::abort("Portfolio summaries require nonempty grouped monthly return data.")
   }
@@ -438,6 +441,11 @@ summarise_portfolio_returns <- function(data, groups,
   if (any(data[[total_col]] <= -1)) {
     rlang::abort("Portfolio total returns must remain above -100 percent.")
   }
+  for (column in c(unmanaged_col, weight_col)) {
+    if (!is.numeric(data[[column]]) || any(!is.finite(data[[column]]))) {
+      rlang::abort("Risk diagnostic columns must be numeric and finite.")
+    }
+  }
   score <- function(x) {
     x <- dplyr::arrange(x, month_id)
     excess <- x[[excess_col]]
@@ -446,7 +454,7 @@ summarise_portfolio_returns <- function(data, groups,
     wealth <- cumprod(1 + total)
     drawdown <- wealth / cummax(c(1, wealth))[-1] - 1
     centered <- excess - mean(excess)
-    tibble::tibble(
+    result <- tibble::tibble(
       n = length(excess),
       start = min(x$month_id),
       end = max(x$month_id),
@@ -464,6 +472,16 @@ summarise_portfolio_returns <- function(data, groups,
         mean(centered^4) / volatility_monthly^4 - 3
       } else NA_real_
     )
+    ## Compute risk after any factor aggregation, on exactly the payoff dates.
+    ## A mean of individual-factor risk ratios would describe another portfolio.
+    if (!is.null(unmanaged_col)) {
+      unmanaged_vol <- stats::sd(x[[unmanaged_col]])
+      result$vol_ratio <- if (is.finite(unmanaged_vol) && unmanaged_vol > 0) {
+        volatility_monthly / unmanaged_vol
+      } else NA_real_
+    }
+    if (!is.null(weight_col)) result$avg_weight_raw <- mean(x[[weight_col]])
+    result
   }
   if (!length(groups)) return(score(data))
   data %>%

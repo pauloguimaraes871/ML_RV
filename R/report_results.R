@@ -625,10 +625,11 @@
   principal_versions <- stack_return_versions(principal_returns)
   principal_aggregate <- aggregate_portfolio_returns(
     principal_versions, c("universe", "strategy", "version"),
-    c("excess_return", "total_return")
+    c("excess_return", "total_return", "factor_exc", "w_raw")
   )
   portfolio_summary <- summarise_portfolio_returns(
-    principal_aggregate, c("universe", "strategy", "version")
+    principal_aggregate, c("universe", "strategy", "version"),
+    unmanaged_col = "factor_exc", weight_col = "w_raw"
   )
   save_data(principal_returns, "portfolio_principal_returns")
   save_data(portfolio_summary, "portfolio_summary")
@@ -638,15 +639,18 @@
   ), "portfolio_input_manifest")
 
   summary_table <- portfolio_summary %>%
-    dplyr::select(universe, strategy, version, sharpe_ratio, cer_ann) %>%
-    tidyr::pivot_longer(c(sharpe_ratio, cer_ann), names_to = "statistic", values_to = "value") %>%
+    dplyr::select(universe, strategy, version, sharpe_ratio, cer_ann, vol_ratio, avg_weight_raw) %>%
+    tidyr::pivot_longer(c(sharpe_ratio, cer_ann, vol_ratio, avg_weight_raw),
+      names_to = "statistic", values_to = "value") %>%
     dplyr::mutate(
       universe = factor(universe, levels = universe_order),
       strategy = factor(strategy, levels = principal_strategy_order),
-      statistic = factor(statistic, levels = c("sharpe_ratio", "cer_ann")),
+      statistic = factor(statistic, levels = c("sharpe_ratio", "cer_ann", "vol_ratio", "avg_weight_raw")),
       value = ifelse(statistic == "cer_ann", 100 * value, value),
       Model = portfolio_strategy_labels[as.character(strategy)],
-      Statistic = ifelse(statistic == "sharpe_ratio", "Sharpe ratio", "CER (%)")
+      Statistic = dplyr::case_when(statistic == "sharpe_ratio" ~ "Sharpe ratio",
+        statistic == "cer_ann" ~ "CER (%)", statistic == "vol_ratio" ~ "Volatility ratio",
+        statistic == "avg_weight_raw" ~ "Mean raw exposure")
     ) %>%
     dplyr::select(universe, strategy, statistic, Model, Statistic, version, value) %>%
     tidyr::pivot_wider(names_from = version, values_from = value) %>%
@@ -667,6 +671,8 @@
       "Panel B equal-weights the 153 factor strategies each month.",
       "SR denotes the annualized excess-return Sharpe ratio.",
       "CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five.",
+      "Volatility ratios compare each return version with the gross unmanaged portfolio on identical months.",
+      "Mean raw exposure is averaged over factor-months before capping and is shared across versions.",
       "Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure.",
       "EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks."
     ), digits = 3, font_size = "scriptsize", placement = "htbp"
@@ -899,7 +905,7 @@
   implementation_metrics <- portfolio_summary %>%
     dplyr::filter(version == "net_capped") %>%
     dplyr::select(universe, strategy, annualized_excess_return, annualized_volatility,
-                  sharpe_ratio, cer_ann, max_drawdown)
+                  sharpe_ratio, cer_ann, vol_ratio, avg_weight_raw, max_drawdown)
   implementation_trading <- principal_returns %>%
     dplyr::group_by(universe, strategy) %>%
     dplyr::summarise(
@@ -919,7 +925,8 @@
     dplyr::transmute(
       universe, Model, `Return (%)` = 100 * annualized_excess_return,
       `Volatility (%)` = 100 * annualized_volatility, Sharpe = sharpe_ratio,
-      `CER (%)` = 100 * cer_ann, `Max drawdown (%)` = 100 * max_drawdown,
+      `CER (%)` = 100 * cer_ann, `Vol. ratio` = vol_ratio,
+      `Mean raw exposure` = avg_weight_raw, `Max drawdown (%)` = 100 * max_drawdown,
       `Cost (%)` = 100 * annualized_cost, Turnover = average_turnover,
       `Maximum exposure` = maximum_raw_exposure, `Capped (%)` = 100 * cap_fraction
     )

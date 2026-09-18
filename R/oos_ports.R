@@ -22,7 +22,7 @@
   preprocessing <- "range"
   tuning <- "grid"
   ensemble_members <- c("harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
-  normalization <- "expanding_rv"
+  normalization <- "full_sample"
   min_history <- 120L
   weight_cap <- 1.5
   cost_per_unit <- .001  # 10 bp per unit of exposure; alternatives .0001/.0014
@@ -225,11 +225,12 @@
         )
       )
 
-      utils::write.csv(
-        tibble::tibble(file = inputs, sha256 = purrr::map_chr(inputs, hash_artifact)),
-        file.path(output_dir, "input_manifest.csv"),
-        row.names = FALSE
-      )
+      write_port_run_provenance(file.path(project_dir, "R", "oos_ports.R"),
+        list(sample_ids = sample_id, universe = universe, preprocessing = preprocessing,
+          tuning = tuning, ensemble_members = ensemble_members,
+          normalization = normalization, min_history = min_history,
+          weight_cap = weight_cap, cost_per_unit = cost_per_unit,
+          initial_weight = initial_weight, cer_gamma = cer_gamma), output_dir, inputs)
 
       writeLines(capture.output(utils::sessionInfo()), file.path(output_dir, "session_info.txt"))
       message("Saved ", nrow(summary), " strategy summaries to ", output_dir)
