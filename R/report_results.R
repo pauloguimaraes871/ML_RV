@@ -47,6 +47,12 @@
     write_report_panel_table(panels, file.path(output_dir, section, paste0(filename, ".tex")),
                              caption, paste0("tab:rv-", filename), digits,
                              font_size, tabcolsep, landscape, placement)
+    if (startsWith(filename, "portfolio")) {
+      ## Portfolio panels contain several exposure versions. Compact rows keep
+      ## the complete comparison inside the manuscript's shorter text block.
+      path <- file.path(output_dir, section, paste0(filename, ".tex"))
+      writeLines(gsub("{1.1}", "{1.0}", readLines(path), fixed = TRUE), path)
+    }
     register_output(section, paste0(filename, ".tex"))
   }
   save_cluster_table <- function(data, section, filename, caption, direction, digits = 4,
@@ -136,11 +142,27 @@
       "ensembles",
       paste0("ew_", universe, "_", preprocessing, "_", tuning, "_", sample_id, ".rds")
     )
-    ensemble <- load_or_build_ew_ensemble(
-      results[[universe]],
-      ensemble_path,
-      ensemble_members
-    )
+    ## Reporting completed backtests must not replace their forecast cache.
+    ## Fail on absent/stale members instead of invoking a prediction builder.
+    if (!file.exists(ensemble_path)) rlang::abort("The completed EW forecast cache is missing.")
+    ensemble <- readRDS(ensemble_path)
+    current_sources <- purrr::imap_dfr(results[[universe]][ensemble_members],
+      ~ dplyr::mutate(.x$source, model = .y, .before = 1)) %>% dplyr::arrange(model)
+    if (!identical(ensemble$backtest_meta$sources, current_sources) ||
+        !identical(ensemble$backtest_meta$weights$model, ensemble_members) ||
+        !isTRUE(all.equal(ensemble$backtest_meta$weights$weight,
+                          rep(1 / length(ensemble_members), length(ensemble_members))))) {
+      rlang::abort("The completed EW forecast cache does not match the current model members.")
+    }
+    keys <- c("month_id", ensemble$backtest_meta$key_col)
+    validate_forecasts(ensemble$oos_outputs, keys)
+    targets <- dplyr::full_join(
+      dplyr::select(results[[universe]]$har$oos_outputs, dplyr::all_of(keys), target),
+      dplyr::select(ensemble$oos_outputs, dplyr::all_of(keys), target),
+      by = keys, suffix = c("_har", "_ew"), relationship = "one-to-one")
+    if (anyNA(targets) || any(targets$target_har != targets$target_ew)) {
+      rlang::abort("The completed EW forecast cache has different targets or dates.")
+    }
     results[[universe]]$ew <- ensemble
     saveRDS(ensemble, file.path(output_dir, "data", paste0("ew_", universe, "_", sample_id, ".rds")))
   }
@@ -925,11 +947,11 @@
     dplyr::arrange(universe, strategy) %>%
     dplyr::transmute(
       universe, Model, `Return (%)` = 100 * annualized_excess_return,
-      `Volatility (%)` = 100 * annualized_volatility, Sharpe = sharpe_ratio,
+      `Vol. (%)` = 100 * annualized_volatility, Sharpe = sharpe_ratio,
       `CER (%)` = 100 * cer_ann, `Vol. ratio` = vol_ratio,
-      `Mean raw exposure` = avg_weight_raw, `Max drawdown (%)` = 100 * max_drawdown,
+      `Raw exposure` = avg_weight_raw, `MDD (%)` = 100 * max_drawdown,
       `Cost (%)` = 100 * annualized_cost, Turnover = average_turnover,
-      `Maximum exposure` = maximum_raw_exposure, `Capped (%)` = 100 * cap_fraction
+      `Max. exposure` = maximum_raw_exposure, `Capped (%)` = 100 * cap_fraction
     )
   implementation_panels <- stats::setNames(
     purrr::map(universe_order, ~ implementation_table %>%
@@ -951,6 +973,14 @@
 
 # LaTeX integration and reproducibility record----------------------------------
 
+  ## The standalone entry point uses the same saved portfolios and may also be
+  ## run by itself while developing inference. It never constructs portfolios.
+  source(file.path(project_dir, "R", "report_portfolio_inference.R"))
+  portfolio_inference <- report_portfolio_inference(project_dir, output_dir)
+  purrr::iwalk(portfolio_inference$outputs, function(files, section) {
+    purrr::walk(files, ~ register_output(section, .x))
+  })
+
   for (section in names(generated)) {
     input_lines <- paste0("\\input{results_v3/", sample_id, "/",
                            gsub("\\", "/", generated[[section]], fixed = TRUE), "}")
@@ -966,7 +996,8 @@
     "Feature summaries are descriptive linear surrogate loadings. Gross and net shares exclude the intercept. Exact collinearity can produce zero loadings and does not establish economic irrelevance. Predictor scales differ, and the equal-weighted forecast has no fitted surrogate model.",
     "The sequential RMSE differences are arithmetic comparisons across model classes. They should not be interpreted as causal contributions. Elastic net adds shrinkage, while nonlinear learners also change regularization and estimation.",
     "Portfolio Sharpe ratios and certainty-equivalent returns use excess returns. Cumulative wealth and maximum drawdowns use total returns, including the risk-free collateral return. Factor-panel portfolio returns are equal-weighted across the 153 factors within each month.",
-    "Managed exposure uses expanding volatility matching with at least 60 prior calibration observations. At each formation date, the normalizer matches unmanaged and inverse-variance-managed volatility over the available past observations. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors."
+    "Managed exposure uses expanding volatility matching with at least 60 prior calibration observations. At each formation date, the normalizer matches unmanaged and inverse-variance-managed volatility over the available past observations. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors.",
+    "Portfolio inference uses the common July 2011 to December 2024 period, with 162 holding months. It uses 10,000 paired stationary-bootstrap draws with expected block length five, with three and ten as sensitivity analyses. Mean and certainty-equivalent return inference extends the Sharpe comparison. One-sided tests use centered bootstrap errors and Holm adjustment across prespecified comparison families. Spanning regressions use Newey-West lag one, with lags five and ten as sensitivity analyses. Inference is conditional on the fitted strategies. The standalone portfolio inference preview contains only these new tests."
   )
   writeLines(notes, file.path(output_dir, "notes.tex"))
   preview <- c("\\documentclass[11pt]{article}",
