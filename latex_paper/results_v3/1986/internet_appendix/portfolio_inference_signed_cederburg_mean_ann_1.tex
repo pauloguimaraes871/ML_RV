@@ -1,0 +1,35 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
+\caption[Paired mean excess return comparisons.]{\footnotesize \textbf{: Paired mean excess return comparisons.} Differences are annual percentage points. Certainty-equivalent returns use risk aversion five and net-return variance. Each row compares the EW forecast ensemble with the stated benchmark within the same portfolio construction. All returns are net of modeled factor-exposure costs. Raw and capped exposures are reported separately. Brackets report pointwise 95 percent percentile intervals from 10000 paired stationary-bootstrap draws with expected block length five months. The one-sided null is that the ensemble's performance difference is nonpositive. Tests use centered bootstrap errors. Adjusted p-values use Holm's correction across Sharpe, mean and certainty-equivalent return comparisons in the stated family. The evaluation period is July 2011 to December 2024. Inference is conditional on the fitted strategies.}\label{tab:rv-portfolio_inference_signed_cederburg_mean_ann_1}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Panel A. Signed two-sleeve MVO, 153-factor aggregate}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged-only MVO & Capped & 1.056 & [-0.255, 2.460] & 0.067 & 1.000 \\
+RW & Capped & 0.444 & [-1.208, 2.158] & 0.300 & 1.000 \\
+HAR & Capped & 0.284 & [-0.432, 1.035] & 0.218 & 1.000 \\
+HARX & Capped & 0.184 & [-0.149, 0.568] & 0.152 & 1.000 \\
+Unmanaged-only MVO & Raw & 1.075 & [-0.261, 2.494] & 0.067 & 1.000 \\
+RW & Raw & 0.446 & [-1.285, 2.204] & 0.307 & 1.000 \\
+HAR & Raw & 0.185 & [-0.645, 1.048] & 0.328 & 1.000 \\
+HARX & Raw & 0.197 & [-0.145, 0.586] & 0.141 & 1.000 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel B. Signed two-sleeve MVO, Pooled market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged-only MVO & Capped & 4.392 & [-3.683, 12.659] & 0.150 & 1.000 \\
+RW & Capped & 4.949 & [-0.774, 10.830] & 0.051 & 1.000 \\
+HAR & Capped & -1.602 & [-4.764, 1.498] & 0.840 & 1.000 \\
+HARX & Capped & -0.648 & [-2.423, 1.032] & 0.763 & 1.000 \\
+Unmanaged-only MVO & Raw & 4.392 & [-3.683, 12.659] & 0.150 & 1.000 \\
+RW & Raw & 4.949 & [-0.774, 10.830] & 0.051 & 1.000 \\
+HAR & Raw & -1.350 & [-6.377, 3.706] & 0.703 & 1.000 \\
+HARX & Raw & -0.887 & [-2.921, 0.943] & 0.815 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}

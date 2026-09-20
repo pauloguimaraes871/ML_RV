@@ -208,92 +208,64 @@ end of month $t$. Models estimate
 \label{eq:model}
 \end{equation}
 
-so the target is the logarithm of realized variance. Working in logs keeps the conditional distribution close to symmetric and prevents the few extreme months from dominating a squared-error criterion. Forecasts are returned to variance units before any portfolio is formed. Estimation is walk-forward and strictly out-of-sample and training uses an expanding window beginning at the first month of the sample, similar to \citet{gukellyxiu2020}.
+so the target is the logarithm of realized variance. Working in logs keeps the conditional distribution close to symmetric and prevents the few extreme months from dominating a squared-error criterion. In the pooled panel, every specification also includes the unscaled expanding mean of each series' logged monthly realized variance through month $t$. This term preserves persistent cross-sectional differences in volatility levels that within-series preprocessing would otherwise remove. It uses only lagged observations and is unnecessary in the standalone market estimation. Forecasts are returned to variance units before any portfolio is formed. Estimation is walk-forward and strictly out-of-sample and training uses an expanding window beginning at the first month of the sample, similar to \citet{gukellyxiu2020}.
 
 Eight specifications are estimated, spanning the range from the benchmark to flexible nonlinear learners. The heterogeneous autoregressive model of \citet{corsi2009} regresses the target on the daily, weekly and monthly lagged
-realized variance terms alone and is the benchmark every other model is measured against. The augmented version adds the full predictor set to the same linear estimator, and isolates the contribution of the predictors from the contribution of functional flexibility. The elastic net adds shrinkage over that predictor set, searching the mixing weight between the two penalties. Random forests and gradient-boosted trees introduce interactions and thresholds, searching the predictor subsampling fraction and tree depth in the first case and the learning rate, depth and a node-size control in the second. Three feedforward networks with one, two and three hidden layers complete the set, searching the learning rate, the dropout rate and an $L_1$ penalty, and each is refitted from ten random initializations whose predictions are averaged, following \citet{gukellyxiu2020}. Table~\ref{tab:hyper} reports every search space and every fixed setting.
+realized variance terms, together with the long-run level in pooled estimation, and is the benchmark every other model is measured against. The augmented version adds the full predictor set to the same linear estimator, and isolates the contribution of the predictors from the contribution of functional flexibility. The elastic net adds shrinkage over that predictor set, searching the mixing weight between the two penalties. Random forests and gradient-boosted trees introduce interactions and thresholds, searching the predictor subsampling fraction and tree depth in the first case and the learning rate, depth and a node-size control in the second. Three feedforward networks with one, two and three hidden layers complete the set, searching the learning rate, the dropout rate and an $L_1$ penalty, and each is refitted from ten random initializations whose predictions are averaged, following \citet{gukellyxiu2020}. Table~\ref{tab:hyper} reports every search space and every fixed setting.
+
+We also form an equal-weighted forecast ensemble in log-RV space,
+\begin{equation}
+\widehat{y}^{\mathrm{EW}}_{i,t+1}=\frac{1}{7}\sum_{m\in\mathcal{M}}\widehat{y}^{(m)}_{i,t+1},
+\qquad
+\mathcal{M}=\{\mathrm{HARX,ENET,RF,XGB,NN1,NN2,NN3}\}.
+\label{eq:forecast-ensemble}
+\end{equation}
+HAR is excluded, and each neural-network architecture receives one weight after its ten refits have been averaged.
 
 All models are scored on the same set of six out-of-sample measures: root mean squared error, mean absolute error, mean pseudo-Huber error, mean absolute percentage error, mean pinball loss at the median, the coefficient of determination, computed against the mean of the target. Reporting the whole set matters because a ranking that rests on one of them can reverse under another \citep{patton2011}.
 
-More details on the forecating design are in the Internet Appendix.
+More details on the forecasting design are in the Internet Appendix.
 
 
 \subsection{Portfolio Applications}
 \label{sec:portfolios}
 
-We replace the conditioning variable in the construction of \citet{moreiramuir2017} with an out-of-sample forecast. For a factor (long-short or market) with excess return $f_{i,t+1}$, the managed portfolio is
+Let $f_{i,t}$ denote the factor excess return in holding month $t$, and let $\widehat{\sigma}^{\,2}_{i,t\mid t-1}$ denote a generic point-in-time variance estimate available when the position is formed. We use out-of-sample forecasts from subsection~\ref{sec:design} and the preceding month's realized variance benchmark common in the volatility-management literature. The portfolio analysis has two single-factor designs and three multifactor designs. The single-factor designs are an inverse-variance managed factor motivated by \citet{moreiramuir2017} and a fixed combination of its managed and unmanaged versions motivated by \citet{cederburg2020}. The multifactor designs are the unconditional multifactor portfolio (UMV), the conditional multifactor portfolio based on market volatility (CMV), and an extension based on each factor's own volatility (FCMV).
+
+Let $\widehat{\sigma}_{s<t}(x_{i,s})$ denote the sample standard deviation of $x_{i,s}$ over the observations available before month $t$. Our first single-factor portfolio is
 \begin{equation}
-\tilde{f}_{i,t+1} = \frac{c_i}{\hat{\sigma}^{2}_{i,t}} f_{i,t+1},
+\widetilde{f}_{i,t} =
+\frac{c_{i,t}}{\widehat{\sigma}^{\,2}_{i,t\mid t-1}}f_{i,t},
+\qquad
+c_{i,t}=\frac{\widehat{\sigma}_{s<t}(f_{i,s})}
+{\widehat{\sigma}_{s<t}\!\left(f_{i,s}/\widehat{\sigma}^{\,2}_{i,s\mid s-1}\right)},
 \label{eq:managed}
 \end{equation}
-where $c_i$ is chosen so that the managed and unmanaged series have the same unconditional standard deviation, which leaves the Sharpe ratio unaffected. Two choices of $\hat{\sigma}^{2}_{i,t}$ are compared: the realized variance of the preceding month, which reproduces \citet{moreiramuir2017} exactly, and the forecast from each model. Besides the intercept and appraisal ratio $\alpha_i / \sigma(u_i)$ from spanning regressions of the type 
+where the normalization uses at least 60 prior observations and expands at each formation date. It equalizes the historical volatility of the managed and unmanaged series using information available before month $t$. We report raw exposure and exposure capped at 1.5. \citet{moreiramuir2017} use a full-sample normalizer, which we retain as an ex-post sensitivity in the Internet Appendix. Our main specification instead follows the real-time normalization in \citet{cederburg2020}.
 
+The second single-factor design combines the unmanaged and managed sleeves using a fixed equal-weight rule,
 \begin{equation}
-\tilde{f}_{i,t+1} = \alpha_i + \beta_i f_{i,t+1} + u_{i,t+1},
-\label{eq:spanning}
+f^{\mathrm{EW}}_{i,t}
+=\frac{1}{2}f_{i,t}+\frac{1}{2}\widetilde{f}_{i,t}
+=\left(\frac{1}{2}+\frac{1}{2}
+\frac{c_{i,t}}{\widehat{\sigma}^{\,2}_{i,t\mid t-1}}\right)f_{i,t}.
+\label{eq:cederburg-ew}
 \end{equation}
+This rule uses the same expanding normalizer and inverse-variance managed sleeve as equation~\eqref{eq:managed}. It reduces sensitivity to estimated means and covariances \citep{demiguelgarlappiuppal2009} and parallels the fixed multifactor allocations below. It is our robustness extension rather than the allocation proposed by \citet{cederburg2020}. Spanning regressions and a signed two-sleeve real-time MVO are reported as diagnostics in the Internet Appendix.
 
-we also report the mean excess return, the standard deviation, the Sharpe ratio and its change relative to the unmanaged factor, the maximum drawdown, and the skewness and kurtosis of the managed return, since the construction is frequently defended on the ground that it reduces crash risk rather than that it raises average returns \citep{barrososantaclara2015}. Turnover and the leverage the scaling implies are reported as well, because a strategy whose weight is proportional to the inverse of a forecast variance can demand positions that a real investor would not hold, and this is one of the margins on which \citet{cederburg2020} find the managed portfolios fail outside a spanning regression.
-
-Our implementation has three main dimensions. The first runs equations~\eqref{eq:managed} and \eqref{eq:spanning} factor by factor, which places the results directly beside \citet{moreiramuir2017}, \citet{cederburg2020} and \citet{schwarz2025}, but with ML-based forecasts.
-
-The second aggregates the managed factors into the conditional multifactor portfolio of \citet{demiguelmartinutrerauppal2024}, whose construction has so far been implemented with the lagged realized variance, and asks whether a better forecast of the conditioning variable changes their conclusion.
-
-The third reports, for the market series only, the volatility-targeting portfolio of \citet{bollerslevhoodhusspedersen2018} evaluated by realized utility, which is the exercise of \citet{brancorubesamzevallos2024},
-\citet{diazhansencabrera2024} and \citet{chunchoryu2025}, considering both the partial pooled and the non-pooled implementations.
-
-An investor allocates between the market portfolio and the risk-free asset and
-holds the mean-variance weight
+The multifactor analysis adapts the conditional portfolio in \citet{demiguelmartinutrerauppal2024}, whose factor exposure has the form $a_i+b_i/\widehat{\sigma}_{t\mid t-1}$. Let $q(i)=M$ when every factor is conditioned on market volatility and $q(i)=i$ when each factor is conditioned on its own volatility. We define
 \begin{equation}
-w_t = \frac{\hat{\mu}_t}{\gamma\,\hat{\sigma}^{2}_{t+1}},
-\label{eq:vtp}
+d_{i,t}=\frac{\widehat{\sigma}_{s<t}(f_{i,s})}
+{\widehat{\sigma}_{s<t}\!\left(f_{i,s}/\widehat{\sigma}_{q(i),s\mid s-1}\right)},
+\qquad
+f^{P}_{t}=\sum_{i=1}^{K}
+\left(a_i+b_i\frac{d_{i,t}}
+{\widehat{\sigma}_{q(i),t\mid t-1}}\right)f_{i,t}.
+\label{eq:multifactor}
 \end{equation}
-with the expanding mean of past excess returns in the numerator and the model's
-variance forecast in the denominator, evaluated at relative risk aversion of
-one, two, five and ten. Two scaling rules of the managed form are reported
-beside it. The first replaces the numerator with the expanding mean of realized
-variance, which is equation~\eqref{eq:managed} applied to the market with a
-constant that uses only past information rather than the full sample. The second
-normalizes by the expanding mean of the forecasts, which separates the effect of
-the forecast from the effect of the normalizing constant. Three feasible
-benchmarks bound the comparison: a buy-and-hold position, a fixed sixty per cent
-allocation, and the same scaling rule conditioned on the previous month's
-realized variance, which is the conditioning variable of
-\citet{moreiramuir2017}. A fourth strategy conditions on the realized variance
-of the month being forecast. It is infeasible by construction and reports what
-perfect foresight would deliver, which bounds what any forecast can achieve. All
-weights are floored at zero and capped at one and a half, so no strategy shorts
-the market or levers beyond half again its capital, and every result is reported
-with and without that cap.
+The normalizer $d_{i,t}$ is analogous to $c_{i,t}$, but it applies to the inverse-volatility sleeve in the DeMiguel specification. UMV imposes $b_i=0$. CMV uses $q(i)=M$, while FCMV uses $q(i)=i$. Our main analysis replaces MVO with equal-weighted (EW) and hierarchical equal-weighted (HEW) allocation because the 154-factor, 308-sleeve opportunity set produces a high-dimensional and unstable covariance problem. EW assigns equal coefficients to the available sleeves. HEW equal-weights the 13 JKP themes and a separate Market cluster before equal-weighting factors and sleeves within each cluster. These coefficients sum to one, but the volatility scaling makes effective factor exposure time-varying. We proportionally limit aggregate factor exposure to 1.5.
 
-This is also where the comparison that separates our design from those studies
-is made. Each of them estimates its forecasting model on a single index. Here
-the market series is forecast twice by the same walk-forward loop over the same
-months, once from the pooled panel in which it sits alongside the 153 long-short
-factors and once from the market series on its own, so the two forecasts differ
-only in the estimation sample. Feeding each into equation~\eqref{eq:vtp} turns
-the pooling question into a difference in realized utility rather than a
-difference in a loss function, which is the form in which it matters to an
-investor. If the commonality in volatility that
-\citet{bollerslevhoodhusspedersen2018} document across assets is strong enough
-to reduce estimation error at a monthly horizon, the pooled forecast should
-dominate; if the factor cross-section is too heterogeneous to support common
-coefficients, it should not. Either outcome speaks to why the machine learning
-evidence in this literature has been mixed, since the studies reporting gains
-have generally pooled their assets and those reporting none, including
-\citet{brancorubesamzevallos2024}, have estimated index by index.
-
-Transaction costs are charged on the change in the position. Turnover in month
-$t$ is the absolute difference between the weight held in month $t$ and the
-weight held in month $t-1$, with the first month measured from a zero position,
-and the cost is a proportional ten basis points per unit of turnover deducted
-from that month's return. Turnover is computed on the capped weights, which are
-the positions actually held. The same rate applies to every strategy and to both
-samples, so it favours no conditioning variable and the strategies differ only
-in how much they trade. Because the model is proportional and carries no
-bid-ask spread or price-impact term, it understates what an investor moving
-large positions quickly would pay, and every result is therefore reported gross
-and net so that the two bracket the effect.
+We report net mean excess return, volatility, Sharpe ratio, certainty-equivalent return at risk aversion five, maximum drawdown, turnover, and modeled costs. Transaction costs are 10 basis points per unit change in target factor exposure. Because the factors are self-financing excess-return positions, wealth and drawdown add their net payoff to one unit of risk-free collateral and compound $1+r_{f,t}+r^{\mathrm{net}}_{P,t}$. Section~\ref{app:portfolio-design} provides the spanning tests, MVO diagnostics, exposure constraints, cost conventions, and implementation differences from the source studies.
 
 %% =====================================================================
 \section{Results}
@@ -305,25 +277,61 @@ Table~\ref{tab:rv-performance} reports the main out-of-sample results from July 
 
 The comparison does not support a general conclusion that greater functional flexibility necessarily improves forecasts. Relative to HARX, random forest lowers pooled RMSE by 4.0 percent and XGBoost lowers it by 3.0 percent. The elastic net, which remains linear, lowers it by 3.8 percent. In contrast, none of the neural-network architectures materially improves on HARX and increasing network depth also provides no systematic benefit. The evidence for useful nonlinearity is therefore concentrated in tree ensembles, particularly random forest. It is comparable in magnitude to the gain from linear shrinkage. 
 
-Figure~\ref{fig:rv-har_relative_gains} reports RMSE gains for the pooled panel and for the market portfolio within that estimation. Table~\ref{tab:rv-factor_gain_summary} shows how broadly the pooled improvements extend across factors. Random forest beats HAR for 112 of 153 factors, and the equal-weighted forecast does so for 110. Elastic net and XGBoost beat HAR for 107 and 101 factors. Their median reductions in factor-level RMSE are 4.49, 4.00, 3.49, and 3.19 percent, respectively. HARX beats HAR for only 74 factors and has a median gain of $-0.57$ percent. The neural networks beat HAR for between 69 and 77 factors, with median gains ranging from $-0.92$ to 0.28 percent. The pooled advantage of the strongest methods is thus not generated by a very small set of factors. At the same time, none dominates every series, and even random forest performs worse than HAR for 41 factors. The dispersion reported in Table~\ref{tab:rv-factor_gain_summary} indicates meaningful heterogeneity in forecastability and in the value of model flexibility.
+Figure~\ref{fig:rv-har_relative_gains} reports RMSE gains for the pooled panel and for the market portfolio within that estimation, and Figure~\ref{fig:rv-har_relative_gains_market_separate} does the same for the market factor estimated in separate models. Table~\ref{tab:rv-factor_gain_summary} shows how broadly the pooled improvements extend across factors. Random forest beats HAR for 112 of 153 factors, and the equal-weighted forecast does so for 110. Elastic net and XGBoost beat HAR for 107 and 101 factors. Their median reductions in factor-level RMSE are 4.49, 4.00, 3.49, and 3.19 percent, respectively. HARX beats HAR for only 74 factors and has a median gain of $-0.57$ percent. The neural networks beat HAR for between 69 and 77 factors, with median gains ranging from $-0.92$ to 0.28 percent. The pooled advantage of the strongest methods is thus not generated by a very small set of factors. At the same time, none dominates every series, and even random forest performs worse than HAR for 41 factors. The dispersion reported in Table~\ref{tab:rv-factor_gain_summary} indicates meaningful heterogeneity in forecastability and in the value of model flexibility across factors.
 
-The sequence from HAR to richer models helps separate the economic content of these comparisons. In the pooled sample, adding the exogenous predictors without regularization reduces RMSE from 0.7287 to 0.7267, a gain of 0.28 percent. Moving from HARX to random forest reduces it to 0.6973, a further gain of 4.04 percent. Combining HARX and all statistical learning forecasts reduces it to 0.6936, another 0.54 percent relative to random forest. Measured directly against HAR, the equal-weighted forecast improves pooled RMSE by 4.82 percent. These changes are arithmetic decompositions because each learner changes both the functional form and regularization. Figure~\ref{fig:rv-sequential_waterfall} reports the corresponding paths for every learner. They show that the final ensemble generally limits the cost of a weak constituent forecast, although equal weighting need not beat the best model in every sample.
+Evaluating the sequence from HAR to the ensemble helps separate the economic content of adding exogeneous variables, nonlinearities and ensembling. In the pooled sample, adding the exogenous predictors without regularization reduces RMSE from 0.7287 to 0.7267, a gain of 0.28 percent. Moving from HARX to random forest reduces it to 0.6973, a further gain of 4.04 percent. Combining HARX and all statistical learning forecasts reduces it to 0.6936, another 0.54 percent relative to random forest. Measured directly against HAR, the equal-weighted forecast improves pooled RMSE by 4.82 percent. These changes are arithmetic decompositions because each learner changes both the functional form and regularization. Figure~\ref{fig:rv-sequential_waterfall} reports the corresponding paths for every learner. They show that the final ensemble generally limits the cost of a weak constituent forecast, although equal weighting need not beat the best model in every sample.
 
 Panel B of Table~\ref{tab:rv-performance} considers the market portfolio within the pooled estimation. HAR has the lowest RMSE, 0.8205, and random forest is effectively tied at 0.8206. HARX, elastic net, and the equal-weighted forecast follow with RMSE values of 0.8246, 0.8254, and 0.8289. XGBoost and the three neural networks perform worse. Adding exogenous covariates raises RMSE by 0.50 percent relative to HAR, while the equal-weighted combination raises it by 1.03 percent. The ranking therefore differs from the pooled statistic in Panel A. The methods that improve the average forecast across the full panel do not improve the market forecast obtained under the same common coefficients.
 
-Table~\ref{tab:rv-additional_scopes} in the Internet Appendix reports the market portfolio estimated separately. The separate specification has lower RMSE than its pooled counterpart for HAR, HARX, elastic net, random forest, XGBoost, NN2, NN3, and the equal-weighted forecast. The reduction is 9.25 percent for the equal-weighted forecast and 15.11 percent for elastic net. NN1 is the sole exception. Its separate-series RMSE is 0.9239, compared with 0.8600 under pooled estimation. The best separate model is elastic net, with an RMSE of 0.7007 and an out-of-sample $R^2$ of 0.5364. Extra factor observations consequently do not improve market forecasting in this design. Common coefficients impose cross-sectional restrictions that help estimate the broader factor panel but appear too restrictive for the market portfolio. A specialized model better accommodates the market series, particularly when the estimator can shrink the larger predictor set. This conclusion concerns the present common-parameter pooling design and does not rule out hierarchical or partially pooled specifications.
+Table~\ref{tab:rv-additional_scopes} in the Internet Appendix reports the market portfolio estimated separately. The separate specification has lower RMSE than its pooled counterpart for HAR, HARX, elastic net, random forest, XGBoost, NN2, NN3, and the equal-weighted forecast. The reduction is 9.25 percent for the equal-weighted forecast and 15.11 percent for elastic net. NN1 is the sole exception. Its separate-model RMSE is 0.9239, compared with 0.8600 under pooled estimation. The best separate model is elastic net, with an RMSE of 0.7007 and an out-of-sample $R^2$ of 0.5364. Extra factor observations consequently do not improve market forecasting in this specific design, in which some of the covariates are directly related to  market-level volatility (such as the implied-vol from the VIX). Therefore, a specialized model better accommodates the market series, particularly when the estimator can shrink the larger predictor set. Overall, for the market factor, nonlinearity seems to be less important than for the pooled panel evaluation, possibly due to smaller degrees of freedom in comparison to the pooled factor case.  
 
-Forecast difficulty varies considerably over time. Figure~\ref{fig:rv-rolling_rmse} reports trailing 12-month RMSE and shows the largest error across every evaluation sample in the window ending in May 2009. The financial crisis therefore remains the principal common stress episode. Rankings also move over time. In the 191 complete rolling windows for the separately estimated market portfolio, elastic net has the lowest RMSE in 68 windows, HARX in 37, XGBoost in 36, and HAR in 22. No single specification remains best throughout the sample. For the pooled panel, elastic net leads in 39 windows, HAR in 34, the equal-weighted forecast in 33, and XGBoost in 30. This turnover explains why forecast combination performs well in the pooled full-sample evaluation even though random forest has the lowest RMSE among the individual models. The cluster-specific paths in Figure~\ref{fig:rv-cluster_rolling_rmse} show that the timing and persistence of high-error periods also differ across groups of factors.
+Forecast difficulty varies considerably over time. Figure~\ref{fig:rv-rolling_rmse} reports trailing 12-month RMSE and shows the largest error across every evaluation sample in the window ending in May 2009. The financial crisis therefore remains the principal common stress episode. Rankings also move over time. In the 191 complete rolling windows for the separately estimated market portfolio, elastic net has the lowest RMSE in 68 windows, HARX in 37, XGBoost in 36, and HAR in 22. No single specification remains best throughout the sample. For the pooled panel, elastic net leads in 39 windows, HAR in 34, the equal-weighted forecast in 33, and XGBoost in 30. This turnover might explain why forecast combination performs well in the pooled full-sample evaluation even though random forest has the lowest RMSE among the individual models. The cluster-specific paths in Figure~\ref{fig:rv-cluster_rolling_rmse} show that the timing and persistence of high-error periods also differ across groups of factors.
 
-The relation between validation and subsequent test performance is mixed. Figure~\ref{fig:rv-validation_test} compares the selected 90-month validation score with RMSE over the following forecast block. For the pooled models, average subsequent RMSE is close to or below average validation RMSE for all tuned learners. The gaps are small for the neural networks and larger in favor of the test sample for the two tree ensembles. The separate market networks generalize less reliably. NN1 has average validation and test RMSE of 0.694 and 0.839 across refit blocks, while the corresponding gaps are 0.047 for NN2 and 0.031 for NN3. Validation and test RMSE correlations across annual blocks are weak or negative, which indicates that a favorable score on the rolling validation window does not reliably identify the volatility regime of the next year. Overlapping validation windows, annual rather than monthly tuning, and the shorter test blocks also contribute to this pattern. The evidence favors regularized linear and tree specifications for stable market forecasting and warrants caution in interpreting the network validation minima.
+The relation between validation and subsequent test performance is mixed. Figure~\ref{fig:rv-validation_test} compares the selected 90-month validation score with RMSE over the following forecast block. For the pooled models, average subsequent RMSE is close to or below average validation RMSE for all tuned learners. The gaps are small for the neural networks and larger in favor of the test sample for the two tree ensembles. The separate market networks generalize less reliably. NN1 has average validation and test RMSE of 0.694 and 0.839 across refit blocks, while the corresponding gaps are 0.047 for NN2 and 0.031 for NN3. Validation and test RMSE correlations across annual blocks are weak or negative, which indicates that a favorable score on the rolling validation window does not reliably identify the volatility regime of the next year. The evidence favors regularized linear and tree specifications for stable market forecasting and warrants caution in interpreting the network validation minima.
 
-Figure~\ref{fig:rv-hyperparameters_all} provides complementary evidence. The separately estimated market elastic net selects a pure lasso penalty at every refit, whereas the pooled elastic net uses all five candidate mixing values over the sample. Random-forest depth and feature subsampling vary over time in both universes, and XGBoost alternates among shallow depths, child-weight settings, and learning rates. The selected neural-network dropout and regularization parameters also change, but the market networks often choose the highest learning rate in the grid. Their early-stopping iterations vary sharply across refits. Parameter instability is therefore present rather than hidden by one full-sample choice. For the tree models, this adaptation accompanies relatively stable out-of-sample performance. For the market networks, changing configurations do not prevent sizeable test deterioration in several blocks. The contrast suggests that estimation variance and optimization sensitivity remain important for the smaller single-series sample.
+Figure~\ref{fig:rv-hyperparameters_all} provides complementary analysis between pooled and market-specific models. The separately estimated market elastic net selects a pure lasso penalty at every refit, whereas the pooled elastic net uses all five candidate mixing values over the sample. Random-forest depth and feature subsampling vary over time in both universes, and XGBoost alternates among shallow depths, child-weight settings, and learning rates. The selected neural-network dropout and regularization parameters also change, but the market networks often choose the highest learning rate in the grid. Their early-stopping iterations vary sharply across refits. Nonetheless, for the market networks, changing configurations do not prevent sizeable test deterioration in several blocks. The contrast suggests that estimation variance and optimization sensitivity remain important for the smaller single-series sample.
 
-The final-refit theme shares in Figure~\ref{fig:rv-final_theme_gross_share} summarize which predictor groups carry the fitted forecasts. Own-series realized-variance terms receive the largest share for most models. Their gross share is about 49 percent for the pooled random forest and ranges from 40 to 69 percent across the separately estimated statistical learning models. The expanding long-run realized-variance level is also prominent in the pooled elastic net and tree models. Calendar variables receive comparatively large shares in HARX and the pooled neural-network surrogates. Implied variance is especially important for the separate market elastic net and tree models, while macrofinancial predictors contribute more visibly in pooled HARX, XGBoost, and the network surrogates. These shares describe linear projections of fitted model predictions onto the original variables. They measure association with a model's fitted signal and should not be interpreted as structural effects. The archived neural-network results retain forecasts and surrogate summaries but not fitted network weights, so the common surrogate measure is used for all nonlinear models. Figure~\ref{fig:rv-theme_history_panel} and Figure~\ref{fig:rv-theme_history_spx} show that the allocation across themes also changes through time.
+The final-refit model is used in Figures~\ref{fig:rv-final_theme_gross_share} and~\ref{fig:rv-final_theme_net_share} to summarize which predictor groups are more relevant in explaining the fitted forecasts. The loading shares represent linear projections of fitted model predictions onto the original variables, normalized by the absolute sum of coefficients, thus measuring association with a model's fitted signal. 
 
-Tables~\ref{tab:rv-factor_rmse} and \ref{tab:rv-factor_rss} organize factor-level performance using the clusters of \citet{jensenkellypedersen2023}. Forecastability differs substantially across them. Relative to cluster-level HAR, the best method lowers RMSE by 12.27 percent for Debt Issuance, 10.29 percent for Quality, 8.02 percent for Short-Term Reversal, and 7.38 percent for Profit Growth. The equal-weighted forecast is best for Debt Issuance, Profit Growth, Seasonality, and Short-Term Reversal. Elastic net is best for Accruals and Quality. Random forest is best for Investment, Low Leverage, Momentum, and Size, while XGBoost is best for Low Risk, Profitability, and Value. Profitability remains the most difficult cluster for the richer models. Even its best model has RMSE 3.21 percent above HAR. Value also offers little aggregate improvement, and the equal-weighted forecast is slightly worse than HAR for that cluster. The strongest gains are therefore concentrated in economically distinct groups rather than in one broad class such as value or momentum. Machine learning improves many factor forecasts, but its benefit depends materially on the characteristic cluster and on the estimator.
+ Own-series realized-variance terms receive the largest share for most models. Their gross share is about 49 percent for the pooled random forest and ranges from 40 to 69 percent across the separately estimated statistical learning models. The expanding long-run realized-variance level is also prominent in the pooled elastic net and tree models. Calendar variables receive comparatively large shares in HARX and the pooled neural-network surrogates. Implied variance is especially important for the separate market elastic net and tree models, while macrofinancial predictors contribute more visibly in pooled HARX, XGBoost, and the network surrogates. Figures~\ref{fig:rv-theme_history_panel}  and~\ref{fig:rv-theme_history_spx} show the allocation across themes through time.
+
+Tables~\ref{tab:rv-factor_rmse} and \ref{tab:rv-factor_rss} organize factor-level performance using the clusters of \citet{jensenkellypedersen2023}. Forecastability differs substantially across them. Relative to cluster-level HAR, the best method lowers RMSE by 12.27 percent for Debt Issuance, 10.29 percent for Quality, 8.02 percent for Short-Term Reversal, and 7.38 percent for Profit Growth. The equal-weighted forecast is best for Debt Issuance, Profit Growth, Seasonality, and Short-Term Reversal. Elastic net is best for Accruals and Quality. Random forest is best for Investment, Low Leverage, Momentum, and Size, while XGBoost is best for Low Risk, Profitability, and Value. Profitability remains the most difficult cluster for the richer models. Even its best model has RMSE 3.21 percent above HAR. Value also offers little aggregate improvement, and the equal-weighted forecast is slightly worse than HAR for that cluster. The strongest gains are therefore concentrated in economically distinct groups rather than in one broad class. Machine learning improves many factor forecasts, but its benefit depends materially on the characteristic cluster and on the estimator.
 
 %% =====================================================================
+\subsection{Single-factor analysis}
+\label{sec:single-factor-results}
+
+The portfolio evaluation covers July 2011 through December 2024, yielding 162 monthly observations. The shorter period relative to the forecasting evaluation reflects the minimum of 60 prior observations required for portfolio calibration ($c_{i,t}$ and $d_{i,t}$). Calibration subsequently expands using all available prior observations. We distinguish the performance of individual factors from that of an aggregate portfolio that assigns equal weight to the 153 nonmarket factor strategies each month. The other principal single-factor application is the market portfolio managed using forecasts from pooled estimation. Separately estimated market forecasts are reported in the Internet Appendix. In particular, we assess the EW forecast ensemble against unmanaged exposure, lagged realized variance (random-walk), HAR, and HARX.
+
+Table~\ref{tab:rv-portfolio_performance} first reports economic performance across raw and capped exposures, before and after transaction costs. For the net capped specification, the EW forecast ensemble produces a Sharpe ratio of 0.523 for the factor aggregate, compared with 0.480 for unmanaged exposure and 0.371, 0.465, and 0.501 for the random-walk, HAR, and HARX strategies. The gross capped version EW delivers a Sharpe ratio of 0.641, against 0.483, 0.597, 0.601 and 0.631 for unmanaged, random-walk, HAR and HARX, respectively. Therefore, costs make the random-walk and HAR models underperform the unmanaged version, but not HARX and EW.
+
+ For the market portfolio, its Sharpe ratio of 0.760 is close to the unmanaged value of 0.769 but below HAR at 0.828. Figures~\ref{fig:rv-portfolio_wealth_market_pooled} and~\ref{fig:rv-portfolio_wealth_factor_panel} show the corresponding cumulative wealth paths. HAR finishes with the highest market wealth, while unmanaged exposure finishes with the highest factor-aggregate wealth, so the ensemble does not uniformly dominate the benchmarks.
+
+ Table~\ref{tab:rv-portfolio_inference_single_factor_primary} reports paired Sharpe differences for both raw and capped exposures. Inference uses 10,000 stationary-bootstrap draws with expected block length five months, following the resampling design of \citet{demiguelmartinutrerauppal2024}. The same month indices are applied to every strategy, preserving contemporaneous dependence across factors. Our one-sided tests use centered bootstrap errors under the null of a nonpositive performance difference. This differs from the paper's sign-fraction calculation. Extending the resampling procedure to mean excess returns and certainty-equivalent returns is our application. We report pointwise 95\% percentile intervals and Holm-adjusted p-values for prespecified families spanning the three endpoints, both exposure versions, and the relevant portfolio comparisons. Three- and ten-month blocks provide sensitivity analyses. The inference conditions on the fitted strategies and does not repeat model estimation.
+
+Under inverse-variance management with raw exposure, the ensemble's aggregate net Sharpe ratio is 0.468, compared with 0.480 for the unmanaged aggregate. For the market portfolio, the corresponding ratios are 0.731 and 0.769. The ensemble improves on the RW, HAR, and HARX managed strategies in both raw-exposure applications, but this ranking does not establish an improvement over unmanaged investment. Together with the capped results in Table~\ref{tab:rv-portfolio_performance}, these comparisons show that exposure restrictions affect model rankings as well as the magnitude of performance differences.
+
+The bootstrap intervals remain wide relative to these gains. For example, the raw aggregate ensemble improves Sharpe over HARX by 0.065, with a pointwise interval of [0.014, 0.115]. Its one-sided p-value is 0.0045, but the Holm-adjusted value is 0.432. None of the primary single-factor comparisons rejects its null at the 5\% level after adjustment. This finding does not establish equivalence between strategies. It indicates that the available evaluation period provides insufficient evidence of superiority across the prespecified comparisons. The conclusion is unchanged with expected block lengths of three and ten months.
+
+The fixed 50/50 combination yields aggregate and market net Sharpe ratios of 0.497 and 0.786, respectively, when the managed sleeve uses the ensemble. This combination is a robustness extension motivated by the implementation concerns in \citet{cederburg2020}, rather than their estimated mean-variance allocation. Its modest Sharpe gains over unmanaged exposure do not imply uniform utility gains. With risk aversion five and net-return variance, annual aggregate certainty-equivalent return is 1.03\%, compared with 1.11\% for the unmanaged aggregate. The corresponding market values are 6.17\% and 5.91\%. The signed two-sleeve MVO comparisons in the Internet Appendix use an unmanaged-only MVO benchmark that optimizes factor and cash exposure. That benchmark is distinct from buy-and-hold.
+
+Individual-factor results also qualify the aggregate rankings. In raw-exposure MM management, the ensemble improves Sharpe over unmanaged exposure for 44.4\% of factors. The fraction is 49.0\% for the fixed 50/50 combination. Among the clusters of \citet{jensenkellypedersen2023}, raw MM management improves Sharpe for 17 of 18 Low Risk factors but only one of 18 Value factors. Median paired differences are 0.080 for Low Risk, 0.162 for Momentum, -0.195 for Value, and -0.321 for Accruals. These counts and medians describe heterogeneous outcomes across correlated strategies. They are not independent replications of an investment experiment.
+
+Spanning regressions provide a complementary opportunity-set diagnostic. For raw MM management, annualized alpha against the unmanaged benchmark is 0.17\% for the aggregate and 1.84\% for the market portfolio. Their Newey-West t-statistics with lag one are 0.50 and 0.66. We therefore do not interpret the positive point estimates as evidence of implementable allocation gains. All economic results remain conditional on the factor-exposure cost proxy. It charges 10 basis points per unit change in target exposure, including entry from zero, and excludes underlying-stock turnover, financing, and shorting costs.
+
+\subsection{Multifactor analysis}
+\label{sec:multifactor-results}
+
+The multifactor opportunity set contains 154 underlying factors, including the market, and 308 sleeves when unmanaged and managed exposures are combined. We distinguish unmanaged multifactor investment (UMV), conditioning every managed sleeve on market volatility (CMV), and conditioning each sleeve on its own factor's volatility (FCMV). The main CMV specification uses the pooled model's market forecast. Conditional sleeves use inverse predicted standard deviation, whereas the single-factor MM construction uses inverse predicted variance. EW and HEW refer here to allocation coefficients. They are distinct from the EW forecast ensemble used to construct the volatility signal.
+
+The allocation rule materially changes the portfolio before any forecasting gains are considered. HEW assigns equal weight to the 13 JKP themes and a separate Market cluster, followed by equal factor weights within each cluster and equal sleeve weights within each factor. Consequently, unmanaged market weight is 1/14 under HEW and 1/154 under EW. The higher unmanaged HEW Sharpe ratio therefore reflects a different composition and cannot be attributed to volatility forecasting. We evaluate each conditional strategy against its own allocator's UMV benchmark.
+
+Table~\ref{tab:rv-portfolio_inference_multifactor_primary} reports the paired comparisons. Under EW allocation, net UMV Sharpe is 0.517. Ensemble-based CMV has essentially the same Sharpe ratio, while FCMV reaches 0.543. Under HEW, the corresponding ratios are 1.305 for UMV, 1.284 for CMV, and 1.346 for FCMV. The FCMV gains over matching UMV are 0.026 and 0.041. Their pointwise 95\% intervals are [-0.039, 0.099] and [-0.057, 0.127], respectively. Although FCMV improves on the HAR and HARX point estimates under both allocation rules, none of the primary multifactor performance gains remains statistically significant after the prespecified adjustment. These results support a cautious interpretation of the incremental value of own-factor volatility conditioning.
+
+The utility gains are also small. Annual net certainty-equivalent return under EW allocation is approximately 1.183\% for UMV and 1.194\% for ensemble-based FCMV. Under HEW, the corresponding values are 1.785\% and 1.821\%. CMV illustrates why Sharpe and certainty-equivalent return rankings need not coincide. Under HEW, ensemble-based CMV has lower Sharpe than UMV but slightly higher certainty-equivalent return, reflecting differences in mean return and risk. Throughout these comparisons, certainty-equivalent return uses net-return variance. We do not combine this measure with a gross-risk convention.
+
+The available historical multifactor comparator conditions all managed sleeves on lagged market volatility. It is a CMV benchmark and does not provide an own-factor lagged-volatility FCMV comparison. More generally, the exercises preserve the saved factor-level implementation and should not be read as exact replications of \citet{demiguelmartinutrerauppal2024}. Our cost proxy cannot measure their stock-level trading-diversification benefits. Likewise, compounded collateralized wealth, formed from net excess returns plus the risk-free return, differs from a cumulative sum of self-financing payoffs. These implementation distinctions limit the interpretation of both favorable and unfavorable comparisons with the earlier literature.
+
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -470,6 +478,86 @@ the weights,
  + \lambda^{\omega} \sum_k \lVert \mathbf{W}_k \rVert_1,
 \end{equation}
 stopping after 10 epochs without validation improvement. After hyperparameters are selected, each architecture is refitted from ten independent random initializations and the predictions are averaged, following \citet{gukellyxiu2020}. Tuning itself uses a single fitted network, so the averaging reduces sensitivity to one initialization without enlarging the search budget.
+
+\subsection{Portfolio Application Details}
+\label{app:portfolio-design}
+
+\subsubsection{Single-factor normalization and diagnostics}
+
+Equation~\eqref{eq:managed} uses at least 60 prior paired observations and an expanding history. The time-varying normalizer gives the managed and unmanaged series the same volatility over the information set available before month $t$, but it does not impose equal realized volatility over the subsequent evaluation sample. \citet{moreiramuir2017} instead choose a constant $c_i^{*}$ that equates the two volatilities over their full sample. They note that this scale does not affect the managed portfolio's Sharpe ratio. The full-sample value is nevertheless unavailable when the position is formed and can affect exposures, binding caps, turnover, and costs. We therefore use the real-time design of \citet{cederburg2020} in the main analysis and report the Moreira--Muir full-sample normalizer as an ex-post sensitivity.
+
+The unconstrained Moreira--Muir exposure is $w^{\mathrm{MM}}_{i,t}=c_{i,t}/\widehat{\sigma}^{\,2}_{i,t\mid t-1}$. Their main return analysis is unconstrained, while their leverage robustness exercises cap this exposure at one or 1.5. They interpret 1.5 as a standard margin constraint allowing 50\% leverage. We report the raw exposure and the corresponding capped specification,
+\begin{equation}
+w^{\mathrm{MM,cap}}_{i,t}
+=\min\left\{1.5,w^{\mathrm{MM}}_{i,t}\right\}.
+\end{equation}
+
+Spanning regressions take the form
+\begin{equation}
+\widetilde{f}_{i,t} = \alpha_i + \beta_i f_{i,t} + u_{i,t}.
+\label{eq:spanning}
+\end{equation}
+We use Newey--West inference for the intercept and report the annualized appraisal ratio $\widehat{AR}_i=\sqrt{12}\widehat{\alpha}_i/\widehat{\sigma}_{u_i}$. These quantities are ex-post opportunity-set diagnostics. A nonzero alpha indicates that adding the managed return changes the ex-post mean-variance frontier. As emphasized by \citet{cederburg2020}, the corresponding tangency portfolio is an ex-post optimal combination of the unmanaged and managed returns. The regression does not establish that the managed return alone dominates, and the optimal combination is not known to a real-time investor.
+
+\subsubsection{\citet{cederburg2020} allocation and exposure constraint}
+
+The signed two-sleeve MVO reported in the Internet Appendix estimates $a_{i,t}$ and $b_{i,t}$ from the expanding training matrix and forms
+\begin{equation}
+f^{\mathrm{MVO}}_{i,t}
+=\left(a_{i,t}+b_{i,t}
+\frac{c_{i,t}}{\widehat{\sigma}^{\,2}_{i,t\mid t-1}}\right)f_{i,t}.
+\label{eq:cederburg-mvo}
+\end{equation}
+The current normalizer $c_{i,t}$ is applied to every managed-sleeve observation in that training matrix. We consider a paired benchmark that estimates only the coefficient on the unmanaged factor over the same history and sets $b_{i,t}=0$. Neither single-factor MVO imposes that risky coefficients sum to one. The residual position is therefore the risk-free collateral implied by the chosen factor exposure.
+
+This leverage constraint matches the object defined by \citet{cederburg2020}. In their notation, $x_{\sigma,i,t}$ and $x_{i,t}$ are the MVO coefficients on the managed and unmanaged sleeves. The actual position in the underlying factor is
+\begin{equation}
+y_{i,t}
+=x_{i,t}
++x_{\sigma,i,t}
+\frac{c_{i,t}}{\widehat{\sigma}^{\,2}_{i,t\mid t-1}}.
+\end{equation}
+\citet{cederburg2020} impose $|y_{i,t}|\leq5$. Our notation sets $a_{i,t}=x_{i,t}$ and $b_{i,t}=x_{\sigma,i,t}$, so $w^{\mathrm{Ced}}_{i,t}=y_{i,t}$. The saved implementation therefore applies the same base-case constraint,
+\begin{equation}
+w^{\mathrm{Ced,cap}}_{i,t}
+=\max\left\{-5,\min\left(5,w^{\mathrm{Ced}}_{i,t}\right)\right\}.
+\end{equation}
+The value five is intentionally permissive. Cederburg et al. use it to prevent a small number of extreme real-time MVO positions from driving the results, and they report robustness to a unit cap and to no cap. Our fixed 50/50 extension sets $a_{i,t}=b_{i,t}=1/2$ and applies the same bound to its resulting factor exposure. The fixed weights are our extension, while the definition and numerical value of the leverage constraint follow their real-time design.
+
+\subsubsection{Multifactor allocation and exposure constraint}
+
+The normalizer $d_{i,t}$ in equation~\eqref{eq:multifactor} equalizes the historical volatility of each unmanaged factor and its inverse-volatility sleeve. Under EW, coefficients are $1/K$ across the $K$ unmanaged sleeves in UMV and $1/(2K)$ across the unmanaged and managed sleeves in CMV and FCMV. HEW instead assigns equal weight to the 13 JKP themes and a separate Market cluster, then equal-weights factors within each cluster and sleeves within each factor. The coefficients therefore sum to one by construction.
+
+Coefficient weights and effective factor exposure are different objects. The current exposure to factor $i$ is $w_{i,t}=a_i+b_i d_{i,t}/\widehat{\sigma}_{q(i),t\mid t-1}$. Consequently, $\sum_i(a_i+b_i)=1$ does not imply $\sum_iw_{i,t}=1$. For the capped specification, all factor exposures in a portfolio-month are multiplied by
+\begin{equation}
+\lambda_t=\min\left\{1,\frac{1.5}{\sum_i w_{i,t}}\right\}.
+\end{equation}
+This proportional adjustment preserves relative factor weights and limits aggregate positive factor exposure to 1.5. It usually does not affect fixed-allocation UMV, whose exposure sums to one, but it can bind for CMV and FCMV because their managed sleeves vary with volatility.
+
+\citet{demiguelmartinutrerauppal2024} estimate the $a_i$ and $b_i$ coefficients by MVO over a substantially smaller factor set. Because their factors are zero-cost portfolios, their main specification does not require the coefficients to sum to one and does not impose an absolute 1.5 exposure cap. It instead requires $a_i\geq0$ and $b_i\geq0$. Their Internet Appendix considers a relative leverage restriction under which CMV exposure is at most 20\% above the corresponding UMV exposure.
+
+Our main EW and HEW specifications retain their economic comparison while avoiding estimation of a covariance matrix for 154 factors and 308 conditional sleeves. In the 1986 sample, this matrix is ill-conditioned and its small estimated eigenvalues produce concentrated and unstable portfolios, consistent with the broader evidence on estimation error in \citet{demiguelgarlappiuppal2009}. For these fixed allocations, the absolute bound $\sum_iw_{i,t}^{\mathrm{cap}}\leq1.5$ is our implementation choice and is applied through the proportional adjustment above. It is not a constraint from the main DeMiguel specification.
+
+The multifactor MVO reported as a diagnostic combines our absolute safeguard with their relative restriction. UMV exposure is constrained by
+\begin{equation}
+L^{\mathrm{UMV}}_t\leq1.5,
+\end{equation}
+while CMV and FCMV exposure is constrained by
+\begin{equation}
+L^{P}_t
+\leq
+\min\left\{1.5,1.2L^{\mathrm{UMV}}_t\right\},
+\qquad P\in\{\mathrm{CMV},\mathrm{FCMV}\}.
+\end{equation}
+Here leverage is measured as aggregate positive factor exposure because the optimizer coefficients are nonnegative. The 1.2 relative bound follows the DeMiguel robustness exercise. The absolute 1.5 ceiling and its application at the factor-exposure level are our safeguards for the larger opportunity set. The proportional 1.5 adjustment is retained after optimization for a common output definition and is redundant when the optimizer constraints are satisfied.
+
+\subsubsection{Returns, costs, and wealth}
+
+The primary market signal comes from pooled estimation, while separate market estimation is an appendix comparison. Sharpe ratios and certainty-equivalent returns use monthly net excess returns and sample net-return variance. Transaction costs equal 10 basis points times the absolute change in target factor exposure, including entry from zero and no terminal liquidation. Raw and capped strategies pay costs on their own exposure paths. Within a single-factor combination, sleeve exposures are netted before costs are charged.
+
+Each factor is a self-financing excess-return position. We therefore represent total portfolio wealth as one unit of collateral earning the risk-free return plus the net factor payoff, and compound $1+r_{f,t}+r^{\mathrm{net}}_{P,t}$. Gains and collateral returns are reinvested. This differs from a cumulative self-financing payoff that adds monthly excess payoffs without reinvestment.
+
+The exercises are adaptations rather than exact replications. Our realized variance sums daily squared returns and omits the trading-day adjustment in \citet{cederburg2020}. Monthly factor returns compound daily returns. The historical multifactor signal is not the demeaned daily standard deviation in \citet{demiguelmartinutrerauppal2024}. The factor-level cost proxy excludes stock turnover, trade netting within the underlying factors, factor implementation costs, shorting, and financing costs. It therefore does not capture the stock-level trading-diversification benefits in that study.
 
 
 

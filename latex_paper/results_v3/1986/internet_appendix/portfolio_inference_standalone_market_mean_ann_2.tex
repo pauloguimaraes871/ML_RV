@@ -1,0 +1,22 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
+\caption[Paired mean excess return comparisons.]{\footnotesize \textbf{: Paired mean excess return comparisons.} Differences are annual percentage points. Certainty-equivalent returns use risk aversion five and net-return variance. Each row compares the EW forecast ensemble with the stated benchmark within the same portfolio construction. All returns are net of modeled factor-exposure costs. Raw and capped exposures are reported separately. Brackets report pointwise 95 percent percentile intervals from 10000 paired stationary-bootstrap draws with expected block length five months. The one-sided null is that the ensemble's performance difference is nonpositive. Tests use centered bootstrap errors. Adjusted p-values use Holm's correction across Sharpe, mean and certainty-equivalent return comparisons in the stated family. The evaluation period is July 2011 to December 2024. Inference is conditional on the fitted strategies.}\label{tab:rv-portfolio_inference_standalone_market_mean_ann_2}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Panel A. HEW allocation, CMV, standalone market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+UMV & Raw & 0.059 & [-0.095, 0.213] & 0.239 & 1.000 \\
+Lagged market & Raw & 0.008 & [-0.146, 0.145] & 0.476 & 1.000 \\
+HAR & Raw & 0.051 & [-0.035, 0.140] & 0.123 & 1.000 \\
+HARX & Raw & 0.037 & [-0.009, 0.083] & 0.057 & 1.000 \\
+UMV & Capped & 0.059 & [-0.095, 0.213] & 0.239 & 1.000 \\
+Lagged market & Capped & 0.008 & [-0.109, 0.126] & 0.452 & 1.000 \\
+HAR & Capped & 0.046 & [-0.039, 0.133] & 0.144 & 1.000 \\
+HARX & Capped & 0.036 & [-0.009, 0.082] & 0.059 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}

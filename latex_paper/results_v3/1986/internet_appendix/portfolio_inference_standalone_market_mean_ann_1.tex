@@ -1,0 +1,61 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
+\caption[Paired mean excess return comparisons.]{\footnotesize \textbf{: Paired mean excess return comparisons.} Differences are annual percentage points. Certainty-equivalent returns use risk aversion five and net-return variance. Each row compares the EW forecast ensemble with the stated benchmark within the same portfolio construction. All returns are net of modeled factor-exposure costs. Raw and capped exposures are reported separately. Brackets report pointwise 95 percent percentile intervals from 10000 paired stationary-bootstrap draws with expected block length five months. The one-sided null is that the ensemble's performance difference is nonpositive. Tests use centered bootstrap errors. Adjusted p-values use Holm's correction across Sharpe, mean and certainty-equivalent return comparisons in the stated family. The evaluation period is July 2011 to December 2024. Inference is conditional on the fitted strategies.}\label{tab:rv-portfolio_inference_standalone_market_mean_ann_1}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Panel A. 50/50 single-factor combination, Standalone market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & 0.281 & [-2.818, 3.441] & 0.431 & 1.000 \\
+RW & Capped & 2.112 & [-0.845, 5.027] & 0.083 & 1.000 \\
+HAR & Capped & -0.336 & [-2.457, 1.936] & 0.610 & 1.000 \\
+HARX & Capped & 1.016 & [0.115, 1.913] & 0.014 & 1.000 \\
+Unmanaged & Raw & 0.281 & [-2.818, 3.441] & 0.431 & 1.000 \\
+RW & Raw & 2.112 & [-0.845, 5.027] & 0.083 & 1.000 \\
+HAR & Raw & -0.336 & [-2.457, 1.936] & 0.610 & 1.000 \\
+HARX & Raw & 1.016 & [0.115, 1.913] & 0.014 & 1.000 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel B. Signed two-sleeve MVO, Standalone market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged-only MVO & Capped & 2.244 & [-4.393, 9.235] & 0.264 & 1.000 \\
+RW & Capped & 2.801 & [-2.099, 7.877] & 0.143 & 1.000 \\
+HAR & Capped & -4.174 & [-8.603, 0.129] & 0.967 & 1.000 \\
+HARX & Capped & 1.756 & [-0.317, 3.841] & 0.051 & 1.000 \\
+Unmanaged-only MVO & Raw & 2.244 & [-4.393, 9.235] & 0.264 & 1.000 \\
+RW & Raw & 2.801 & [-2.099, 7.877] & 0.143 & 1.000 \\
+HAR & Raw & -2.853 & [-8.620, 3.521] & 0.817 & 1.000 \\
+HARX & Raw & 1.756 & [-0.317, 3.841] & 0.051 & 1.000 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel C. MM management, Standalone market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & -1.182 & [-5.550, 2.877] & 0.712 & 1.000 \\
+RW & Capped & 3.141 & [-1.164, 7.319] & 0.070 & 1.000 \\
+HAR & Capped & -0.455 & [-2.834, 1.645] & 0.667 & 1.000 \\
+HARX & Capped & 2.187 & [1.243, 3.198] & 0.000 & 0.012 \\
+Unmanaged & Raw & 0.562 & [-5.636, 6.883] & 0.431 & 1.000 \\
+RW & Raw & 4.223 & [-1.690, 10.053] & 0.083 & 1.000 \\
+HAR & Raw & -0.672 & [-4.914, 3.873] & 0.610 & 1.000 \\
+HARX & Raw & 2.032 & [0.231, 3.827] & 0.014 & 1.000 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel D. EW allocation, CMV, standalone market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+UMV & Raw & 0.058 & [-0.127, 0.248] & 0.285 & 1.000 \\
+Lagged market & Raw & 0.112 & [-0.094, 0.329] & 0.144 & 1.000 \\
+HAR & Raw & 0.125 & [-0.007, 0.264] & 0.039 & 1.000 \\
+HARX & Raw & -0.003 & [-0.078, 0.067] & 0.546 & 1.000 \\
+UMV & Capped & 0.058 & [-0.127, 0.248] & 0.285 & 1.000 \\
+Lagged market & Capped & 0.123 & [-0.062, 0.322] & 0.106 & 1.000 \\
+HAR & Capped & 0.125 & [-0.004, 0.263] & 0.038 & 1.000 \\
+HARX & Capped & -0.005 & [-0.080, 0.065] & 0.569 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}

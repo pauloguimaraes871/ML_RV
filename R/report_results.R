@@ -487,7 +487,6 @@
     "Columns report HAR, HARX, elastic net, random forest, XGBoost, and the three neural-network architectures.",
     "The intercept is excluded. Each coefficient is divided by the sum of absolute non-intercept coefficients.",
     "Gross shares sum absolute loadings within themes. Net shares retain coefficient signs.",
-    "A zero loading caused by exact collinearity does not establish that a predictor is economically irrelevant.",
     "Own-series terms refer to each factor's realized measures. The equal-weighted forecast has no fitted surrogate model.")
   for (measure in c("gross_share", "net_share")) {
     plot <- theme_final %>% dplyr::mutate(model = as_model_label(model), universe = as_universe_label(universe)) %>%

@@ -2,39 +2,39 @@
 \begin{table}[p]
 \centering\scriptsize
 \captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
-\renewcommand{\arraystretch}{1.1}
+\renewcommand{\arraystretch}{1.0}
 \setlength{\tabcolsep}{2.5pt}
 \caption[Implementation statistics for net capped volatility-managed portfolios.]{\footnotesize \textbf{: Implementation statistics for net capped volatility-managed portfolios.} Return, volatility, certainty-equivalent return, transaction cost, and maximum drawdown are reported in percent. Sharpe ratios use excess returns and maximum drawdowns use total returns. Turnover is the average monthly absolute change in factor exposure. Maximum exposure is measured before capping. The capped percentage is the share of factor-month observations for which uncapped exposure exceeds 1.5. Panel C first equal-weights factor-strategy returns within each month. Its implementation statistics summarize the underlying factor-month exposures.}\label{tab:rv-portfolio_implementation}
-\begin{tabular}{lrrrrrrrrr}
-\multicolumn{10}{@{}l}{\textit{Panel A. Market portfolio, separate estimation}} \\
+\begin{tabular}{lrrrrrrrrrrr}
+\multicolumn{12}{@{}l}{\textit{Panel A. Market portfolio, separate estimation}} \\
 \hline
-Model & Return (\%) & Volatility (\%) & Sharpe & CER (\%) & Max drawdown (\%) & Cost (\%) & Turnover & Maximum exposure & Capped (\%) \\
+Model & Return (\%) & Vol. (\%) & Sharpe & CER (\%) & Vol. ratio & Raw exposure & MDD (\%) & Cost (\%) & Turnover & Max. exposure & Capped (\%) \\
 \hline
-Unmanaged & 9.479 & 16.107 & 0.588 & 2.993 & -51.570 & 0.005 & 0.005 & 1.000 & 0.000 \\
-Random walk & 11.305 & 15.327 & 0.738 & 5.432 & -32.232 & 0.273 & 0.227 & 11.957 & 53.153 \\
-HAR & 11.744 & 16.093 & 0.730 & 5.270 & -39.978 & 0.237 & 0.198 & 6.172 & 52.703 \\
-HARX & 10.079 & 17.600 & 0.573 & 2.335 & -38.379 & 0.235 & 0.195 & 6.176 & 63.514 \\
-EW & 10.747 & 17.509 & 0.614 & 3.083 & -44.208 & 0.190 & 0.159 & 4.226 & 62.613 \\
+Unmanaged & 11.527 & 14.985 & 0.769 & 5.913 & 1.000 & 1.000 & -24.982 & 0.007 & 0.006 & 1.000 & 0.000 \\
+Random walk & 7.205 & 10.419 & 0.692 & 4.492 & 0.695 & 1.080 & -16.355 & 0.472 & 0.393 & 4.909 & 24.074 \\
+HAR & 10.800 & 13.393 & 0.806 & 6.316 & 0.894 & 1.543 & -15.359 & 0.324 & 0.270 & 4.394 & 43.827 \\
+HARX & 8.159 & 14.373 & 0.568 & 2.994 & 0.959 & 1.453 & -28.404 & 0.340 & 0.283 & 4.016 & 40.741 \\
+EW & 10.346 & 14.916 & 0.694 & 4.784 & 0.995 & 1.517 & -25.610 & 0.254 & 0.211 & 3.291 & 50.617 \\
 \hline
-\multicolumn{10}{@{}l}{\textit{Panel B. Market portfolio, pooled estimation}} \\
+\multicolumn{12}{@{}l}{\textit{Panel B. Market portfolio, pooled estimation}} \\
 \hline
-Model & Return (\%) & Volatility (\%) & Sharpe & CER (\%) & Max drawdown (\%) & Cost (\%) & Turnover & Maximum exposure & Capped (\%) \\
+Model & Return (\%) & Vol. (\%) & Sharpe & CER (\%) & Vol. ratio & Raw exposure & MDD (\%) & Cost (\%) & Turnover & Max. exposure & Capped (\%) \\
 \hline
-Unmanaged & 9.479 & 16.107 & 0.588 & 2.993 & -51.570 & 0.005 & 0.005 & 1.000 & 0.000 \\
-Random walk & 11.305 & 15.327 & 0.738 & 5.432 & -32.232 & 0.273 & 0.227 & 11.957 & 53.153 \\
-HAR & 12.681 & 18.163 & 0.698 & 4.433 & -46.298 & 0.165 & 0.138 & 6.494 & 61.712 \\
-HARX & 11.762 & 18.265 & 0.644 & 3.422 & -43.110 & 0.137 & 0.114 & 6.571 & 67.117 \\
-EW & 12.185 & 18.550 & 0.657 & 3.583 & -45.901 & 0.118 & 0.099 & 5.609 & 70.721 \\
+Unmanaged & 11.527 & 14.985 & 0.769 & 5.913 & 1.000 & 1.000 & -24.982 & 0.007 & 0.006 & 1.000 & 0.000 \\
+Random walk & 7.205 & 10.419 & 0.692 & 4.492 & 0.695 & 1.080 & -16.355 & 0.472 & 0.393 & 4.909 & 24.074 \\
+HAR & 11.881 & 14.352 & 0.828 & 6.732 & 0.958 & 1.612 & -16.464 & 0.267 & 0.223 & 4.170 & 45.062 \\
+HARX & 10.267 & 14.036 & 0.731 & 5.342 & 0.937 & 1.471 & -19.589 & 0.285 & 0.237 & 3.780 & 40.741 \\
+EW & 11.048 & 14.543 & 0.760 & 5.760 & 0.971 & 1.460 & -19.474 & 0.259 & 0.216 & 3.315 & 45.062 \\
 \hline
-\multicolumn{10}{@{}l}{\textit{Panel C. Equal-weighted factor panel}} \\
+\multicolumn{12}{@{}l}{\textit{Panel C. Equal-weighted factor panel}} \\
 \hline
-Model & Return (\%) & Volatility (\%) & Sharpe & CER (\%) & Max drawdown (\%) & Cost (\%) & Turnover & Maximum exposure & Capped (\%) \\
+Model & Return (\%) & Vol. (\%) & Sharpe & CER (\%) & Vol. ratio & Raw exposure & MDD (\%) & Cost (\%) & Turnover & Max. exposure & Capped (\%) \\
 \hline
-Unmanaged & 1.101 & 2.546 & 0.433 & 0.939 & -8.844 & 0.005 & 0.005 & 1.000 & 0.000 \\
-Random walk & 0.892 & 2.186 & 0.408 & 0.772 & -6.126 & 0.258 & 0.215 & 87.117 & 48.834 \\
-HAR & 0.881 & 2.324 & 0.379 & 0.746 & -7.858 & 0.234 & 0.195 & 25.043 & 39.878 \\
-HARX & 1.284 & 2.689 & 0.478 & 1.103 & -9.017 & 0.172 & 0.143 & 29.135 & 57.608 \\
-EW & 1.232 & 2.596 & 0.475 & 1.064 & -8.267 & 0.168 & 0.140 & 24.454 & 53.451 \\
+Unmanaged & 1.288 & 2.686 & 0.480 & 1.108 & 1.001 & 1.000 & -8.844 & 0.007 & 0.006 & 1.000 & 0.000 \\
+Random walk & 0.499 & 1.346 & 0.371 & 0.453 & 0.501 & 0.852 & -2.417 & 0.306 & 0.255 & 8.928 & 15.900 \\
+HAR & 0.948 & 2.040 & 0.465 & 0.844 & 0.760 & 1.161 & -5.007 & 0.276 & 0.230 & 6.120 & 25.704 \\
+HARX & 1.020 & 2.033 & 0.501 & 0.916 & 0.757 & 1.136 & -4.626 & 0.263 & 0.219 & 5.771 & 27.403 \\
+EW & 1.062 & 2.031 & 0.523 & 0.959 & 0.756 & 1.132 & -4.498 & 0.240 & 0.200 & 4.406 & 27.080 \\
 \hline
 \end{tabular}
 \end{table}

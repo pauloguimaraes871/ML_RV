@@ -1,7 +1,7 @@
 \begin{table}[htbp]
 \centering\scriptsize
 \captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
-\renewcommand{\arraystretch}{1.1}
+\renewcommand{\arraystretch}{1.0}
 \setlength{\tabcolsep}{4pt}
 \caption[Economic performance of volatility-managed portfolios for the market portfolio estimated separately.]{\footnotesize \textbf{: Economic performance of volatility-managed portfolios for the market portfolio estimated separately.} Each forecasting model is estimated only on the market-portfolio time series. SR denotes the annualized excess-return Sharpe ratio. CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five. Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure. EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks.}\label{tab:rv-portfolio_performance_market_separate}
 \begin{tabular}{lrrrrr}
@@ -9,16 +9,26 @@
 \hline
 Model & Statistic & Raw & Capped & Net raw & Net capped \\
 \hline
-Unmanaged & Sharpe ratio & 0.589 & 0.589 & 0.588 & 0.588 \\
-Unmanaged & CER (\%) & 2.999 & 2.999 & 2.993 & 2.993 \\
-Random walk & Sharpe ratio & 0.549 & 0.756 & 0.496 & 0.738 \\
-Random walk & CER (\%) & -10.486 & 5.709 & -12.348 & 5.432 \\
-HAR & Sharpe ratio & 0.603 & 0.745 & 0.559 & 0.730 \\
-HAR & CER (\%) & -0.635 & 5.510 & -1.734 & 5.270 \\
-HARX & Sharpe ratio & 0.549 & 0.586 & 0.511 & 0.573 \\
-HARX & CER (\%) & -3.770 & 2.582 & -4.805 & 2.335 \\
-EW & Sharpe ratio & 0.608 & 0.625 & 0.577 & 0.614 \\
-EW & CER (\%) & -0.206 & 3.283 & -0.975 & 3.083 \\
+Unmanaged & Sharpe ratio & 0.770 & 0.770 & 0.769 & 0.769 \\
+Unmanaged & CER (\%) & 5.922 & 5.922 & 5.913 & 5.913 \\
+Unmanaged & Volatility ratio & 1.000 & 1.000 & 1.000 & 1.000 \\
+Unmanaged & Mean raw exposure & 1.000 & 1.000 & 1.000 & 1.000 \\
+Random walk & Sharpe ratio & 0.554 & 0.737 & 0.498 & 0.692 \\
+Random walk & CER (\%) & 2.518 & 4.963 & 1.630 & 4.492 \\
+Random walk & Volatility ratio & 1.053 & 0.695 & 1.054 & 0.695 \\
+Random walk & Mean raw exposure & 1.080 & 1.080 & 1.080 & 1.080 \\
+HAR & Sharpe ratio & 0.684 & 0.831 & 0.637 & 0.806 \\
+HAR & CER (\%) & 3.681 & 6.644 & 2.740 & 6.316 \\
+HAR & Volatility ratio & 1.336 & 0.893 & 1.336 & 0.894 \\
+HAR & Mean raw exposure & 1.543 & 1.543 & 1.543 & 1.543 \\
+HARX & Sharpe ratio & 0.601 & 0.592 & 0.561 & 0.568 \\
+HARX & CER (\%) & 2.738 & 3.344 & 2.013 & 2.994 \\
+HARX & Volatility ratio & 1.197 & 0.958 & 1.197 & 0.959 \\
+HARX & Mean raw exposure & 1.453 & 1.453 & 1.453 & 1.453 \\
+EW & Sharpe ratio & 0.698 & 0.711 & 0.665 & 0.694 \\
+EW & CER (\%) & 4.439 & 5.048 & 3.838 & 4.784 \\
+EW & Volatility ratio & 1.212 & 0.995 & 1.212 & 0.995 \\
+EW & Mean raw exposure & 1.517 & 1.517 & 1.517 & 1.517 \\
 \hline
 \end{tabular}
 \end{table}
