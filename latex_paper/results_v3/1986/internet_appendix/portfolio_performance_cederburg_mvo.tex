@@ -1,0 +1,41 @@
+\begin{landscape}
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{2.2pt}
+\caption[Economic performance of signed two-sleeve mean-variance portfolios.]{\footnotesize \textbf{: Economic performance of signed two-sleeve mean-variance portfolios.} Managed rows estimate allocations to the unmanaged factor, its volatility-managed counterpart, and risk-free collateral over the expanding training window. Unmanaged-only MVO estimates the factor and collateral allocation with the managed-sleeve coefficient set to zero and is distinct from buy-and-hold. The reported implementation restricts total factor exposure to the interval from minus five to five. Raw results remain available in the accompanying inference tables and machine-readable output. Return, volatility, certainty-equivalent return, maximum drawdown, and modeled costs are reported in percent. Net results deduct 10 basis points per unit change in total factor exposure. Mean exposure is the average bounded total factor exposure.}\label{tab:rv-portfolio_performance_cederburg_mvo}
+\begin{tabular}{lrrrrrrrrr}
+\multicolumn{10}{@{}l}{\textit{Panel A. Market portfolio, pooled estimation}} \\
+\hline
+Model & Return (\%) & Vol. (\%) & Gross SR & Net SR & CER (\%) & MDD (\%) & Turnover & Cost (\%) & Mean exposure \\
+\hline
+Unmanaged-only MVO & 5.959 & 9.491 & 0.631 & 0.628 & 3.707 & -19.406 & 0.025 & 0.029 & 0.600 \\
+Random walk & 5.402 & 9.235 & 0.629 & 0.585 & 3.270 & -20.672 & 0.331 & 0.398 & 0.662 \\
+HAR & 11.952 & 21.063 & 0.609 & 0.567 & 0.862 & -45.853 & 0.722 & 0.867 & 1.555 \\
+HARX & 10.999 & 20.383 & 0.583 & 0.540 & 0.612 & -44.226 & 0.748 & 0.898 & 1.553 \\
+EW forecast ensemble & 10.351 & 19.241 & 0.577 & 0.538 & 1.095 & -41.303 & 0.633 & 0.760 & 1.486 \\
+\hline
+\multicolumn{10}{@{}l}{\textit{Panel B. Equal-weighted 153-factor aggregate}} \\
+\hline
+Model & Return (\%) & Vol. (\%) & Gross SR & Net SR & CER (\%) & MDD (\%) & Turnover & Cost (\%) & Mean exposure \\
+\hline
+Unmanaged-only MVO & 0.761 & 1.624 & 0.522 & 0.469 & 0.695 & -3.388 & 0.071 & 0.085 & 0.499 \\
+Random walk & 1.373 & 1.615 & 1.070 & 0.850 & 1.308 & -3.535 & 0.294 & 0.353 & 1.106 \\
+HAR & 1.533 & 2.414 & 0.972 & 0.635 & 1.388 & -3.190 & 0.690 & 0.828 & 0.731 \\
+HARX & 1.633 & 2.757 & 0.887 & 0.592 & 1.443 & -5.486 & 0.680 & 0.816 & 0.698 \\
+EW forecast ensemble & 1.817 & 2.837 & 0.906 & 0.641 & 1.616 & -5.036 & 0.626 & 0.751 & 0.748 \\
+\hline
+\multicolumn{10}{@{}l}{\textit{Panel C. Market portfolio, separate estimation}} \\
+\hline
+Model & Return (\%) & Vol. (\%) & Gross SR & Net SR & CER (\%) & MDD (\%) & Turnover & Cost (\%) & Mean exposure \\
+\hline
+Unmanaged-only MVO & 5.959 & 9.491 & 0.631 & 0.628 & 3.707 & -19.406 & 0.025 & 0.029 & 0.600 \\
+Random walk & 5.402 & 9.235 & 0.629 & 0.585 & 3.270 & -20.672 & 0.331 & 0.398 & 0.662 \\
+HAR & 12.378 & 21.367 & 0.624 & 0.579 & 0.964 & -45.899 & 0.814 & 0.977 & 1.546 \\
+HARX & 6.447 & 14.690 & 0.471 & 0.439 & 1.052 & -26.084 & 0.393 & 0.471 & 1.086 \\
+EW forecast ensemble & 8.203 & 17.167 & 0.511 & 0.478 & 0.836 & -33.972 & 0.480 & 0.576 & 1.312 \\
+\hline
+\end{tabular}
+\end{table}
+\end{landscape}

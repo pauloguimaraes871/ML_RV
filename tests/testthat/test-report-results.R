@@ -1,5 +1,6 @@
 base::source(base::file.path(here::here(), "R", "helpers.R"))
 base::source(base::file.path(here::here(), "R", "reporting_helpers.R"))
+base::source(base::file.path(here::here(), "R", "report_full_sample_portfolio_table.R"))
 
 make_reporting_fixture <- function() {
   observations <- tibble::tibble(
@@ -217,6 +218,61 @@ testthat::test_that("portfolio aggregation equally weights factors within each m
     aggregate_portfolio_returns(data[-1, ], c("universe", "strategy"),
       c("excess_return", "total_return")),
     "balanced")
+})
+
+testthat::test_that("common-period portfolio costs restart from the stated initial exposure", {
+  data <- tidyr::expand_grid(
+    universe = "factor_panel", strategy = "ew", name = c("a", "b"),
+    month_id = as.Date(c("2011-06-01", "2011-07-01", "2011-08-01"))
+  ) %>%
+    dplyr::arrange(universe, strategy, name, month_id) %>%
+    dplyr::mutate(
+      factor_exc = rep(c(.01, .02, -.01), 2), rf = .001,
+      w_raw = rep(c(.8, 1.2, 1.0), 2),
+      w_capped = pmin(w_raw, 1.0)
+    )
+
+  actual <- rebase_portfolio_costs(
+    data, evaluation_start = as.Date("2011-07-01"),
+    evaluation_end = as.Date("2011-08-01"), cost_per_unit = .001,
+    initial_weight = 0
+  )
+
+  first <- dplyr::filter(actual, month_id == as.Date("2011-07-01"))
+  second <- dplyr::filter(actual, month_id == as.Date("2011-08-01"))
+  testthat::expect_equal(first$turnover_raw, first$w_raw)
+  testthat::expect_equal(first$turnover, first$w_capped)
+  testthat::expect_equal(second$turnover_raw, abs(second$w_raw - first$w_raw))
+  testthat::expect_equal(actual$tc, .001 * actual$turnover)
+  testthat::expect_equal(
+    actual$r_exc_fwd1_net_capped,
+    actual$w_capped * actual$factor_exc - actual$tc
+  )
+  testthat::expect_equal(
+    actual$r_strat_fwd1_net_capped,
+    actual$rf + actual$r_exc_fwd1_net_capped
+  )
+  testthat::expect_equal(range(actual$month_id),
+                         as.Date(c("2011-07-01", "2011-08-01")))
+})
+
+testthat::test_that("common-period portfolio costs reject invalid evaluation inputs", {
+  data <- tibble::tibble(
+    universe = "factor_panel", strategy = "ew", name = "a",
+    month_id = as.Date("2011-07-01"), factor_exc = .01, rf = .001,
+    w_raw = 1, w_capped = 1
+  )
+  testthat::expect_error(
+    rebase_portfolio_costs(data, as.Date("2011-08-01")), "empty"
+  )
+  duplicated <- dplyr::bind_rows(data, data)
+  testthat::expect_error(
+    rebase_portfolio_costs(duplicated, as.Date("2011-07-01")), "unique"
+  )
+  data$w_raw <- Inf
+  testthat::expect_error(
+    rebase_portfolio_costs(data, as.Date("2011-07-01")), "finite"
+  )
 })
 
 testthat::test_that("cluster tables can compare learning models with several benchmarks", {

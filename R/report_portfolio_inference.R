@@ -3,6 +3,296 @@
 # report_portfolio_inference(). report_results.R uses the same entry point.
 # This report deliberately uses only stationary blocks and HAC spanning alpha.
 
+#' Summarize saved single-factor allocation implementations
+#'
+#' @param data Monthly aggregate returns and implementation quantities returned
+#'   by read_primary_portfolio_inference().
+#' @param gamma Risk aversion used for annualized certainty-equivalent returns.
+#' @return One row per portfolio family, scope, exposure version and model.
+summarise_single_factor_implementation <- function(data, gamma = 5) {
+  groups <- c("family", "scope", "version", "model")
+  required <- c(groups, "month_id", "gross_return", "excess_return",
+                "total_return", "turnover", "cost", "exposure", "n_factors")
+  if (!is.data.frame(data) || !nrow(data) || !all(required %in% names(data)) ||
+      anyNA(data[required]) || anyDuplicated(data[c(groups, "month_id")]) ||
+      any(!purrr::map_lgl(data[c("gross_return", "excess_return", "total_return",
+                                  "turnover", "cost", "exposure")], is.numeric)) ||
+      any(!is.finite(as.matrix(data[c("gross_return", "excess_return", "total_return",
+                                      "turnover", "cost", "exposure")]))) ||
+      any(data$turnover < 0) || any(data$cost < 0) ||
+      any(abs(data$gross_return - data$cost - data$excess_return) > 1e-12)) {
+    rlang::abort("Single-factor implementation data are incomplete or inconsistent.")
+  }
+  net <- summarise_portfolio_returns(data, groups, cer_gamma = gamma) %>%
+    dplyr::select(dplyr::all_of(groups),
+      net_return = annualized_excess_return, net_volatility = annualized_volatility,
+      net_sharpe = sharpe_ratio, net_cer = cer_ann, net_max_drawdown = max_drawdown)
+  gross <- data %>%
+    dplyr::mutate(gross_total_return = gross_return + total_return - excess_return) %>%
+    summarise_portfolio_returns(groups, excess_col = "gross_return",
+                                total_col = "gross_total_return", cer_gamma = gamma) %>%
+    dplyr::select(dplyr::all_of(groups), gross_return = annualized_excess_return,
+                  gross_sharpe = sharpe_ratio)
+  implementation <- data %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(groups))) %>%
+    dplyr::summarise(annualized_cost = 12 * mean(cost),
+      average_turnover = mean(turnover), mean_exposure = mean(exposure),
+      n_factors = dplyr::first(n_factors), .groups = "drop")
+  net %>%
+    dplyr::left_join(gross, by = groups, relationship = "one-to-one") %>%
+    dplyr::left_join(implementation, by = groups, relationship = "one-to-one")
+}
+
+#' Write descriptive Cederburg-style performance tables
+#'
+#' @param statistics Output of summarise_single_factor_implementation().
+#' @param output_dir Paper-results root.
+#' @param project_dir Repository root, used to source the table helper.
+#' @return Output registry for the main text and Internet Appendix.
+write_cederburg_descriptive_tables <- function(statistics, output_dir,
+                                                project_dir = here::here()) {
+  source(file.path(project_dir, "R", "reporting_helpers.R"), local = TRUE)
+  model_order <- c("buyhold", "unmanaged_mvo_ew", "rw", "har", "harx", "ew")
+  model_labels <- c(buyhold = "Unmanaged", unmanaged_mvo_ew = "Unmanaged-only MVO",
+    rw = "Random walk", har = "HAR", harx = "HARX", ew = "EW forecast ensemble")
+  scope_order <- c("market_pooled", "aggregate_153", "market_separate")
+  scope_labels <- c(market_pooled = "Market portfolio, pooled estimation",
+    aggregate_153 = "Equal-weighted 153-factor aggregate",
+    market_separate = "Market portfolio, separate estimation")
+  format_table <- function(data, include_diagnostics = FALSE) {
+    data %>%
+      dplyr::mutate(
+        scope = factor(scope, levels = scope_order),
+        model = factor(model, levels = model_order),
+        version = factor(version, levels = c("raw", "capped")),
+        Model = unname(model_labels[as.character(model)])) %>%
+      dplyr::arrange(scope, model, version) %>%
+      dplyr::transmute(Model,
+        `Return (%)` = 100 * net_return, `Vol. (%)` = 100 * net_volatility,
+        `Gross SR` = gross_sharpe, `Net SR` = net_sharpe,
+        `CER (%)` = 100 * net_cer,
+        !!!if (include_diagnostics) rlang::exprs(`MDD (%)` = 100 * net_max_drawdown)
+            else rlang::exprs(),
+        Turnover = average_turnover, `Cost (%)` = 100 * annualized_cost,
+        !!!if (include_diagnostics) rlang::exprs(`Mean exposure` = mean_exposure)
+            else rlang::exprs())
+  }
+  make_panels <- function(data, scopes, include_diagnostics = FALSE) {
+    stats::setNames(purrr::map(scopes, function(scope_id) {
+      format_table(dplyr::filter(data, scope == scope_id), include_diagnostics)
+    }), paste0("Panel ", LETTERS[seq_along(scopes)], ". ", unname(scope_labels[scopes])))
+  }
+  main_scopes <- c("market_pooled", "aggregate_153")
+  main_data <- statistics %>%
+    dplyr::filter(family == "ced_ew", version == "capped", scope %in% main_scopes,
+                  model %in% c("buyhold", "rw", "har", "harx", "ew"))
+  main_name <- "portfolio_performance_cederburg_ew"
+  write_report_panel_table(make_panels(main_data, main_scopes),
+    file.path(output_dir, "main", paste0(main_name, ".tex")),
+    paste(
+      "Economic performance of fixed 50/50 unmanaged and volatility-managed combinations.",
+      "Each managed row assigns one-half to the unmanaged factor and one-half to the volatility-managed factor.",
+      "The EW row refers to the equal-weighted forecast ensemble.",
+      "Returns, volatility, certainty-equivalent return, and modeled costs are annualized percentages.",
+      "Gross and net Sharpe ratios use excess returns. Net results deduct 10 basis points per unit change in total factor exposure.",
+      "Turnover is the average monthly absolute exposure change after applying the bound of five.",
+      "Panel B first equal-weights the 153 factor-strategy returns within each month."
+    ), paste0("tab:rv-", main_name), digits = 3, font_size = "scriptsize",
+    tabcolsep = 2.2, placement = "htbp")
+
+  appendix_scopes <- c("market_pooled", "aggregate_153", "market_separate")
+  appendix_data <- statistics %>%
+    dplyr::filter(family == "ced_mvo", version == "capped", scope %in% appendix_scopes,
+                  model %in% c("unmanaged_mvo_ew", "rw", "har", "harx", "ew"))
+  appendix_name <- "portfolio_performance_cederburg_mvo"
+  write_report_panel_table(make_panels(appendix_data, appendix_scopes, TRUE),
+    file.path(output_dir, "internet_appendix", paste0(appendix_name, ".tex")),
+    paste(
+      "Economic performance of signed two-sleeve mean-variance portfolios.",
+      "Managed rows estimate allocations to the unmanaged factor, its volatility-managed counterpart, and risk-free collateral over the expanding training window.",
+      "Unmanaged-only MVO estimates the factor and collateral allocation with the managed-sleeve coefficient set to zero and is distinct from buy-and-hold.",
+      "The reported implementation restricts total factor exposure to the interval from minus five to five. Raw results remain available in the accompanying inference tables and machine-readable output.",
+      "Return, volatility, certainty-equivalent return, maximum drawdown, and modeled costs are reported in percent. Net results deduct 10 basis points per unit change in total factor exposure. Mean exposure is the average bounded total factor exposure."
+    ), paste0("tab:rv-", appendix_name), digits = 3, font_size = "scriptsize",
+    tabcolsep = 2.2, landscape = TRUE)
+  list(main = paste0(main_name, ".tex"),
+       internet_appendix = paste0(appendix_name, ".tex"))
+}
+
+#' Read completed multifactor implementations for the main performance table
+#'
+#' @param project_dir Repository root containing the primary saved allocations.
+#' @return Monthly gross and net excess returns, costs, turnover, and exposure.
+#'   UMV is read once per allocator. Every conditional row uses the same 162
+#'   holding months and the saved factor-level cost convention.
+read_multifactor_descriptive_inputs <- function(project_dir = here::here()) {
+  allocation_dir <- file.path(project_dir, "ports", "v3", "1986", "allocations",
+    "expanding_vol_10bps_60m_alloc_60_60_60m")
+  dates <- seq(as.Date("2011-07-01"), as.Date("2024-12-01"), by = "month")
+  specifications <- tibble::tribble(
+    ~specification, ~forecast, ~method, ~model,
+    "cmv_panel", "ew", "umv", "umv",
+    "lagged_market", "ew", "cmv", "lagged_market",
+    "cmv_panel", "har", "cmv", "cmv_panel_har",
+    "cmv_panel", "harx", "cmv", "cmv_panel_harx",
+    "cmv_panel", "ew", "cmv", "cmv_panel_ew",
+    "fcmv", "har", "fcmv", "fcmv_har",
+    "fcmv", "harx", "fcmv", "fcmv_harx",
+    "fcmv", "ew", "fcmv", "fcmv_ew"
+  )
+  purrr::map_dfr(c("ew", "hew"), function(allocator) {
+    purrr::pmap_dfr(specifications, function(specification, forecast, method, model) {
+      path <- file.path(allocation_dir,
+        paste0("multifactor_", forecast, "_", specification, "_", allocator, ".rds"))
+      if (!file.exists(path)) rlang::abort(paste("Missing completed multifactor portfolio:", path))
+      saved <- readRDS(path)
+      settings <- saved$settings
+      if (!identical(settings$allocation, allocator) ||
+          !identical(settings$managed_normalization, "training_vol") ||
+          !isTRUE(all.equal(settings$exposure_cap, 1.5)) ||
+          !isTRUE(all.equal(settings$cost_per_unit, .001))) {
+        rlang::abort(paste("Unexpected multifactor portfolio settings:", path))
+      }
+      x <- saved$monthly_returns %>% dplyr::filter(.data$method == .env$method) %>%
+        dplyr::arrange(month_id)
+      if (nrow(x) != length(dates) || !identical(x$month_id, dates)) {
+        rlang::abort(paste("Unexpected multifactor holding months:", path))
+      }
+      purrr::map_dfr(c("raw", "capped"), function(version) {
+        gross <- paste0("gross_", version)
+        net <- paste0("net_", version)
+        x %>% dplyr::transmute(
+          family = paste0("multi_", allocator), scope = "all_154", version, model,
+          month_id, gross_return = .data[[gross]], excess_return = .data[[net]],
+          total_return = .data[[net]] + rf,
+          turnover = .data[[paste0("turnover_", version)]],
+          cost = .data[[paste0("tc_", version)]],
+          exposure = .data[[paste0("exposure_", version)]], n_factors = 154L)
+      })
+    })
+  })
+}
+
+#' Write economic performance of the primary multifactor portfolios
+#'
+#' @param statistics Output of summarise_single_factor_implementation() for
+#'   completed multifactor monthly returns.
+#' @param output_dir Paper-results root.
+#' @param project_dir Repository root, used to source the existing table helper.
+#' @return Output registry for the main manuscript.
+write_multifactor_descriptive_table <- function(statistics, output_dir,
+                                                project_dir = here::here()) {
+  source(file.path(project_dir, "R", "reporting_helpers.R"), local = TRUE)
+  model_order <- c("umv", "lagged_market", "cmv_panel_har", "cmv_panel_harx",
+                   "cmv_panel_ew", "fcmv_har", "fcmv_harx", "fcmv_ew")
+  model_labels <- c(umv = "UMV", lagged_market = "CMV, lagged market RV",
+    cmv_panel_har = "CMV, HAR", cmv_panel_harx = "CMV, HARX",
+    cmv_panel_ew = "CMV, EW forecast ensemble", fcmv_har = "FCMV, HAR",
+    fcmv_harx = "FCMV, HARX", fcmv_ew = "FCMV, EW forecast ensemble")
+  primary <- statistics %>% dplyr::filter(version == "capped",
+    family %in% c("multi_ew", "multi_hew"), model %in% model_order)
+  if (nrow(primary) != 2L * length(model_order) ||
+      anyDuplicated(primary[c("family", "model")]) ||
+      any(primary$n_factors != 154L)) {
+    rlang::abort("Unexpected primary multifactor performance coverage.")
+  }
+  panels <- stats::setNames(purrr::map(c("multi_ew", "multi_hew"), function(allocator) {
+    primary %>% dplyr::filter(family == allocator) %>%
+      dplyr::mutate(model = factor(model, levels = model_order)) %>%
+      dplyr::arrange(model) %>%
+      dplyr::transmute(Model = unname(model_labels[as.character(model)]),
+        `Return (%)` = 100 * net_return, `Vol. (%)` = 100 * net_volatility,
+        `Gross SR` = gross_sharpe, `Net SR` = net_sharpe,
+        `CER (%)` = 100 * net_cer, Turnover = average_turnover,
+        `Cost (%)` = 100 * annualized_cost)
+  }), c("Panel A. Equal-weight allocation", "Panel B. Hierarchical equal-weight allocation"))
+  table_name <- "portfolio_performance_multifactor"
+  write_report_panel_table(panels,
+    file.path(output_dir, "main", paste0(table_name, ".tex")),
+    paste(
+      "Economic performance of multifactor volatility-managed portfolios.",
+      "Each allocator combines 154 factors, including the market portfolio.",
+      "UMV holds unmanaged factors. CMV conditions managed sleeves on market volatility, while FCMV uses each factor's own volatility.",
+      "Lagged market RV is a CMV benchmark. EW denotes the equal-weighted forecast ensemble, not the allocation rule.",
+      "Returns, volatility, certainty-equivalent return, and modeled costs are annualized percentages. Gross and net Sharpe ratios use excess returns.",
+      "The table reports exposure capped at 1.5. Net results deduct 10 basis points per unit change in target factor exposure. Turnover is the monthly sum of absolute changes in factor exposures, averaged over time."
+    ), paste0("tab:rv-", table_name), digits = 3, font_size = "scriptsize",
+    tabcolsep = 2.2, placement = "htbp")
+  list(main = paste0(table_name, ".tex"))
+}
+
+#' Write single-factor spanning-regression diagnostics
+#'
+#' @param spanning Saved-output spanning regressions from report_portfolio_inference().
+#' @param output_dir Paper-results root.
+#' @param project_dir Repository root, used to source the table helper.
+#' @return Output registry for the Internet Appendix.
+#'
+#' The table is deliberately descriptive. A spanning alpha describes the ex post
+#' opportunity set generated by adding the managed return to the benchmark; it is
+#' not evidence that the managed strategy is a feasible superior allocation.
+write_single_factor_spanning_table <- function(spanning, output_dir,
+                                               project_dir = here::here()) {
+  source(file.path(project_dir, "R", "reporting_helpers.R"), local = TRUE)
+  required <- c("family", "portfolio_family", "scope", "version", "forecast",
+                "comparator", "hac_lag", "alpha_ann", "t_alpha", "p_alpha",
+                "beta", "r_squared", "appraisal_ratio")
+  if (!is.data.frame(spanning) || !all(required %in% names(spanning))) {
+    rlang::abort("Spanning table requires complete single-factor diagnostics.")
+  }
+
+  scope_order <- c("aggregate_153", "market_pooled")
+  scope_labels <- c(aggregate_153 = "153-factor aggregate",
+                    market_pooled = "Pooled market")
+  format_panel <- function(data) {
+    data %>%
+      dplyr::mutate(
+        scope = factor(scope, levels = scope_order),
+        version = factor(version, levels = c("capped", "raw")),
+        Scope = unname(scope_labels[as.character(scope)]),
+        Exposure = dplyr::recode(as.character(version), capped = "Capped", raw = "Raw")) %>%
+      dplyr::arrange(scope, version) %>%
+      dplyr::transmute(Scope, Exposure, `Alpha (%)` = 100 * alpha_ann,
+        `t(alpha)` = t_alpha, `p-value` = p_alpha, Beta = beta,
+        `R2` = r_squared, `Appraisal ratio` = appraisal_ratio)
+  }
+
+  primary <- spanning %>%
+    dplyr::filter(family == "single_factor_primary", forecast == "ew",
+                  comparator == "buyhold", hac_lag == 1L,
+                  portfolio_family %in% c("ced_ew", "mm"),
+                  scope %in% scope_order)
+  fixed_combination <- primary %>%
+    dplyr::filter(portfolio_family == "ced_ew", version == "capped")
+  mm_management <- primary %>% dplyr::filter(portfolio_family == "mm")
+  if (nrow(fixed_combination) != length(scope_order) ||
+      nrow(mm_management) != length(scope_order) * 2L ||
+      anyDuplicated(fixed_combination[c("scope", "version")]) ||
+      anyDuplicated(mm_management[c("scope", "version")])) {
+    rlang::abort("Unexpected primary spanning-regression coverage.")
+  }
+
+  table_name <- "portfolio_spanning_single_factor"
+  write_report_panel_table(
+    panels = list(
+      "Panel A. Fixed 50/50 combination" = format_panel(fixed_combination),
+      "Panel B. Moreira--Muir management" = format_panel(mm_management)
+    ),
+    path = file.path(output_dir, "internet_appendix", paste0(table_name, ".tex")),
+    caption = paste(
+      "Spanning regressions for net single-factor portfolios relative to unmanaged exposure.",
+      "Each row regresses the EW forecast-ensemble portfolio return on the corresponding unmanaged return over July 2011 to December 2024.",
+      "Panel A reports the fixed 50/50 combination at the capped implementation. Panel B reports Moreira--Muir management at both exposure implementations.",
+      "Alpha is annualized and reported in percent. The intercept t-statistic and p-value use Newey--West standard errors with one lag.",
+      "The appraisal ratio is annualized alpha divided by the residual standard deviation.",
+      "These regressions describe the ex post opportunity set and do not establish implementable allocation gains."
+    ),
+    label = paste0("tab:rv-", table_name), digits = 3,
+    font_size = "scriptsize", tabcolsep = 2.2, placement = "htbp"
+  )
+  list(internet_appendix = paste0(table_name, ".tex"))
+}
+
 #' Report paired inference without re-estimating portfolio strategies
 #'
 #' @param project_dir Repository root.
@@ -23,7 +313,7 @@ report_portfolio_inference <- function(project_dir = here::here(),
                                         "report_portfolio_inference.R", "reporting_helpers.R"))
   code_manifest <- tibble::tibble(file = code,
     sha256 = purrr::map_chr(code, ~ digest::digest(file = .x, algo = "sha256")))
-  for (folder in c("data", "main_appendix", "internet_appendix")) {
+  for (folder in c("data", "main", "main_appendix", "internet_appendix")) {
     dir.create(file.path(output_dir, folder), recursive = TRUE, showWarnings = FALSE)
   }
   save_data <- function(x, name) utils::write.csv(x,
@@ -43,6 +333,17 @@ report_portfolio_inference <- function(project_dir = here::here(),
     dplyr::left_join(dplyr::distinct(inputs$returns, series_id, family, scope, version, model, n_factors),
       by = "series_id", relationship = "one-to-one")
   save_data(metrics, "statistics")
+  single_factor_statistics <- summarise_single_factor_implementation(inputs$implementation)
+  save_data(single_factor_statistics, "single_factor_descriptive")
+  descriptive_outputs <- write_cederburg_descriptive_tables(
+    single_factor_statistics, output_dir, project_dir)
+  ## Multifactor monthly returns have the same gross/net/cost accounting fields,
+  ## so reuse the single-factor summary rather than introduce another metric rule.
+  multifactor_statistics <- summarise_single_factor_implementation(
+    read_multifactor_descriptive_inputs(project_dir))
+  save_data(multifactor_statistics, "multifactor_descriptive")
+  multifactor_outputs <- write_multifactor_descriptive_table(
+    multifactor_statistics, output_dir, project_dir)
 
   ## Identical month draws enter every strategy in every reporting scope. In
   ## particular, aggregate-factor inference never samples factors independently.
@@ -69,6 +370,7 @@ report_portfolio_inference <- function(project_dir = here::here(),
     })
   })
   save_data(spanning, "spanning")
+  spanning_outputs <- write_single_factor_spanning_table(spanning, output_dir, project_dir)
 
   ## Cross-sectional distributions describe individual factors. Their statistics
   ## are never substituted for statistics of the aggregate return series above.
@@ -106,7 +408,13 @@ report_portfolio_inference <- function(project_dir = here::here(),
   })
   save_data(subperiods, "subperiod_statistics")
 
-  outputs <- write_portfolio_inference_tables(bootstrap, output_dir, project_dir)
+  inference_outputs <- write_portfolio_inference_tables(bootstrap, output_dir, project_dir)
+  output_sections <- Reduce(union, list(names(descriptive_outputs), names(multifactor_outputs),
+                                        names(inference_outputs), names(spanning_outputs)))
+  outputs <- stats::setNames(purrr::map(output_sections, function(section) {
+    unique(c(descriptive_outputs[[section]], multifactor_outputs[[section]],
+             inference_outputs[[section]], spanning_outputs[[section]]))
+  }), output_sections)
   if (!identical(code_manifest$sha256, purrr::map_chr(code,
       ~ digest::digest(file = .x, algo = "sha256")))) {
     rlang::abort("Reporting code changed during execution. Rerun before using the outputs.")
@@ -183,15 +491,17 @@ write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir 
   }
   # Keep all endpoints, raw p-values and sensitivity results machine-readable.
   # Appendix tables emphasize the same tests rather than adding other methods.
-  for (family_id in unique(primary$family)) {
+  # The paper reports supplementary mean and CER comparisons only for the
+  # primary single-factor and multifactor designs. Signed MVO and standalone
+  # market inference remain available in the machine-readable results.
+  for (family_id in c("single_factor_primary", "multifactor_primary")) {
     for (metric_id in c("mean_ann", "cer_ann")) {
       table <- primary %>% dplyr::filter(family == family_id, metric == metric_id) %>%
         dplyr::transmute(context, Benchmark = comparator_label, Exposure = version_label,
           `Difference (pp)` = 100 * estimate,
           `95% interval` = sprintf("[%.3f, %.3f]", 100 * ci_lower, 100 * ci_upper),
           `p-value` = p_value, `Holm p-value` = p_holm)
-      # Standalone-market contexts include two allocators and three single-factor
-      # families. Split only for page height, preserving the adjustment family.
+      # Split large tables for page height without changing the adjustment family.
       context_groups <- split(unique(table$context), ceiling(seq_along(unique(table$context)) / 4))
       purrr::iwalk(context_groups, function(contexts, page) {
         title <- if (metric_id == "cer_ann") "Paired certainty-equivalent return comparisons." else
@@ -202,21 +512,6 @@ write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir 
                 caption_method), "internet_appendix")
       })
     }
-  }
-  for (family_id in c("signed_cederburg", "standalone_market")) {
-    table <- primary %>% dplyr::filter(family == family_id, metric == "sharpe") %>%
-      dplyr::transmute(context, Benchmark = comparator_label, Exposure = version_label,
-        `Sharpe difference` = estimate,
-        `95% interval` = sprintf("[%.3f, %.3f]", ci_lower, ci_upper),
-        `p-value` = p_value, `Holm p-value` = p_holm)
-    context_groups <- split(unique(table$context), ceiling(seq_along(unique(table$context)) / 4))
-    purrr::iwalk(context_groups, function(contexts, page) {
-      write_panels(dplyr::filter(table, context %in% contexts),
-        paste0("portfolio_inference_", family_id, "_sharpe_", page),
-        paste("Additional paired Sharpe comparisons.", caption_method,
-          "Unmanaged-only MVO optimizes factor and cash exposure. It is distinct from buy-and-hold."),
-        "internet_appendix")
-    })
   }
   # A standalone preview prevents accidental combination with older generated
   # portfolio tables when running this focused inference report by itself.

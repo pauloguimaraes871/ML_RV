@@ -5,6 +5,7 @@
   project_dir <- here::here()
   source(file.path(project_dir, "R", "helpers.R"))
   source(file.path(project_dir, "R", "reporting_helpers.R"))
+  source(file.path(project_dir, "R", "report_full_sample_portfolio_table.R"))
 
 # Configuration-----------------------------------------------------------------
 
@@ -699,6 +700,7 @@
       "EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks."
     ), digits = 3, font_size = "scriptsize", placement = "htbp"
   )
+  save_full_sample_portfolio_table(portfolio_root, cluster_map$name, principal_returns$month_id)
   separate_market_panel <- stats::setNames(
     list(summary_table %>%
       dplyr::filter(universe == "market_separate") %>%
@@ -882,14 +884,14 @@
     tidyr::pivot_wider(names_from = version, values_from = sharpe_ratio)
   waterfall_data <- ew_factor_metrics %>%
     dplyr::summarise(
-      raw = mean(raw), capped = mean(capped), net_capped = mean(net_capped),
-      raw_p25 = stats::quantile(raw, 0.25), raw_p75 = stats::quantile(raw, 0.75),
       cap_p25 = stats::quantile(capped - raw, 0.25),
       cap_p75 = stats::quantile(capped - raw, 0.75),
       cost_p25 = stats::quantile(net_capped - capped, 0.25),
       cost_p75 = stats::quantile(net_capped - capped, 0.75),
       net_p25 = stats::quantile(net_capped, 0.25),
-      net_p75 = stats::quantile(net_capped, 0.75)
+      net_p75 = stats::quantile(net_capped, 0.75),
+      raw_p25 = stats::quantile(raw, 0.25), raw_p75 = stats::quantile(raw, 0.75),
+      raw = mean(raw), capped = mean(capped), net_capped = mean(net_capped)
     )
   waterfall_plot_data <- tibble::tibble(
     step = factor(c("Raw", "Exposure cap", "Transaction costs", "Net capped"),
@@ -1023,7 +1025,9 @@
     "Only this generated results_v3/1986 directory is overwritten on rerun. Existing manuscript and estimation artifacts are not changed.")
   writeLines(readme, file.path(output_dir, "README.md"))
   capture.output(utils::sessionInfo(), file = file.path(output_dir, "data", "session_info.txt"))
-  save_data(tibble::tibble(file = c("R/helpers.R", "R/reporting_helpers.R", "R/report_results.R"),
-    sha256 = purrr::map_chr(file.path(project_dir, c("R/helpers.R", "R/reporting_helpers.R", "R/report_results.R")), hash_artifact)),
+  report_source_files <- c("R/helpers.R", "R/reporting_helpers.R",
+                           "R/report_full_sample_portfolio_table.R", "R/report_results.R")
+  save_data(tibble::tibble(file = report_source_files,
+    sha256 = purrr::map_chr(file.path(project_dir, report_source_files), hash_artifact)),
     "report_code_manifest")
   message("Reporting complete: ", output_dir)

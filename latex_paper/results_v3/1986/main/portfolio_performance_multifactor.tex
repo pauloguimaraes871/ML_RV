@@ -1,0 +1,35 @@
+\begin{table}[htbp]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{2.2pt}
+\caption[Economic performance of multifactor volatility-managed portfolios.]{\footnotesize \textbf{: Economic performance of multifactor volatility-managed portfolios.} Each allocator combines 154 factors, including the market portfolio. UMV holds unmanaged factors. CMV conditions managed sleeves on market volatility, while FCMV uses each factor's own volatility. Lagged market RV is a CMV benchmark. EW denotes the equal-weighted forecast ensemble, not the allocation rule. Returns, volatility, certainty-equivalent return, and modeled costs are annualized percentages. Gross and net Sharpe ratios use excess returns. The table reports exposure capped at 1.5. Net results deduct 10 basis points per unit change in target factor exposure. Turnover is the monthly sum of absolute changes in factor exposures, averaged over time.}\label{tab:rv-portfolio_performance_multifactor}
+\begin{tabular}{lrrrrrrr}
+\multicolumn{8}{@{}l}{\textit{Panel A. Equal-weight allocation}} \\
+\hline
+Model & Return (\%) & Vol. (\%) & Gross SR & Net SR & CER (\%) & Turnover & Cost (\%) \\
+\hline
+UMV & 1.355 & 2.621 & 0.520 & 0.517 & 1.183 & 0.006 & 0.007 \\
+CMV, lagged market RV & 1.290 & 2.602 & 0.586 & 0.496 & 1.120 & 0.192 & 0.231 \\
+CMV, HAR & 1.328 & 2.671 & 0.561 & 0.497 & 1.149 & 0.140 & 0.168 \\
+CMV, HARX & 1.325 & 2.622 & 0.567 & 0.506 & 1.154 & 0.134 & 0.161 \\
+CMV, EW forecast ensemble & 1.355 & 2.621 & 0.570 & 0.517 & 1.183 & 0.115 & 0.138 \\
+FCMV, HAR & 1.317 & 2.500 & 0.580 & 0.527 & 1.161 & 0.110 & 0.132 \\
+FCMV, HARX & 1.326 & 2.503 & 0.582 & 0.530 & 1.169 & 0.109 & 0.131 \\
+FCMV, EW forecast ensemble & 1.348 & 2.483 & 0.588 & 0.543 & 1.194 & 0.092 & 0.110 \\
+\hline
+\multicolumn{8}{@{}l}{\textit{Panel B. Hierarchical equal-weight allocation}} \\
+\hline
+Model & Return (\%) & Vol. (\%) & Gross SR & Net SR & CER (\%) & Turnover & Cost (\%) \\
+\hline
+UMV & 1.835 & 1.406 & 1.314 & 1.305 & 1.785 & 0.006 & 0.007 \\
+CMV, lagged market RV & 1.886 & 1.528 & 1.393 & 1.234 & 1.827 & 0.192 & 0.231 \\
+CMV, HAR & 1.890 & 1.517 & 1.363 & 1.246 & 1.832 & 0.141 & 0.169 \\
+CMV, HARX & 1.878 & 1.478 & 1.383 & 1.270 & 1.824 & 0.134 & 0.161 \\
+CMV, EW forecast ensemble & 1.895 & 1.476 & 1.381 & 1.284 & 1.841 & 0.115 & 0.138 \\
+FCMV, HAR & 1.854 & 1.409 & 1.418 & 1.316 & 1.804 & 0.115 & 0.138 \\
+FCMV, HARX & 1.850 & 1.393 & 1.428 & 1.328 & 1.801 & 0.113 & 0.135 \\
+FCMV, EW forecast ensemble & 1.869 & 1.388 & 1.431 & 1.346 & 1.820 & 0.094 & 0.113 \\
+\hline
+\end{tabular}
+\end{table}

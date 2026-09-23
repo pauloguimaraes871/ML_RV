@@ -37,3 +37,33 @@ testthat::test_that("benchmark copies are aligned by keys and must agree before 
   testthat::expect_error(check_portfolio_benchmark_copy(data, dplyr::bind_rows(data, data[1, ]),
     base::c("name", "month_id")), "unique complete keys")
 })
+
+testthat::test_that("completed-backtest provenance distinguishes artifacts from live source", {
+  folder <- base::tempfile("inference-provenance-")
+  base::dir.create(base::file.path(folder, "R"), recursive = TRUE)
+  base::on.exit(base::unlink(folder, recursive = TRUE), add = TRUE)
+  artifact <- base::file.path(folder, "saved_returns.rds")
+  source_file <- base::file.path(folder, "R", "portfolio_code.R")
+  manifest <- base::file.path(folder, "input_manifest.csv")
+  base::saveRDS(base::list(value = 1), artifact)
+  base::writeLines("value <- 1", source_file)
+  utils::write.csv(tibble::tibble(
+    file = base::c(artifact, source_file),
+    sha256 = purrr::map_chr(file, ~ digest::digest(file = .x, algo = "sha256"))
+  ), manifest, row.names = FALSE)
+
+  base::writeLines("value <- 2", source_file)
+  checked <- testthat::expect_warning(
+    check_portfolio_inference_provenance(manifest),
+    "Live portfolio source differs"
+  )
+  testthat::expect_equal(checked$input_type, base::c("saved_input", "live_source"))
+  testthat::expect_equal(checked$matches, base::c(TRUE, FALSE))
+  testthat::expect_true(base::all(checked$matches[checked$match_required]))
+
+  base::saveRDS(base::list(value = 2), artifact)
+  testthat::expect_error(
+    base::suppressWarnings(check_portfolio_inference_provenance(manifest)),
+    "saved backtest input"
+  )
+})

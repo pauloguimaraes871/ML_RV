@@ -60,6 +60,59 @@ check_portfolio_benchmark_copy <- function(reference, data, keys) {
   invisible(TRUE)
 }
 
+#' Verify completed-backtest inputs while retaining live-source drift
+#'
+#' Saved artifacts must remain byte-identical to their run manifests. Files in
+#' the repository's live R source directory are also checked and reported, but
+#' later source edits do not invalidate inference conditional on saved returns.
+#' The executed run snapshot and every other saved input remain strict checks.
+#'
+#' @param manifest_paths Input-manifest CSV files from completed backtests.
+#' @return One row per distinct input with current hashes and audit status.
+check_portfolio_inference_provenance <- function(manifest_paths) {
+  if (!is.character(manifest_paths) || !length(manifest_paths) ||
+      anyNA(manifest_paths) || any(!file.exists(manifest_paths))) {
+    rlang::abort("Portfolio inference requires existing input manifests.")
+  }
+  provenance <- purrr::map_dfr(manifest_paths, function(path) {
+    manifest <- utils::read.csv(path)
+    if (!all(c("file", "sha256") %in% names(manifest)) ||
+        anyNA(manifest[c("file", "sha256")])) {
+      rlang::abort(paste("Invalid saved input manifest:", path))
+    }
+    dplyr::select(manifest, file, sha256)
+  }) %>% dplyr::distinct()
+  if (anyDuplicated(provenance$file) || any(!file.exists(provenance$file))) {
+    rlang::abort("Upstream manifests contain conflicting hashes or unavailable inputs.")
+  }
+  normalized_file <- stringr::str_replace_all(provenance$file, "\\\\", "/")
+  provenance <- provenance %>%
+    dplyr::mutate(
+      input_type = dplyr::if_else(
+        stringr::str_detect(.env$normalized_file, "(^|/)R/[^/]+[.]R$"),
+        "live_source", "saved_input"
+      ),
+      match_required = input_type == "saved_input",
+      current_sha256 = purrr::map_chr(file,
+        ~ digest::digest(file = .x, algo = "sha256")),
+      matches = sha256 == current_sha256
+    )
+  failed_inputs <- provenance %>% dplyr::filter(match_required, !matches)
+  if (nrow(failed_inputs)) {
+    rlang::abort(paste("A saved backtest input no longer matches its recorded hash:",
+                       paste(basename(failed_inputs$file), collapse = ", ")))
+  }
+  changed_source <- provenance %>% dplyr::filter(!match_required, !matches)
+  if (nrow(changed_source)) {
+    rlang::warn(paste(
+      "Live portfolio source differs from the completed-backtest version;",
+      "inference remains conditional on the unchanged saved returns:",
+      paste(basename(changed_source$file), collapse = ", ")
+    ))
+  }
+  provenance
+}
+
 #' Read primary completed portfolios for the prespecified inference contrasts
 #'
 #' @param project_dir Repository root. Reads only primary 60-month-minimum runs.
@@ -106,9 +159,17 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       rlang::abort("Allocation training history violates primary timing or minimum length.")
     }
   }
+  ## Saved MM objects contain the ensemble and linear benchmarks. RW is a
+  ## benchmark method within every object, so retaining it once avoids treating
+  ## byte-identical benchmark copies as distinct portfolio strategies.
   models <- c("ew", "har", "harx")
   versions <- c("raw", "capped")
   scaler_checks <- list()
+
+  ## Implementation data retain gross returns, modeled costs, and exposures in
+  ## addition to net returns. The descriptive Cederburg and MVO tables need
+  ## these fields, whereas paired bootstrap inference only needs net returns.
+  single_implementation <- list()
   single <- purrr::map_dfr(c("panel", "spx"), function(universe) {
     mm_path <- file.path(root, universe, "expanding_vol_10bps_60m", "all_ports.rds")
     mm <- read_saved(mm_path)
@@ -123,6 +184,27 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
         benchmark(result$w_compiled_df), c("method", "name", "month_id"))
     })
     record_settings(mm_path, purrr::map(mm, "settings"))
+    ## The unmanaged benchmark is common across forecast models. Extract it
+    ## from the ensemble object only after the equality checks above establish
+    ## that the duplicated copies agree on every factor-month key.
+    buyhold <- mm$ew$w_compiled_df %>% dplyr::filter(method == "buyhold")
+    single_implementation[[paste(universe, "buyhold")]] <<- purrr::map_dfr(
+      versions, function(version) {
+        gross <- paste0("r_exc_fwd1_", version)
+        net <- paste0("r_exc_fwd1_net_", version)
+        cost <- if (version == "raw") "tc_raw" else "tc"
+        turnover <- if (version == "raw") "turnover_raw" else "turnover"
+        exposure <- if (version == "raw") "w_raw" else "w_capped"
+        buyhold %>% dplyr::transmute(family = "ced_ew", universe, version,
+          model = "buyhold", name, month_id, gross_return = .data[[gross]],
+          excess_return = .data[[net]], total_return = .data[[net]] + rf,
+          turnover = .data[[turnover]], cost = .data[[cost]],
+          exposure = .data[[exposure]])
+      })
+    ## MM rows are the standalone inverse-variance managed portfolios. These
+    ## are kept separate from the Cederburg artifacts below because their 1.5
+    ## cap and direct managed-return construction differ from the two-sleeve
+    ## allocation with a total-exposure cap of five.
     mm_rows <- purrr::map_dfr(models, function(model) {
       x <- mm[[model]]$w_compiled_df
       if (model != "ew") x <- dplyr::filter(x, method == "vol_scaled")
@@ -132,6 +214,10 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
             model = dplyr::if_else(method == "vol_scaled", model, method), excess_return, total_return)
       })
     })
+    ## Each Cederburg artifact contains a fixed 50/50 combination (`ew`), a
+    ## signed two-sleeve MVO (`mvo`), and its unmanaged-only MVO comparator.
+    ## The RW signal is stored in the ensemble artifact because it does not
+    ## depend on fitted forecasting-model parameters.
     ced_rows <- purrr::map_dfr(c(models, "rw"), function(model) {
       signal <- if (model == "rw") "rw" else "vol_scaled"
       saved_model <- if (model == "rw") "ew" else model
@@ -144,6 +230,9 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
         initial_weight = 0, gamma = 5))
       x <- saved$weights
       validate_panel(x, expected_names)
+      ## The primary Cederburg design must use the same current MM scaler on
+      ## each holding date. This keyed equality check rules out accidentally
+      ## comparing a historical saved normalizer with the current one.
       ced_scaler <- x %>% dplyr::filter(method == "ew") %>%
         dplyr::select(name, month_id, scaler)
       mm_scaler <- mm[[saved_model]]$w_compiled_df %>%
@@ -156,6 +245,30 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       }
       scaler_checks[[paste(universe, model)]] <<- tibble::tibble(universe, model,
         n_pairs = nrow(joined), max_absolute_difference = error)
+      ## Retain the implementation rows required for the two descriptive
+      ## tables. The unmanaged-only MVO is taken only from the ensemble file;
+      ## its return does not vary with the forecast model and would otherwise
+      ## be needlessly duplicated.
+      implementation_methods <- x %>% dplyr::filter(
+        method %in% c("ew", "mvo") |
+          (method == "unmanaged_mvo" & .env$model == "ew"))
+      single_implementation[[paste(universe, model)]] <<- purrr::map_dfr(
+        versions, function(version) {
+          implementation_methods %>% dplyr::transmute(
+            family = dplyr::if_else(method == "ew", "ced_ew", "ced_mvo"),
+            universe, version, name, month_id,
+            model = dplyr::if_else(method == "unmanaged_mvo",
+              "unmanaged_mvo_ew", .env$model),
+            gross_return = .data[[paste0("gross_", version)]],
+            excess_return = .data[[paste0("net_", version)]],
+            total_return = .data[[paste0("net_", version)]] + rf,
+            turnover = .data[[paste0("turnover_", version)]],
+            cost = .data[[paste0("tc_", version)]],
+            exposure = .data[[paste0("w_", version)]])
+        })
+      ## Return-only rows feed paired comparisons. The implementation table
+      ## above instead retains the factor-level costs and exposures needed for
+      ## descriptive statistics.
       purrr::map_dfr(versions, function(version) {
         extract_portfolio_inference_returns(x, "allocation", version) %>%
           dplyr::transmute(family = dplyr::if_else(method == "ew", "ced_ew", "ced_mvo"),
@@ -168,6 +281,9 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
     # own unmanaged MVO comparator because its available training rows can vary.
     dplyr::bind_rows(mm_rows, ced_rows,
       mm_rows %>% dplyr::filter(model == "buyhold") %>% dplyr::mutate(family = "ced_ew"))
+  ## The panel artifact includes both nonmarket factors and `spx_vw`. Preserve
+  ## the pooled market as its own scope before forming the equal-weighted
+  ## nonmarket-factor aggregate; it is not part of the 153-factor portfolio.
   }) %>% dplyr::mutate(scope = dplyr::case_when(universe == "spx" ~ "market_separate",
     name == "spx_vw" ~ "market_pooled", TRUE ~ "aggregate_153"))
   individual <- single %>% dplyr::filter(scope == "aggregate_153") %>%
@@ -218,6 +334,29 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
   returns <- dplyr::bind_rows(aggregated, multifactor) %>%
     tidyr::unite("series_id", family, scope, version, model, remove = FALSE, sep = "/")
   align_portfolio_inference(returns)
+  ## Aggregate factor-level implementations month by month before computing
+  ## nonlinear performance statistics. This produces the return of an
+  ## equal-weighted factor portfolio, rather than an average of individual
+  ## factor Sharpe ratios, and maintains a consistent cost/exposure convention.
+  implementation <- dplyr::bind_rows(single_implementation) %>%
+    dplyr::mutate(scope = dplyr::case_when(
+      universe == "spx" ~ "market_separate",
+      name == "spx_vw" ~ "market_pooled",
+      TRUE ~ "aggregate_153")) %>%
+    dplyr::group_by(family, scope, version, model, month_id) %>%
+    dplyr::summarise(
+      dplyr::across(c(gross_return, excess_return, total_return,
+                      turnover, cost, exposure), mean),
+      n_factors = dplyr::n(), .groups = "drop")
+  ## The accounting identity is checked after aggregation, because it is the
+  ## exact return convention shown in the reported gross and net tables.
+  expected_implementation_n <- ifelse(implementation$scope == "aggregate_153", 153L, 1L)
+  if (any(implementation$n_factors != expected_implementation_n) ||
+      anyDuplicated(implementation[c("family", "scope", "version", "model", "month_id")]) ||
+      any(abs(implementation$gross_return - implementation$cost -
+              implementation$excess_return) > 1e-12)) {
+    rlang::abort("Unexpected single-factor implementation aggregation.")
+  }
   contrasts <- returns %>% dplyr::distinct(family, scope, version, model) %>%
     dplyr::filter(model %in% c("ew", "cmv_panel_ew", "cmv_spx_ew", "fcmv_ew")) %>%
     purrr::pmap_dfr(function(family, scope, version, model) {
@@ -242,13 +381,7 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
   ## Current source files and recorded hashes are retained alongside results.
   manifest_paths <- c(file.path(allocation_dir, "input_manifest.csv"),
     file.path(root, c("panel", "spx"), "expanding_vol_10bps_60m", "input_manifest.csv"))
-  provenance <- purrr::map_dfr(manifest_paths, ~ utils::read.csv(.x)) %>% dplyr::distinct()
-  if (anyDuplicated(provenance$file) || any(!file.exists(provenance$file))) {
-    rlang::abort("Upstream manifests contain conflicting hashes or unavailable inputs.")
-  }
-  provenance <- provenance %>% dplyr::mutate(current_sha256 = purrr::map_chr(file,
-    ~ digest::digest(file = .x, algo = "sha256")), matches = sha256 == current_sha256)
-  if (!all(provenance$matches)) rlang::abort("A saved backtest input no longer matches its recorded hash.")
+  provenance <- check_portfolio_inference_provenance(manifest_paths)
   ensemble_checks <- purrr::map_dfr(c("panel", "spx"), function(universe) {
     path <- file.path(project_dir, "models_v3", "1986", "ensembles",
                       paste0("ew_", universe, "_range_grid_1986.rds"))
@@ -288,7 +421,8 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       convention = "Arithmetic average of log forecasts, HAR excluded")
   })
   paths <- unique(c(paths, manifest_paths, file.path(project_dir, "data", "cluster_labels.csv")))
-  list(returns = returns, individual = individual, contrasts = contrasts,
+  list(returns = returns, individual = individual, implementation = implementation,
+    contrasts = contrasts,
     manifest = tibble::tibble(file = paths, sha256 = purrr::map_chr(paths,
       ~ digest::digest(file = .x, algo = "sha256"))),
     effective_settings = settings, scaler_checks = dplyr::bind_rows(scaler_checks),
