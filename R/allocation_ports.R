@@ -12,8 +12,8 @@
 
   ## Add "1927" only after its MM results exist for both estimation universes.
   ## Restrict models_to_run to "ew" for a quick complete specification comparison.
-  sample_ids <- c("1986")
-  models_to_run <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3", "ew")
+  sample_ids <- c("1927")
+  models_to_run <- c("har", "harx", "ew")
   mm_run <- "expanding_vol_10bps_60m"
   ## EW and HEW only estimate the trailing volatility normalizer. Five years
   ## provides a stable estimate while preserving a longer OOS evaluation window.

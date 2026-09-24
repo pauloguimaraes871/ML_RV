@@ -18,7 +18,7 @@
 
   ## Read all available V3 models in these samples. No refitting, package
   ## installation or fallback to archived results is performed.
-  sample_ids <- c("1986")
+  sample_ids <- c("1927")
   preprocessing <- "range"
   tuning <- "grid"
   ensemble_members <- c("harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
