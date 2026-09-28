@@ -1,21 +1,20 @@
 \begin{table}[p]
 \captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
 \renewcommand{\arraystretch}{0.85}
-\caption[Hyperparameter search spaces]{\footnotesize \textbf{: Hyperparameter search spaces.} Reports the grid and the Bayesian search domains for each tuned model, with the per-refit evaluation budgets. Entries marked fixed are set once and excluded from the search. The heterogeneous autoregressive specifications are untuned and omitted.}
+\caption[Hyperparameter search space]{\footnotesize \textbf{: Hyperparameter search space.} Reports the grid-search values and fixed settings for each tuned model. Entries marked fixed are set once and excluded from the search. The heterogeneous autoregressive specifications are untuned and omitted.}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
 \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}m{3.2cm}*{4}{>{\raggedleft\arraybackslash}X}}
 \hline
 Hyperparameter & ENET & RF & XGB & NN1--NN3 \\
 \hline
-\multicolumn{5}{@{}l}{\textit{Panel A. Grid search}} \\
 L1 share of the penalty & 0, 0.25, 0.5, 0.75, 1 & -- & -- & -- \\
 Penalty path floor & Fixed: $10^{-4}$ & -- & -- & -- \\
 Trees / boosting rounds & -- & Fixed: 1{,}000 & Fixed: 1{,}000 & -- \\
-Maximum depth & -- & 2, 5, 8 & 1, 2, 3 & -- \\
+Maximum depth & -- & 5, 8, 12 & 1, 2, 3 & -- \\
 Minimum terminal node size & -- & Fixed: 5 & -- & -- \\
 Minimum child weight & -- & -- & 5, 20 & -- \\
-Feature subsampling fraction & -- & 0.15, 0.35, 0.50 & Fixed: 0.8 & -- \\
+Feature subsampling fraction & -- & 0.35, 0.50, 0.75 & Fixed: 0.8 & -- \\
 Row subsampling fraction & -- & -- & Fixed: 0.8 & -- \\
 Learning rate & -- & -- & 0.01, 0.05, 0.10 & $10^{-4}$, $10^{-3}$, $10^{-2}$ \\
 L1 penalty & -- & -- & Fixed: 0 & $10^{-5}$, $10^{-4}$, $10^{-3}$ \\
@@ -27,28 +26,7 @@ Epochs & -- & -- & -- & Fixed: 100 \\
 \hline
 Grid combinations per refit & 5 & 9 & 18 & 27 \\
 \hline
-\multicolumn{5}{@{}l}{\textit{Panel B. Bayesian optimization}} \\
-L1 share of the penalty & [0, 1] & -- & -- & -- \\
-Penalty path floor & Fixed: $10^{-4}$ & -- & -- & -- \\
-Trees / boosting rounds & -- & Fixed: 1{,}000 & Fixed: 1{,}000 & -- \\
-Maximum depth & -- & [2, 8] & [1, 3] & -- \\
-Minimum terminal node size & -- & Fixed: 5 & -- & -- \\
-Minimum child weight & -- & -- & [5, 20] & -- \\
-Feature subsampling fraction & -- & [0.15, 0.50] & Fixed: 0.8 & -- \\
-Row subsampling fraction & -- & -- & Fixed: 0.8 & -- \\
-Learning rate & -- & -- & [$10^{-2}$, $10^{-1}$] & [$10^{-4}$, $10^{-2}$] \\
-L1 penalty & -- & -- & Fixed: 0 & [$10^{-5}$, $10^{-3}$] \\
-L2 penalty & -- & -- & -- & Fixed: 0 \\
-Minimum split loss & -- & -- & Fixed: 0 & -- \\
-Dropout rate & -- & -- & -- & [0, 0.25] \\
-Batch size & -- & -- & -- & Fixed: 64 \\
-Epochs & -- & -- & -- & Fixed: 100 \\
-\hline
-Initial design points & 6 & 8 & 10 & 10 \\
-Acquisition iterations & 6 & 10 & 12 & 10 \\
-Total evaluations per refit & 12 & 18 & 22 & 20 \\
-\hline
-\multicolumn{5}{@{}p{0.98\linewidth}@{}}{\textit{Both arms minimize validation root mean squared error and re-optimize at each annual refit. Grid search is the primary specification. Learning rates and the L1 penalty are searched on a logarithmic scale and reported here in engine units. Boosting rounds are a ceiling set by early stopping, not a tuned quantity.}} \\
+\multicolumn{5}{@{}p{0.98\linewidth}@{}}{\textit{Hyperparameters are selected by minimizing validation root mean squared error at each annual refit. Boosting rounds are a ceiling set by early stopping, not a tuned quantity.}} \\
 \hline
 \end{tabularx}
 \label{tab:hyper}

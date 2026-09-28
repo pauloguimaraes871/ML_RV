@@ -2,6 +2,9 @@
 # Run independently with source('R/report_portfolio_inference.R'), followed by
 # report_portfolio_inference(). report_results.R uses the same entry point.
 # This report deliberately uses only stationary blocks and HAC spanning alpha.
+# Define the descriptive helpers in the same environment as their dependencies,
+# including when this file is sourced from a clean, noninteractive R session.
+source(here::here("R", "reporting_helpers.R"), local = TRUE)
 
 #' Summarize saved single-factor allocation implementations
 #'
@@ -122,13 +125,17 @@ write_cederburg_descriptive_tables <- function(statistics, output_dir,
 #' Read completed multifactor implementations for the main performance table
 #'
 #' @param project_dir Repository root containing the primary saved allocations.
+#' @param sample_id Saved model vintage, 1986 or 1927.
 #' @return Monthly gross and net excess returns, costs, turnover, and exposure.
-#'   UMV is read once per allocator. Every conditional row uses the same 162
-#'   holding months and the saved factor-level cost convention.
-read_multifactor_descriptive_inputs <- function(project_dir = here::here()) {
-  allocation_dir <- file.path(project_dir, "ports", "v3", "1986", "allocations",
+#'   UMV is read once per allocator. All rows use the saved factor-level cost
+#'   convention and the chosen sample's balanced holding calendar.
+read_multifactor_descriptive_inputs <- function(project_dir = here::here(),
+                                                sample_id = c("1986", "1927")) {
+  sample_id <- match.arg(sample_id)
+  allocation_dir <- file.path(project_dir, "ports", "v3", sample_id, "allocations",
     "expanding_vol_10bps_60m_alloc_60_60_60m")
-  dates <- seq(as.Date("2011-07-01"), as.Date("2024-12-01"), by = "month")
+  first_month <- if (sample_id == "1986") "2011-07-01" else "1980-01-01"
+  dates <- seq(as.Date(first_month), as.Date("2024-12-01"), by = "month")
   specifications <- tibble::tribble(
     ~specification, ~forecast, ~method, ~model,
     "cmv_panel", "ew", "umv", "umv",
@@ -281,7 +288,7 @@ write_single_factor_spanning_table <- function(spanning, output_dir,
     path = file.path(output_dir, "internet_appendix", paste0(table_name, ".tex")),
     caption = paste(
       "Spanning regressions for net single-factor portfolios relative to unmanaged exposure.",
-      "Each row regresses the EW forecast-ensemble portfolio return on the corresponding unmanaged return over July 2011 to December 2024.",
+      "Each row regresses the EW forecast-ensemble portfolio return on the corresponding unmanaged return over its full available evaluation history.",
       "Panel A reports the fixed 50/50 combination at the capped implementation. Panel B reports Moreira--Muir management at both exposure implementations.",
       "Alpha is annualized and reported in percent. The intercept t-statistic and p-value use Newey--West standard errors with one lag.",
       "The appraisal ratio is annualized alpha divided by the residual standard deviation.",
@@ -304,8 +311,10 @@ write_single_factor_spanning_table <- function(spanning, output_dir,
 #' @return Invisibly, output registry, bootstrap results and spanning regressions.
 #'   Writes LaTeX, CSV, RDS calendars/settings and a self-contained preview source.
 report_portfolio_inference <- function(project_dir = here::here(),
-    output_dir = file.path(project_dir, "latex_paper", "results_v3", "1986"),
-    draws = 10000L, seed = 20260918L) {
+    output_dir = NULL,
+    draws = 10000L, seed = 20260918L, sample_id = c("1986", "1927")) {
+  sample_id <- match.arg(sample_id)
+  if (is.null(output_dir)) output_dir <- file.path(project_dir, "latex_paper", "results_v3", sample_id)
   source(file.path(project_dir, "R", "portfolio_inference_helpers.R"), local = TRUE)
   source(file.path(project_dir, "R", "portfolio_inference_inputs.R"), local = TRUE)
   source(file.path(project_dir, "R", "reporting_helpers.R"), local = TRUE)
@@ -319,8 +328,12 @@ report_portfolio_inference <- function(project_dir = here::here(),
   save_data <- function(x, name) utils::write.csv(x,
     file.path(output_dir, "data", paste0("portfolio_inference_", name, ".csv")), row.names = FALSE)
   message("Checking completed portfolios, matching benchmarks and provenance.")
-  inputs <- read_primary_portfolio_inference(project_dir)
-  aligned <- align_portfolio_inference(inputs$returns)
+  inputs <- read_primary_portfolio_inference(project_dir, sample_id)
+  # Market series retain their longer history. All contrasts sharing a calendar
+  # receive identical month draws, including every factor and forecast model.
+  calendars <- if (sample_id == "1986") list(common = inputs$returns) else
+    split(inputs$returns, ifelse(inputs$returns$scope %in%
+      c("market_pooled", "market_separate"), "market", "balanced"))
   save_data(inputs$returns, "returns")
   save_data(inputs$contrasts, "contrasts")
   save_data(inputs$manifest, "sources")
@@ -340,7 +353,7 @@ report_portfolio_inference <- function(project_dir = here::here(),
   ## Multifactor monthly returns have the same gross/net/cost accounting fields,
   ## so reuse the single-factor summary rather than introduce another metric rule.
   multifactor_statistics <- summarise_single_factor_implementation(
-    read_multifactor_descriptive_inputs(project_dir))
+    read_multifactor_descriptive_inputs(project_dir, sample_id))
   save_data(multifactor_statistics, "multifactor_descriptive")
   multifactor_outputs <- write_multifactor_descriptive_table(
     multifactor_statistics, output_dir, project_dir)
@@ -351,20 +364,29 @@ report_portfolio_inference <- function(project_dir = here::here(),
   ## opportunities to select a favorable p-value.
   bootstrap <- purrr::map_dfr(c(5, 3, 10), function(block_length) {
     message("Paired stationary bootstrap: ", draws, " draws, expected block length ", block_length, ".")
+    purrr::imap_dfr(calendars, function(rows, calendar_name) {
+    aligned <- align_portfolio_inference(rows)
     calendar <- draw_portfolio_months(aligned$dates, draws, block_length, seed)
     saveRDS(calendar, file.path(output_dir, "data",
-      paste0("portfolio_inference_calendar_", block_length, "m.rds")))
-    infer_portfolio_pairs(inputs$returns, inputs$contrasts, calendar) %>%
+      paste0("portfolio_inference_calendar_", calendar_name, "_", block_length, "m.rds")))
+    contrasts <- dplyr::filter(inputs$contrasts, strategy %in% rows$series_id)
+    infer_portfolio_pairs(rows, contrasts, calendar) %>%
       dplyr::left_join(dplyr::select(inputs$contrasts, comparison_id, portfolio_family,
                                    scope, version, forecast, comparator),
         by = "comparison_id", relationship = "many-to-one")
-  })
+    })
+  }) %>% dplyr::group_by(block_length, family) %>%
+    dplyr::mutate(p_holm = stats::p.adjust(p_value, "holm"),
+                  p_bh = stats::p.adjust(p_value, "BH")) %>% dplyr::ungroup()
   save_data(bootstrap, "bootstrap")
   spanning <- purrr::map_dfr(c(1L, 5L, 10L), function(lag) {
     purrr::pmap_dfr(inputs$contrasts, function(comparison_id, family, portfolio_family,
       scope, version, forecast, comparator, strategy, benchmark) {
-      data <- tibble::tibble(month_id = aligned$dates,
-        excess_return = aligned$returns[, strategy], benchmark_return = aligned$returns[, benchmark])
+      data <- inputs$returns %>% dplyr::filter(series_id == strategy) %>%
+        dplyr::select(month_id, excess_return) %>%
+        dplyr::inner_join(inputs$returns %>% dplyr::filter(series_id == benchmark) %>%
+          dplyr::select(month_id, benchmark_return = excess_return),
+          by = "month_id", relationship = "one-to-one") %>% dplyr::arrange(month_id)
       span_portfolio_returns(data, lag) %>% dplyr::mutate(comparison_id, family,
         portfolio_family, scope, version, forecast, comparator)
     })
@@ -408,7 +430,10 @@ report_portfolio_inference <- function(project_dir = here::here(),
   })
   save_data(subperiods, "subperiod_statistics")
 
-  inference_outputs <- write_portfolio_inference_tables(bootstrap, output_dir, project_dir)
+  period_note <- if (sample_id == "1986") "The evaluation period is July 2011 to December 2024." else
+    "Market strategies span June 1952 to December 2024. Balanced factor and multifactor portfolios span January 1980 to December 2024."
+  inference_outputs <- write_portfolio_inference_tables(bootstrap, output_dir, project_dir,
+    period_note = period_note)
   output_sections <- Reduce(union, list(names(descriptive_outputs), names(multifactor_outputs),
                                         names(inference_outputs), names(spanning_outputs)))
   outputs <- stats::setNames(purrr::map(output_sections, function(section) {
@@ -430,9 +455,17 @@ report_portfolio_inference <- function(project_dir = here::here(),
 #' @param bootstrap Output of the paired inference report, including scope labels.
 #' @param output_dir Paper-results root. Existing table files are overwritten.
 #' @param project_dir Repository root, used to source the existing table helper.
+#' @param period_note Sentence describing the evaluation period in captions.
+#' @param supplementary Whether to also render mean and CER appendix tables.
 #' @return Invisible output registry. This function does not resample returns.
-write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir = here::here()) {
+write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir = here::here(),
+                                             period_note = "The evaluation period is July 2011 to December 2024.",
+                                             supplementary = TRUE) {
   source(file.path(project_dir, "R", "reporting_helpers.R"), local = TRUE)
+  # BH and Holm use the same prespecified family, never only the displayed
+  # Sharpe rows. Sample vintages remain separate reporting families.
+  bootstrap <- bootstrap %>% dplyr::group_by(block_length, family) %>%
+    dplyr::mutate(p_bh = stats::p.adjust(p_value, "BH")) %>% dplyr::ungroup()
   draws <- unique(bootstrap$draws)
   if (length(draws) != 1L || !is.numeric(draws) || !is.finite(draws)) {
     rlang::abort("Inference tables require a common recorded draw count.")
@@ -475,14 +508,14 @@ write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir 
     "Brackets report pointwise 95 percent percentile intervals from ", draws,
     " paired stationary-bootstrap draws with expected block length five months. ",
     "The one-sided null is that the ensemble's performance difference is nonpositive. ",
-    "Tests use centered bootstrap errors. Adjusted p-values use Holm's correction across Sharpe, mean and certainty-equivalent return comparisons in the stated family. ",
-    "The evaluation period is July 2011 to December 2024. Inference is conditional on the fitted strategies.")
+    "Tests use centered bootstrap errors. Holm and Benjamini-Hochberg adjustments use the same family of Sharpe, mean and certainty-equivalent return comparisons. ",
+    period_note, " Inference is conditional on the fitted strategies.")
   for (family_id in c("single_factor_primary", "multifactor_primary")) {
     table <- primary %>% dplyr::filter(family == family_id, metric == "sharpe") %>%
       dplyr::transmute(context, Benchmark = comparator_label, Exposure = version_label,
         `Sharpe difference` = estimate,
         `95% interval` = sprintf("[%.3f, %.3f]", ci_lower, ci_upper),
-        `p-value` = p_value, `Holm p-value` = p_holm)
+        `p-value` = p_value, `Holm p-value` = p_holm, `BH p-value` = p_bh)
     title <- if (family_id == "single_factor_primary") "Paired Sharpe comparisons for single-factor strategies." else
       "Paired Sharpe comparisons for multifactor strategies."
     family_size <- nrow(dplyr::filter(primary, family == family_id))
@@ -494,7 +527,7 @@ write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir 
   # The paper reports supplementary mean and CER comparisons only for the
   # primary single-factor and multifactor designs. Signed MVO and standalone
   # market inference remain available in the machine-readable results.
-  for (family_id in c("single_factor_primary", "multifactor_primary")) {
+  if (supplementary) for (family_id in c("single_factor_primary", "multifactor_primary")) {
     for (metric_id in c("mean_ann", "cer_ann")) {
       table <- primary %>% dplyr::filter(family == family_id, metric == metric_id) %>%
         dplyr::transmute(context, Benchmark = comparator_label, Exposure = version_label,
@@ -515,13 +548,13 @@ write_portfolio_inference_tables <- function(bootstrap, output_dir, project_dir 
   }
   # A standalone preview prevents accidental combination with older generated
   # portfolio tables when running this focused inference report by itself.
-  relative_root <- "results_v3/1986"
+  relative_root <- paste0("results_v3/", basename(output_dir))
   preview <- c("\\documentclass[11pt]{article}",
     "\\usepackage[a4paper,margin=18mm]{geometry}", "\\usepackage[T1]{fontenc}",
     "\\usepackage{longtable,caption,pdflscape}", "\\usepackage[table]{xcolor}",
     "\\DeclareCaptionLabelFormat{boldlabel}{\\textbf{#1 #2}}", "\\begin{document}",
     "\\section*{Portfolio performance inference}",
-    "July 2011--December 2024. Sharpe ratios and certainty-equivalent returns use monthly net excess returns. The 153-factor aggregate equal-weights nonmarket factor returns within each month. Multifactor allocations include the market as a 154th factor.",
+    paste(period_note, "Sharpe ratios and certainty-equivalent returns use monthly net excess returns. The 153-factor aggregate equal-weights nonmarket factor returns within each month. Multifactor allocations include the market as a 154th factor."),
     unlist(purrr::imap(outputs, function(files, section) {
       c("\\clearpage", paste0("\\section*{", gsub("_", " ", section), "}"),
         paste0("\\input{", relative_root, "/", section, "/", files, "}"))

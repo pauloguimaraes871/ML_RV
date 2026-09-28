@@ -1,0 +1,38 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.91}\setlength{\tabcolsep}{4pt}
+\caption[]{\footnotesize \textbf{: Out-of-sample predictive performance for the market portfolio estimated separately.} Each model is estimated only on the market time series. Forecast scores use monthly log realized variance. Forecast evaluation spans June 1947 to December 2024 in the long sample and July 2006 to December 2024 in the short sample.}
+\label{tab:rv-additional_scopes}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrr}
+\multicolumn{4}{@{}l}{\textit{Panel A. Long sample}} \\
+\hline
+Model & RMSE & MAE & R-squared \\
+\hline
+HAR & 0.7037 & 0.5433 & 0.4339 \\
+HARX & 0.6704 & 0.5142 & 0.4862 \\
+ENET & 0.6754 & 0.5119 & 0.4786 \\
+RF & 0.6915 & 0.5274 & 0.4534 \\
+XGB & 0.6964 & 0.5385 & 0.4456 \\
+NN1 & 0.8356 & 0.6496 & 0.2017 \\
+NN2 & 0.7639 & 0.6037 & 0.3329 \\
+NN3 & 0.7741 & 0.6169 & 0.3149 \\
+EW & 0.6891 & 0.5310 & 0.4571 \\
+\hline
+\multicolumn{4}{@{}l}{\textit{Panel B. Short sample}} \\
+\hline
+Model & RMSE & MAE & R-squared \\
+\hline
+HAR & 0.8074 & 0.6317 & 0.3844 \\
+HARX & 0.7599 & 0.5896 & 0.4548 \\
+ENET & 0.7007 & 0.5422 & 0.5364 \\
+RF & 0.7496 & 0.5775 & 0.4694 \\
+XGB & 0.7544 & 0.5861 & 0.4627 \\
+NN1 & 0.9239 & 0.7161 & 0.1939 \\
+NN2 & 0.8287 & 0.6325 & 0.3515 \\
+NN3 & 0.7782 & 0.6033 & 0.4281 \\
+EW & 0.7523 & 0.5803 & 0.4657 \\
+\hline
+\end{tabular}}
+\end{table}

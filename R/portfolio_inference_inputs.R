@@ -116,14 +116,19 @@ check_portfolio_inference_provenance <- function(manifest_paths) {
 #' Read primary completed portfolios for the prespecified inference contrasts
 #'
 #' @param project_dir Repository root. Reads only primary 60-month-minimum runs.
+#' @param sample_id Saved model vintage. The 1927 adapter retains the full
+#'   market history and the balanced January 1980--December 2024 factor calendar.
 #' @return List with monthly aggregate/market returns, individual factor returns,
 #'   comparison definitions, input hashes, effective settings and scaler checks.
 #'   Aggregates equal-weight 153 nonmarket factors within each holding month.
 #'   The multifactor opportunity set instead includes all 154 factors.
-read_primary_portfolio_inference <- function(project_dir = here::here()) {
-  root <- file.path(project_dir, "ports", "v3", "1986")
+read_primary_portfolio_inference <- function(project_dir = here::here(),
+                                             sample_id = c("1986", "1927")) {
+  sample_id <- match.arg(sample_id)
+  root <- file.path(project_dir, "ports", "v3", sample_id)
   allocation_dir <- file.path(root, "allocations", "expanding_vol_10bps_60m_alloc_60_60_60m")
-  dates <- seq(as.Date("2011-07-01"), as.Date("2024-12-01"), by = "month")
+  first_month <- if (sample_id == "1986") "2011-07-01" else "1980-01-01"
+  dates <- seq(as.Date(first_month), as.Date("2024-12-01"), by = "month")
   clusters <- utils::read.csv(file.path(project_dir, "data", "cluster_labels.csv")) %>%
     dplyr::transmute(name = characteristic, cluster)
   if (nrow(clusters) != 153L || anyNA(clusters) || anyDuplicated(clusters$name) ||
@@ -143,7 +148,28 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       }
     })
   }
-  validate_panel <- function(data, names_expected) {
+  validate_panel <- function(data, names_expected, native_market = FALSE) {
+    if (native_market && sample_id == "1927") {
+      # Validate market and nonmarket calendars separately. Their start dates
+      # differ, but no factor is silently admitted to a changing aggregate.
+      market <- dplyr::filter(data, name == "spx_vw")
+      factors <- dplyr::filter(data, name != "spx_vw")
+      market_dates <- seq(as.Date("1952-06-01"), as.Date("2024-12-01"), by = "month")
+      counts <- market %>% dplyr::count(method, month_id)
+      if (anyDuplicated(data[c("method", "name", "month_id")]) ||
+          !setequal(data$name, names_expected) || any(counts$n != 1L) ||
+          nrow(counts) != length(unique(market$method)) * length(market_dates) ||
+          !identical(sort(unique(market$month_id)), market_dates)) {
+        rlang::abort("Unexpected full-history market holdings.")
+      }
+      if (nrow(factors)) validate_panel(factors, setdiff(names_expected, "spx_vw"))
+      if ("train_end" %in% names(market) &&
+          (anyNA(market[c("train_end", "n_train")]) ||
+           any(market$train_end >= market$month_id) || any(market$n_train < 60))) {
+        rlang::abort("Market allocation violates training availability.")
+      }
+      return(invisible(TRUE))
+    }
     if (anyDuplicated(data[c("method", "name", "month_id")]) ||
         !setequal(data$name, names_expected) || !identical(sort(unique(data$month_id)), dates)) {
       rlang::abort("Unexpected saved portfolio keys, universe, or evaluation dates.")
@@ -173,11 +199,17 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
   single <- purrr::map_dfr(c("panel", "spx"), function(universe) {
     mm_path <- file.path(root, universe, "expanding_vol_10bps_60m", "all_ports.rds")
     mm <- read_saved(mm_path)
+    # Preserve the native market history alongside the balanced factor panel.
+    if (sample_id == "1927") mm <- purrr::map(mm, function(result) {
+      result$w_compiled_df <- dplyr::filter(result$w_compiled_df,
+        name == "spx_vw" | month_id %in% dates)
+      result
+    })
     expected_names <- if (universe == "panel") c(clusters$name, "spx_vw") else "spx_vw"
     purrr::iwalk(mm, function(result, model) {
       validate_settings(result$settings, list(normalization = "expanding_vol", min_history = 60L,
         weight_cap = 1.5, cost_per_unit = .001, initial_weight = 0))
-      validate_panel(result$w_compiled_df, expected_names)
+      validate_panel(result$w_compiled_df, expected_names, native_market = TRUE)
       # Buyhold and RW copies must match before retaining the ensemble copy.
       benchmark <- function(x) x %>% dplyr::filter(method %in% c("buyhold", "rw"))
       check_portfolio_benchmark_copy(benchmark(mm$ew$w_compiled_df),
@@ -228,8 +260,8 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       validate_settings(saved$settings, list(normalization = "training_vol", min_history = 60L,
         source_normalization = "expanding_vol", exposure_cap = 5, cost_per_unit = .001,
         initial_weight = 0, gamma = 5))
-      x <- saved$weights
-      validate_panel(x, expected_names)
+      x <- dplyr::filter(saved$weights, name == "spx_vw" | month_id %in% dates)
+      validate_panel(x, expected_names, native_market = TRUE)
       ## The primary Cederburg design must use the same current MM scaler on
       ## each holding date. This keyed equality check rules out accidentally
       ## comparing a historical saved normalizer with the current one.
@@ -240,7 +272,7 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       joined <- dplyr::inner_join(ced_scaler, mm_scaler, by = c("name", "month_id"),
                                  relationship = "one-to-one")
       error <- max(abs(joined$scaler - joined$w_raw))
-      if (nrow(joined) != length(expected_names) * length(dates) || error > 1e-12) {
+      if (nrow(joined) != nrow(ced_scaler) || nrow(joined) != nrow(mm_scaler) || error > 1e-12) {
         rlang::abort("MM and Cederburg current scalers disagree on matched holding dates.")
       }
       scaler_checks[[paste(universe, model)]] <<- tibble::tibble(universe, model,
@@ -297,7 +329,8 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
 
   multifactor <- purrr::map_dfr(c("ew", "hew"), function(allocator) {
     reference_umv <- reference_lagged <- NULL
-    all_models <- c("ew", "har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
+    all_models <- if (sample_id == "1986")
+      c("ew", "har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3") else models
     purrr::map_dfr(all_models, function(model) {
       purrr::map_dfr(c("cmv_panel", "cmv_spx", "fcmv", "lagged_market"), function(specification) {
         path <- file.path(allocation_dir, paste0("multifactor_", model, "_", specification,
@@ -333,7 +366,9 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
   })
   returns <- dplyr::bind_rows(aggregated, multifactor) %>%
     tidyr::unite("series_id", family, scope, version, model, remove = FALSE, sep = "/")
-  align_portfolio_inference(returns)
+  # Compare strategies on a complete common calendar within each scope. The
+  # long-sample market starts earlier than the balanced 153-factor aggregate.
+  purrr::walk(split(returns, returns$scope), align_portfolio_inference)
   ## Aggregate factor-level implementations month by month before computing
   ## nonlinear performance statistics. This produces the return of an
   ## equal-weighted factor portfolio, rather than an average of individual
@@ -383,8 +418,8 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
     file.path(root, c("panel", "spx"), "expanding_vol_10bps_60m", "input_manifest.csv"))
   provenance <- check_portfolio_inference_provenance(manifest_paths)
   ensemble_checks <- purrr::map_dfr(c("panel", "spx"), function(universe) {
-    path <- file.path(project_dir, "models_v3", "1986", "ensembles",
-                      paste0("ew_", universe, "_range_grid_1986.rds"))
+    path <- file.path(project_dir, "models_v3", sample_id, "ensembles",
+                      paste0("ew_", universe, "_range_grid_", sample_id, ".rds"))
     cached <- read_saved(path)
     # Standalone forecasts have one target and are keyed only by month. Attach
     # its known economic identifier explicitly for the common audit join.
@@ -398,7 +433,7 @@ read_primary_portfolio_inference <- function(project_dir = here::here()) {
       rlang::abort("Unexpected cached ensemble membership or weights.")
     }
     predictions <- purrr::pmap_dfr(sources, function(model, file, sha256) {
-      member_path <- file.path(project_dir, "models_v3", "1986", file)
+      member_path <- file.path(project_dir, "models_v3", sample_id, file)
       if (!identical(digest::digest(file = member_path, algo = "sha256"), sha256)) {
         rlang::abort("Cached ensemble member hash mismatch.")
       }

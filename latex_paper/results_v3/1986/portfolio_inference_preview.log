@@ -1,0 +1,344 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.7.25)  19 SEP 2026 11:30
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**./results_v3/1986/portfolio_inference_preview.tex
+(results_v3/1986/portfolio_inference_preview.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2025-12-24>
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/base\article.c
+ls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.cl
+o
+File: size11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count275
+\c@section=\count276
+\c@subsection=\count277
+\c@subsubsection=\count278
+\c@paragraph=\count279
+\c@subparagraph=\count280
+\c@figure=\count281
+\c@table=\count282
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen148
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geome
+try.sty
+Package: geometry 2026/03/07 v6.0 Page Geometry
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyva
+l.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks17
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex
+.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.
+sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+))
+\Gm@cnth=\count283
+\Gm@cntv=\count284
+\c@Gm@tempcnt=\count285
+\Gm@bindingoffset=\dimen149
+\Gm@wd@mp=\dimen150
+\Gm@odd@mp=\dimen151
+\Gm@even@mp=\dimen152
+\Gm@layoutwidth=\dimen153
+\Gm@layoutheight=\dimen154
+\Gm@layouthoffset=\dimen155
+\Gm@layoutvoffset=\dimen156
+\Gm@dimlist=\toks18
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geome
+try.cfg))
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/base\fontenc.s
+ty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/tools\longtabl
+e.sty
+Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
+\LTleft=\skip51
+\LTright=\skip52
+\LTpre=\skip53
+\LTpost=\skip54
+\LTchunksize=\count286
+\LTcapwidth=\dimen157
+\LT@head=\box53
+\LT@firsthead=\box54
+\LT@foot=\box55
+\LT@lastfoot=\box56
+\LT@gbox=\box57
+\LT@cols=\count287
+\LT@rows=\count288
+\c@LT@tables=\count289
+\c@LT@chunks=\count290
+\LT@p@ftn=\toks19
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
+n.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
+n3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen158
+\captionmargin=\dimen159
+\caption@leftmargin=\dimen160
+\caption@rightmargin=\dimen161
+\caption@width=\dimen162
+\caption@indent=\dimen163
+\caption@parindent=\dimen164
+\caption@hangindent=\dimen165
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count291
+\c@continuedfloat=\count292
+Package caption Info: longtable package is loaded.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/caption\ltcapt
+ion.sty
+Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
+))
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdfl
+scape.sty
+Package: pdflscape 2022-10-27 v0.13 Display of landscape pages in PDF
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdfl
+scape-nometadata.sty
+Package: pdflscape-nometadata 2022-10-28 v0.13 Display of landscape pages in PD
+F (HO)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\lscap
+e.sty
+Package: lscape 2020/05/28 v3.02 Landscape Pages (DPC)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graph
+ics.sty
+Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.
+sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\g
+raphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\p
+dftex.def
+File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
+)))
+Package pdflscape Info: Auto-detected driver: pdftex on input line 81.
+))
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.
+sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\c
+olor.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathc
+olor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/colortbl\color
+tbl.sty
+Package: colortbl 2026/05/01 v1.0l Color table columns (DPC)
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.st
+y
+Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
+\col@sep=\dimen166
+\ar@mcellbox=\box58
+\extrarowheight=\dimen167
+\NC@list=\toks20
+\extratabsurround=\skip55
+\backup@length=\skip56
+\ar@cellbox=\box59
+)
+\everycr=\toks21
+\minrowclearance=\skip57
+\rownum=\count293
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3ba
+ckend-pdftex.def
+File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count294
+)
+(C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutorado\ML_RV\latex_pap
+er\results_v3\1986\portfolio_inference_preview.aux)
+\openout1 = `portfolio_inference_preview.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(51.21495pt, 495.07797pt, 51.21495pt)
+* v-part:(T,H,B)=(51.21495pt, 742.61694pt, 51.21495pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=495.07797pt
+* \textheight=742.61694pt
+* \oddsidemargin=-21.05504pt
+* \evensidemargin=-21.05504pt
+* \topmargin=-58.05504pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=11.0pt
+* \footskip=30.0pt
+* \marginparwidth=59.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: End \AtBeginDocument code.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\su
+pp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count295
+\scratchdimen=\dimen168
+\scratchbox=\box60
+\nofMPsegments=\count296
+\nofMParguments=\count297
+\everyMPshowfont=\toks22
+\MPscratchCnt=\count298
+\MPscratchDim=\dimen169
+\MPnumerator=\count299
+\makeMPintoPDFobject=\count300
+\everyMPtoPDFconversion=\toks23
+)
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\e
+pstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(C:\Users\paulo.fonteles\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epsto
+pdf-sys.cfg
+File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
+)) [1
+
+{C:/Users/paulo.fonteles/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
+(results_v3/1986/main_appendix/portfolio_inference_single_factor_primary.tex
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 7.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 7.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 7.
+)
+(results_v3/1986/main_appendix/portfolio_inference_multifactor_primary.tex)
+[2
+
+] [3] [4]
+(results_v3/1986/internet_appendix/portfolio_inference_single_factor_primary_me
+an_ann_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_single_factor_primary_ce
+r_ann_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_mean_a
+nn_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_mean_a
+nn_2.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_cer_an
+n_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_cer_an
+n_2.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_signed_cederburg_mean_an
+n_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_signed_cederburg_cer_ann
+_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_multifactor_primary_mean
+_ann_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_multifactor_primary_cer_
+ann_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_signed_cederburg_sharpe_
+1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_sharpe
+_1.tex)
+(results_v3/1986/internet_appendix/portfolio_inference_standalone_market_sharpe
+_2.tex) [5
+
+] [6] [7] [8] [9] [10] [11] [12] [13] [14]
+(C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutorado\ML_RV\latex_pap
+er\results_v3\1986\portfolio_inference_preview.aux)
+ ***********
+LaTeX2e <2025-11-01>
+L3 programming layer <2025-12-24>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 4370 strings out of 467871
+ 82508 string characters out of 5414020
+ 629356 words of memory out of 5000000
+ 33182 multiletter control sequences out of 15000+600000
+ 635930 words of font info for 55 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 89i,9n,95p,1215b,422s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dp
+i600\ecrm0800.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour
+/jknappen/ec/dpi600\ecti0800.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\
+fonts/pk/ljfour/jknappen/ec/dpi600\ecrm0900.pk> <C:\Users\paulo.fonteles\AppDat
+a\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx0900.pk> <C:\Users\paulo.
+fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx1095.pk> <
+C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600
+\ecrm1095.pk> <C:\Users\paulo.fonteles\AppData\Local\MiKTeX\fonts/pk/ljfour/jkn
+appen/ec/dpi600\ecbx1440.pk>
+Output written on "C:\Users\paulo.fonteles\OneDrive - Sicoob\Documentos\Doutora
+do\ML_RV\latex_paper\results_v3\1986\portfolio_inference_preview.pdf" (14 pages
+, 111002 bytes).
+PDF statistics:
+ 326 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+

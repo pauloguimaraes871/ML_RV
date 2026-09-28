@@ -1,0 +1,193 @@
+"sample","scope","construction","model","basis","sharpe"
+"Panel A. Long sample","factor_panel","MM","EW","Gross",1.07616097548039
+"Panel A. Long sample","factor_panel","MM","EW","Net",0.920495965906533
+"Panel A. Long sample","factor_panel","MM","HAR","Gross",0.994695124240117
+"Panel A. Long sample","factor_panel","MM","HAR","Net",0.832790565477844
+"Panel A. Long sample","factor_panel","MM","HARX","Gross",1.02262426768695
+"Panel A. Long sample","factor_panel","MM","HARX","Net",0.860687144921098
+"Panel A. Long sample","factor_panel","MM","Random walk","Gross",1.05309009554525
+"Panel A. Long sample","factor_panel","MM","Random walk","Net",0.831467755297888
+"Panel A. Long sample","factor_panel","MM","Unmanaged","Gross",0.718181142214421
+"Panel A. Long sample","factor_panel","MM","Unmanaged","Net",0.718164403630996
+"Panel A. Long sample","market_pooled","MM","EW","Gross",0.543162432334568
+"Panel A. Long sample","market_pooled","MM","EW","Net",0.519690796923852
+"Panel A. Long sample","market_pooled","MM","HAR","Gross",0.545394331868402
+"Panel A. Long sample","market_pooled","MM","HAR","Net",0.522284139733656
+"Panel A. Long sample","market_pooled","MM","HARX","Gross",0.550258262408054
+"Panel A. Long sample","market_pooled","MM","HARX","Net",0.527708981565589
+"Panel A. Long sample","market_pooled","MM","Random walk","Gross",0.53869650499098
+"Panel A. Long sample","market_pooled","MM","Random walk","Net",0.513911825324978
+"Panel A. Long sample","market_pooled","MM","Unmanaged","Gross",0.49925746025972
+"Panel A. Long sample","market_pooled","MM","Unmanaged","Net",0.499175638424244
+"Panel A. Long sample","market_separate","MM","EW","Gross",0.551146016648315
+"Panel A. Long sample","market_separate","MM","EW","Net",0.525345361758847
+"Panel A. Long sample","market_separate","MM","HAR","Gross",0.555189713709739
+"Panel A. Long sample","market_separate","MM","HAR","Net",0.524455930497564
+"Panel A. Long sample","market_separate","MM","HARX","Gross",0.580167909697706
+"Panel A. Long sample","market_separate","MM","HARX","Net",0.551032972875812
+"Panel A. Long sample","market_separate","MM","Random walk","Gross",0.53869650499098
+"Panel A. Long sample","market_separate","MM","Random walk","Net",0.513911825324978
+"Panel A. Long sample","market_separate","MM","Unmanaged","Gross",0.49925746025972
+"Panel A. Long sample","market_separate","MM","Unmanaged","Net",0.499175638424244
+"Panel B. Short sample","factor_panel","MM","EW","Gross",0.641428054585142
+"Panel B. Short sample","factor_panel","MM","EW","Net",0.522858997837309
+"Panel B. Short sample","factor_panel","MM","HAR","Gross",0.601051888044599
+"Panel B. Short sample","factor_panel","MM","HAR","Net",0.46496652768677
+"Panel B. Short sample","factor_panel","MM","HARX","Gross",0.631116409625045
+"Panel B. Short sample","factor_panel","MM","HARX","Net",0.501434674466999
+"Panel B. Short sample","factor_panel","MM","Random walk","Gross",0.597390625623465
+"Panel B. Short sample","factor_panel","MM","Random walk","Net",0.370501803271581
+"Panel B. Short sample","factor_panel","MM","Unmanaged","Gross",0.482618990847663
+"Panel B. Short sample","factor_panel","MM","Unmanaged","Net",0.47956394486204
+"Panel B. Short sample","market_pooled","MM","EW","Gross",0.777816114011192
+"Panel B. Short sample","market_pooled","MM","EW","Net",0.759666220805969
+"Panel B. Short sample","market_pooled","MM","HAR","Gross",0.846710198094624
+"Panel B. Short sample","market_pooled","MM","HAR","Net",0.827851465485947
+"Panel B. Short sample","market_pooled","MM","HARX","Gross",0.752145641716716
+"Panel B. Short sample","market_pooled","MM","HARX","Net",0.731486321709266
+"Panel B. Short sample","market_pooled","MM","Random walk","Gross",0.736764512234259
+"Panel B. Short sample","market_pooled","MM","Random walk","Net",0.691582536135953
+"Panel B. Short sample","market_pooled","MM","Unmanaged","Gross",0.76982453751765
+"Panel B. Short sample","market_pooled","MM","Unmanaged","Net",0.769244349682314
+"Panel B. Short sample","market_separate","MM","EW","Gross",0.711269165129833
+"Panel B. Short sample","market_separate","MM","EW","Net",0.693626300461503
+"Panel B. Short sample","market_separate","MM","HAR","Gross",0.83097619454235
+"Panel B. Short sample","market_separate","MM","HAR","Net",0.806429647790263
+"Panel B. Short sample","market_separate","MM","HARX","Gross",0.591879530310236
+"Panel B. Short sample","market_separate","MM","HARX","Net",0.567666495014194
+"Panel B. Short sample","market_separate","MM","Random walk","Gross",0.736764512234259
+"Panel B. Short sample","market_separate","MM","Random walk","Net",0.691582536135953
+"Panel B. Short sample","market_separate","MM","Unmanaged","Gross",0.76982453751765
+"Panel B. Short sample","market_separate","MM","Unmanaged","Net",0.769244349682314
+"Panel A. Long sample","factor_panel","50/50 combination","Unmanaged","Gross",0.718181142214421
+"Panel A. Long sample","factor_panel","50/50 combination","Unmanaged","Net",0.718164403630996
+"Panel A. Long sample","factor_panel","50/50 combination","EW","Gross",0.880237707405176
+"Panel A. Long sample","factor_panel","50/50 combination","EW","Net",0.816622810842884
+"Panel A. Long sample","factor_panel","50/50 combination","HAR","Gross",0.852944098600126
+"Panel A. Long sample","factor_panel","50/50 combination","HAR","Net",0.783567052025193
+"Panel A. Long sample","factor_panel","50/50 combination","HARX","Gross",0.855116593863232
+"Panel A. Long sample","factor_panel","50/50 combination","HARX","Net",0.788825444586114
+"Panel A. Long sample","factor_panel","50/50 combination","Random walk","Gross",0.934411203269332
+"Panel A. Long sample","factor_panel","50/50 combination","Random walk","Net",0.818601203642324
+"Panel A. Long sample","market_pooled","50/50 combination","Unmanaged","Gross",0.49925746025972
+"Panel A. Long sample","market_pooled","50/50 combination","Unmanaged","Net",0.499175638424244
+"Panel A. Long sample","market_pooled","50/50 combination","EW","Gross",0.541017159649393
+"Panel A. Long sample","market_pooled","50/50 combination","EW","Net",0.528219138282681
+"Panel A. Long sample","market_pooled","50/50 combination","HAR","Gross",0.538836468588001
+"Panel A. Long sample","market_pooled","50/50 combination","HAR","Net",0.526169701210711
+"Panel A. Long sample","market_pooled","50/50 combination","HARX","Gross",0.540140681115665
+"Panel A. Long sample","market_pooled","50/50 combination","HARX","Net",0.527437150385444
+"Panel A. Long sample","market_pooled","50/50 combination","Random walk","Gross",0.546549130517227
+"Panel A. Long sample","market_pooled","50/50 combination","Random walk","Net",0.51887706323937
+"Panel A. Long sample","market_separate","50/50 combination","Unmanaged","Gross",0.49925746025972
+"Panel A. Long sample","market_separate","50/50 combination","Unmanaged","Net",0.499175638424244
+"Panel A. Long sample","market_separate","50/50 combination","EW","Gross",0.540696212958026
+"Panel A. Long sample","market_separate","50/50 combination","EW","Net",0.526187006213543
+"Panel A. Long sample","market_separate","50/50 combination","HAR","Gross",0.549250087385199
+"Panel A. Long sample","market_separate","50/50 combination","HAR","Net",0.532065493579885
+"Panel A. Long sample","market_separate","50/50 combination","HARX","Gross",0.557539806105701
+"Panel A. Long sample","market_separate","50/50 combination","HARX","Net",0.541486463645657
+"Panel A. Long sample","market_separate","50/50 combination","Random walk","Gross",0.546549130517227
+"Panel A. Long sample","market_separate","50/50 combination","Random walk","Net",0.51887706323937
+"Panel B. Short sample","factor_panel","50/50 combination","Unmanaged","Gross",0.482618990847663
+"Panel B. Short sample","factor_panel","50/50 combination","Unmanaged","Net",0.47956394486204
+"Panel B. Short sample","factor_panel","50/50 combination","EW","Gross",0.583108107873848
+"Panel B. Short sample","factor_panel","50/50 combination","EW","Net",0.497212883549118
+"Panel B. Short sample","factor_panel","50/50 combination","HAR","Gross",0.582287426639761
+"Panel B. Short sample","factor_panel","50/50 combination","HAR","Net",0.476230713919507
+"Panel B. Short sample","factor_panel","50/50 combination","HARX","Gross",0.568954932206528
+"Panel B. Short sample","factor_panel","50/50 combination","HARX","Net",0.466140943696428
+"Panel B. Short sample","factor_panel","50/50 combination","Random walk","Gross",0.595285009032747
+"Panel B. Short sample","factor_panel","50/50 combination","Random walk","Net",0.462100357610109
+"Panel B. Short sample","market_pooled","50/50 combination","Unmanaged","Gross",0.76982453751765
+"Panel B. Short sample","market_pooled","50/50 combination","Unmanaged","Net",0.769244349682314
+"Panel B. Short sample","market_pooled","50/50 combination","EW","Gross",0.805908982613479
+"Panel B. Short sample","market_pooled","50/50 combination","EW","Net",0.785550461797961
+"Panel B. Short sample","market_pooled","50/50 combination","HAR","Gross",0.794059371663623
+"Panel B. Short sample","market_pooled","50/50 combination","HAR","Net",0.767974382712905
+"Panel B. Short sample","market_pooled","50/50 combination","HARX","Gross",0.808922065507113
+"Panel B. Short sample","market_pooled","50/50 combination","HARX","Net",0.785269544783917
+"Panel B. Short sample","market_pooled","50/50 combination","Random walk","Gross",0.735095808612101
+"Panel B. Short sample","market_pooled","50/50 combination","Random walk","Net",0.702498391128334
+"Panel B. Short sample","market_separate","50/50 combination","Unmanaged","Gross",0.76982453751765
+"Panel B. Short sample","market_separate","50/50 combination","Unmanaged","Net",0.769244349682314
+"Panel B. Short sample","market_separate","50/50 combination","EW","Gross",0.767993484770771
+"Panel B. Short sample","market_separate","50/50 combination","EW","Net",0.748595880891691
+"Panel B. Short sample","market_separate","50/50 combination","HAR","Gross",0.775940356577915
+"Panel B. Short sample","market_separate","50/50 combination","HAR","Net",0.746572793835539
+"Panel B. Short sample","market_separate","50/50 combination","HARX","Gross",0.720531717638771
+"Panel B. Short sample","market_separate","50/50 combination","HARX","Net",0.696732513615807
+"Panel B. Short sample","market_separate","50/50 combination","Random walk","Gross",0.735095808612101
+"Panel B. Short sample","market_separate","50/50 combination","Random walk","Net",0.702498391128334
+"Panel A. Long sample","factor_panel","CMV / EW allocation","EW","Gross",0.822096991235263
+"Panel A. Long sample","factor_panel","CMV / EW allocation","EW","Net",0.790126993982418
+"Panel A. Long sample","factor_panel","CMV / EW allocation","HAR","Gross",0.812563977349815
+"Panel A. Long sample","factor_panel","CMV / EW allocation","HAR","Net",0.78212299831388
+"Panel A. Long sample","factor_panel","CMV / EW allocation","HARX","Gross",0.811831572653166
+"Panel A. Long sample","factor_panel","CMV / EW allocation","HARX","Net",0.782333443265053
+"Panel A. Long sample","factor_panel","CMV / EW allocation","Random walk","Gross",0.864127624029407
+"Panel A. Long sample","factor_panel","CMV / EW allocation","Random walk","Net",0.80670607933075
+"Panel A. Long sample","factor_panel","CMV / EW allocation","Unmanaged","Gross",0.744767155218668
+"Panel A. Long sample","factor_panel","CMV / EW allocation","Unmanaged","Net",0.744109020731143
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","EW","Gross",1.67581818009277
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","EW","Net",1.61550471730278
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","HAR","Gross",1.65712465299065
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","HAR","Net",1.59953617126292
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","HARX","Gross",1.65072701955985
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","HARX","Net",1.5952357568873
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","Random walk","Gross",1.74500203022938
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","Random walk","Net",1.63692010365029
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","Unmanaged","Gross",1.56034422051015
+"Panel A. Long sample","factor_panel","CMV / HEW allocation","Unmanaged","Net",1.55964094630187
+"Panel B. Short sample","factor_panel","CMV / EW allocation","EW","Gross",0.569833692731476
+"Panel B. Short sample","factor_panel","CMV / EW allocation","EW","Net",0.516774683177064
+"Panel B. Short sample","factor_panel","CMV / EW allocation","HAR","Gross",0.560885606328403
+"Panel B. Short sample","factor_panel","CMV / EW allocation","HAR","Net",0.497064211936061
+"Panel B. Short sample","factor_panel","CMV / EW allocation","HARX","Gross",0.567311412118973
+"Panel B. Short sample","factor_panel","CMV / EW allocation","HARX","Net",0.505538647310919
+"Panel B. Short sample","factor_panel","CMV / EW allocation","Random walk","Gross",0.585837397774185
+"Panel B. Short sample","factor_panel","CMV / EW allocation","Random walk","Net",0.495701114220385
+"Panel B. Short sample","factor_panel","CMV / EW allocation","Unmanaged","Gross",0.519918747719134
+"Panel B. Short sample","factor_panel","CMV / EW allocation","Unmanaged","Net",0.516746635362359
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","EW","Gross",1.38143765533005
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","EW","Net",1.28352114116693
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","HAR","Gross",1.36286594671062
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","HAR","Net",1.24580984493293
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","HARX","Gross",1.38257081080672
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","HARX","Net",1.27037363412242
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","Random walk","Gross",1.39298986232647
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","Random walk","Net",1.23395614908606
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","Unmanaged","Gross",1.31387168222746
+"Panel B. Short sample","factor_panel","CMV / HEW allocation","Unmanaged","Net",1.30525817861043
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","EW","Gross",0.837742330226774
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","EW","Net",0.80395664140684
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","HAR","Gross",0.822074112881918
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","HAR","Net",0.784936715252529
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","HARX","Gross",0.825621879930513
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","HARX","Net",0.789485703700624
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","Unmanaged","Gross",0.744767155218668
+"Panel A. Long sample","factor_panel","FCMV / EW allocation","Unmanaged","Net",0.744109020731143
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","EW","Gross",1.75483431398986
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","EW","Net",1.6903203608022
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","HAR","Gross",1.73241086981705
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","HAR","Net",1.66127323096478
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","HARX","Gross",1.73253127056722
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","HARX","Net",1.66318120972948
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","Unmanaged","Gross",1.56034422051015
+"Panel A. Long sample","factor_panel","FCMV / HEW allocation","Unmanaged","Net",1.55964094630187
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","EW","Gross",0.587505407375064
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","EW","Net",0.542831242856436
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","HAR","Gross",0.580268664673451
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","HAR","Net",0.526887656481253
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","HARX","Gross",0.582411680676075
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","HARX","Net",0.529613384768142
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","Unmanaged","Gross",0.519918747719134
+"Panel B. Short sample","factor_panel","FCMV / EW allocation","Unmanaged","Net",0.516746635362359
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","EW","Gross",1.43135109884264
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","EW","Net",1.34628420241901
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","HAR","Gross",1.41806419212836
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","HAR","Net",1.31626153561683
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","HARX","Gross",1.42820146779599
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","HARX","Net",1.32820102964687
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","Unmanaged","Gross",1.31387168222746
+"Panel B. Short sample","factor_panel","FCMV / HEW allocation","Unmanaged","Net",1.30525817861043

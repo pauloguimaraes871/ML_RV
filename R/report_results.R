@@ -1,15 +1,22 @@
 # V3 forecast results for the paper---------------------------------------------
 
+# Both vintages execute this same reporting body. An alternate output directory
+# supports regression checks without overwriting the published short-sample data.
+report_results <- function(sample_id = c("1986", "1927"), output_dir = NULL,
+                           include_inference = TRUE) {
+  sample_id <- match.arg(sample_id)
+  forecast_period <- if (sample_id == "1986") "July 2006 to December 2024" else
+    "June 1947 to December 2024"
+
   ## Run from the ML_RV project. Reads fitted results; never estimates a model.
   `%>%` <- dplyr::`%>%`
   project_dir <- here::here()
   source(file.path(project_dir, "R", "helpers.R"))
   source(file.path(project_dir, "R", "reporting_helpers.R"))
-  source(file.path(project_dir, "R", "report_full_sample_portfolio_table.R"))
+  source(file.path(project_dir, "R", "report_full_sample_portfolio_table.R"), local = TRUE)
 
 # Configuration-----------------------------------------------------------------
 
-  sample_id <- "1986"
   preprocessing <- "range"
   tuning <- "grid"
   base_models <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
@@ -21,7 +28,7 @@
   universe_map <- tibble::tibble(universe = c("panel", "spx"),
     universe_label = c("Pooled factor and market panel", "Market portfolio"))
   paper_dir <- file.path(project_dir, "latex_paper")
-  output_dir <- file.path(paper_dir, "results_v3", sample_id)
+  if (is.null(output_dir)) output_dir <- file.path(paper_dir, "results_v3", sample_id)
   for (directory in c("data", "main", "main_appendix", "internet_appendix")) {
     dir.create(file.path(output_dir, directory), recursive = TRUE, showWarnings = FALSE)
   }
@@ -222,14 +229,16 @@
     scope_metrics %>%
       dplyr::filter(scope == current_scope) %>%
       dplyr::mutate(model = as_model_label(model)) %>% dplyr::arrange(model) %>%
-      dplyr::select(Model = model, RMSE = rmse, MAE = mae, `R-squared` = rss, Bias = mb)
+      dplyr::select(Model = model, RMSE = rmse, MAE = mae, MPHE = mphe,
+                    MAPE = mape, `R-squared` = rss, Bias = mb)
   }), c("Panel A. Pooled factor and market panel",
         "Panel B. Market portfolio from pooled estimation"))
   save_panel_table(performance_panels, "main", "performance", paste(
     "Out-of-sample predictive performance.",
     "Panel A pools forecast errors across all factor-month and market-month observations before computing each statistic.",
     "Panel B evaluates the market-portfolio forecasts from the same pooled estimation.",
-    "The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance.",
+    paste("The evaluation period runs from", forecast_period, "and the dependent variable is monthly log realized variance."),
+    "MPHE denotes mean pseudo-Huber error and MAPE denotes mean absolute percentage error.",
     "R-squared is computed relative to the mean in each evaluation sample. Bias is realized minus predicted log variance.",
     "The equal-weighted forecast averages HARX, elastic net, random forest, XGBoost, and the three neural networks."))
 
@@ -286,7 +295,7 @@
     "internet_appendix", "additional_scopes", paste(
       "Out-of-sample predictive performance for the market portfolio estimated separately.",
       "Each forecasting model is estimated only on the market-portfolio time series.",
-      "The evaluation period runs from July 2006 to December 2024 and the dependent variable is monthly log realized variance."))
+      paste("The evaluation period runs from", forecast_period, "and the dependent variable is monthly log realized variance.")))
 
 # Sequential predictive comparisons---------------------------------------------
 
@@ -537,6 +546,14 @@
                        paste(portfolio_paths[!file.exists(portfolio_paths)], collapse = ", ")))
   }
   portfolio_results <- purrr::map(portfolio_paths, readRDS)
+  # A fixed 153-factor aggregate starts when all factors have saved holdings.
+  # Market strategies retain their full available history in both universes.
+  if (sample_id == "1927") portfolio_results$panel <- purrr::map(
+    portfolio_results$panel, function(result) {
+      result$w_compiled_df <- result$w_compiled_df %>%
+        dplyr::filter(name == "spx_vw" | month_id >= as.Date("1980-01-01"))
+      result
+    })
   portfolio_model_order <- c("glmnet", "har", "harx", "nn1", "nn2", "nn3", "rf", "xgb", "ew")
   required_portfolio_columns <- c(
     "name", "month_id", "method", "w_raw", "w_capped", "turnover_raw", "turnover",
@@ -700,7 +717,11 @@
       "EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks."
     ), digits = 3, font_size = "scriptsize", placement = "htbp"
   )
-  save_full_sample_portfolio_table(portfolio_root, cluster_map$name, principal_returns$month_id)
+  if (file.exists(file.path(portfolio_root, "panel", "full_sample_10bps", "all_ports.rds"))) {
+    save_full_sample_portfolio_table(portfolio_root, cluster_map$name, principal_returns$month_id)
+  } else if (sample_id == "1986") {
+    save_full_sample_portfolio_table(portfolio_root, cluster_map$name, principal_returns$month_id)
+  }
   separate_market_panel <- stats::setNames(
     list(summary_table %>%
       dplyr::filter(universe == "market_separate") %>%
@@ -977,10 +998,12 @@
   ## The standalone entry point uses the same saved portfolios and may also be
   ## run by itself while developing inference. It never constructs portfolios.
   source(file.path(project_dir, "R", "report_portfolio_inference.R"))
-  portfolio_inference <- report_portfolio_inference(project_dir, output_dir)
+  if (include_inference) {
+  portfolio_inference <- report_portfolio_inference(project_dir, output_dir, sample_id = sample_id)
   purrr::iwalk(portfolio_inference$outputs, function(files, section) {
     purrr::walk(files, ~ register_output(section, .x))
   })
+  }
 
   for (section in names(generated)) {
     input_lines <- paste0("\\input{results_v3/", sample_id, "/",
@@ -1000,6 +1023,17 @@
     "Managed exposure uses expanding volatility matching with at least 60 prior calibration observations. At each formation date, the normalizer matches unmanaged and inverse-variance-managed volatility over the available past observations. Exposure is capped at 1.5. Net returns deduct 10 basis points per unit change in factor exposure. These costs exclude trading within the underlying long-short factors.",
     "Portfolio inference uses the common July 2011 to December 2024 period, with 162 holding months. It uses 10,000 paired stationary-bootstrap draws with expected block length five, with three and ten as sensitivity analyses. Mean and certainty-equivalent return inference extends the Sharpe comparison. One-sided tests use centered bootstrap errors and Holm adjustment across prespecified comparison families. Spanning regressions use Newey-West lag one, with lags five and ten as sensitivity analyses. Inference is conditional on the fitted strategies. The standalone portfolio inference preview contains only these new tests."
   )
+  if (sample_id == "1927") {
+    notes[2] <- paste("All forecasts concern monthly log realized variance, log(RV + 1e-8).",
+      "The forecast evaluation spans June 1947 to December 2024, with an expanding unbalanced factor panel.",
+      "Predictors begin in 1927. Training expands, validation uses 90 months, and models are selected each June.")
+    notes[length(notes)] <- paste("Portfolio inference retains June 1952 to December 2024 for market strategies",
+      "and January 1980 to December 2024 for the balanced factor portfolios.",
+      "Each calendar uses shared month draws. The stationary bootstrap uses 10,000 draws, seed 20260918,",
+      "and expected block length five, with three and ten as sensitivities.",
+      "One-sided centered tests use the same prespecified families for Holm and BH adjustments.",
+      "Spanning regressions use Newey-West lag one, with lags five and ten as sensitivities.")
+  }
   writeLines(notes, file.path(output_dir, "notes.tex"))
   preview <- c("\\documentclass[11pt]{article}",
     "\\usepackage[a4paper,margin=18mm]{geometry}", "\\usepackage[T1]{fontenc}",
@@ -1015,14 +1049,15 @@
     paste0("\\input{results_v3/", sample_id, "/internet_appendix.tex}"), "\\end{document}")
   writeLines(preview, file.path(output_dir, "results_preview.tex"))
   readme <- c("# V3 forecast reporting", "",
-    "Regenerate from the ML_RV project with source('R/report_results.R'). No estimation is performed.",
+    paste0("Regenerate with source('R/report_results.R'); report_results('", sample_id, "'). No estimation is performed."),
     "The project R library must be available. The script stops on inconsistent inputs.", "",
     "Compile from latex_paper: pdflatex -interaction=nonstopmode -halt-on-error -output-directory=results_v3/1986 results_v3/1986/results_preview.tex", "",
     "Integration: manuscript.tex reads main.tex, main_appendix.tex and internet_appendix.tex from this directory. The snippets require graphicx, longtable and pdflscape.",
     "See notes.tex for units, aggregation, validation, ensemble and surrogate conventions.",
     "data/ contains the EW RDS objects, forecasts, all metrics, tuning choices, feature coefficients and source hashes.",
     "main/, main_appendix/ and internet_appendix/ contain generated LaTeX tables and figure wrappers plus PDF/PNG figures.",
-    "Only this generated results_v3/1986 directory is overwritten on rerun. Existing manuscript and estimation artifacts are not changed.")
+    paste0("Only this generated results_v3/", sample_id, " directory is overwritten on rerun. Existing manuscript and estimation artifacts are not changed."))
+  readme <- gsub("results_v3/1986", paste0("results_v3/", sample_id), readme, fixed = TRUE)
   writeLines(readme, file.path(output_dir, "README.md"))
   capture.output(utils::sessionInfo(), file = file.path(output_dir, "data", "session_info.txt"))
   report_source_files <- c("R/helpers.R", "R/reporting_helpers.R",
@@ -1031,3 +1066,5 @@
     sha256 = purrr::map_chr(file.path(project_dir, report_source_files), hash_artifact)),
     "report_code_manifest")
   message("Reporting complete: ", output_dir)
+  invisible(list(output_dir = output_dir, generated = generated))
+}

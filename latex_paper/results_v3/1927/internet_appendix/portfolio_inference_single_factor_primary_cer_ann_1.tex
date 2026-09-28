@@ -1,0 +1,61 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
+\caption[Paired certainty-equivalent return comparisons.]{\footnotesize \textbf{: Paired certainty-equivalent return comparisons.} Differences are annual percentage points. Certainty-equivalent returns use risk aversion five and net-return variance. Each row compares the EW forecast ensemble with the stated benchmark within the same portfolio construction. All returns are net of modeled factor-exposure costs. Raw and capped exposures are reported separately. Brackets report pointwise 95 percent percentile intervals from 10000 paired stationary-bootstrap draws with expected block length five months. The one-sided null is that the ensemble's performance difference is nonpositive. Tests use centered bootstrap errors. Holm and Benjamini-Hochberg adjustments use the same family of Sharpe, mean and certainty-equivalent return comparisons. Market strategies span June 1952 to December 2024. Balanced factor and multifactor portfolios span January 1980 to December 2024. Inference is conditional on the fitted strategies.}\label{tab:rv-portfolio_inference_single_factor_primary_cer_ann_1}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Panel A. 50/50 single-factor combination, 153-factor aggregate}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & -0.363 & [-0.742, -0.033] & 0.971 & 1.000 \\
+RW & Capped & 0.077 & [-0.028, 0.182] & 0.078 & 1.000 \\
+HAR & Capped & 0.061 & [0.024, 0.098] & 0.001 & 0.061 \\
+HARX & Capped & 0.061 & [0.032, 0.087] & 0.000 & 0.010 \\
+Unmanaged & Raw & -0.363 & [-0.742, -0.033] & 0.971 & 1.000 \\
+RW & Raw & 0.078 & [-0.028, 0.184] & 0.076 & 1.000 \\
+HAR & Raw & 0.061 & [0.024, 0.098] & 0.001 & 0.061 \\
+HARX & Raw & 0.061 & [0.032, 0.087] & 0.000 & 0.010 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel B. MM management, 153-factor aggregate}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & -0.822 & [-1.638, -0.134] & 0.976 & 1.000 \\
+RW & Capped & 0.303 & [0.146, 0.483] & 0.001 & 0.080 \\
+HAR & Capped & 0.111 & [0.041, 0.177] & 0.001 & 0.048 \\
+HARX & Capped & 0.104 & [0.043, 0.156] & 0.000 & 0.010 \\
+Unmanaged & Raw & -0.808 & [-1.622, -0.111] & 0.974 & 1.000 \\
+RW & Raw & 0.196 & [-0.026, 0.427] & 0.047 & 1.000 \\
+HAR & Raw & 0.118 & [0.042, 0.193] & 0.001 & 0.092 \\
+HARX & Raw & 0.118 & [0.056, 0.172] & 0.000 & 0.010 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel C. 50/50 single-factor combination, Pooled market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & 0.773 & [-0.297, 1.970] & 0.094 & 1.000 \\
+RW & Capped & 0.838 & [-0.599, 2.332] & 0.129 & 1.000 \\
+HAR & Capped & 0.072 & [-0.161, 0.318] & 0.280 & 1.000 \\
+HARX & Capped & 0.048 & [-0.114, 0.212] & 0.273 & 1.000 \\
+Unmanaged & Raw & 0.773 & [-0.297, 1.970] & 0.094 & 1.000 \\
+RW & Raw & 0.797 & [-0.659, 2.305] & 0.143 & 1.000 \\
+HAR & Raw & 0.072 & [-0.161, 0.318] & 0.280 & 1.000 \\
+HARX & Raw & 0.048 & [-0.114, 0.212] & 0.273 & 1.000 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel D. MM management, Pooled market}} \\
+\hline
+Benchmark & Exposure & Difference (pp) & 95\% interval & p-value & Holm p-value \\
+\hline
+Unmanaged & Capped & 0.796 & [-1.179, 2.992] & 0.222 & 1.000 \\
+RW & Capped & 0.213 & [-0.508, 0.926] & 0.271 & 1.000 \\
+HAR & Capped & 0.002 & [-0.374, 0.404] & 0.489 & 1.000 \\
+HARX & Capped & -0.065 & [-0.340, 0.218] & 0.669 & 1.000 \\
+Unmanaged & Raw & 0.813 & [-1.222, 3.035] & 0.221 & 1.000 \\
+RW & Raw & 3.934 & [0.902, 7.253] & 0.011 & 0.702 \\
+HAR & Raw & 0.062 & [-0.394, 0.541] & 0.396 & 1.000 \\
+HARX & Raw & 0.042 & [-0.272, 0.357] & 0.388 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}

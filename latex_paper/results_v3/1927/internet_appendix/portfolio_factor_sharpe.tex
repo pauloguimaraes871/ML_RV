@@ -1,0 +1,247 @@
+\begin{landscape}
+\begingroup\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\setlength{\tabcolsep}{2.5pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.6cm}rrrrrrrrrrr}
+\caption[Net Sharpe ratios of volatility-managed factor portfolios by Jensen, Kelly, and Pedersen factor cluster.]{\footnotesize \textbf{: Net Sharpe ratios of volatility-managed factor portfolios by Jensen, Kelly, and Pedersen factor cluster.} The first row of each panel reports the Sharpe ratio of an equal-weighted portfolio of the factors in that cluster. The remaining rows report individual factor strategies. All managed strategies cap exposure at 1.5 and deduct 10 basis points per unit change in factor exposure. Light blue cells identify strategies that outperform the strongest result between the unmanaged and random-walk benchmarks. Bold cells identify the highest Sharpe ratio in each row.}\label{tab:rv-portfolio_factor_sharpe}\\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline\endfirsthead
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline\endhead
+\hline\endfoot
+\multicolumn{12}{@{}l}{\textit{Panel A. Accruals}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.633} & 0.533 & 0.574 & 0.556 & 0.575 & 0.592 & 0.610 & 0.571 & 0.589 & 0.574 & 0.586 \\
+cowc\_gr1a & 0.810 & 0.758 & 0.770 & 0.755 & 0.775 & 0.810 & \textbf{\cellcolor{blue!10}0.819} & 0.777 & 0.792 & 0.801 & 0.795 \\
+oaccruals\_at & 0.684 & 0.673 & \cellcolor{blue!10}0.731 & \cellcolor{blue!10}0.699 & \cellcolor{blue!10}0.730 & \cellcolor{blue!10}0.730 & \textbf{\cellcolor{blue!10}0.757} & \cellcolor{blue!10}0.716 & \cellcolor{blue!10}0.736 & \cellcolor{blue!10}0.709 & \cellcolor{blue!10}0.731 \\
+oaccruals\_ni & \textbf{0.764} & 0.622 & 0.718 & 0.692 & 0.709 & 0.721 & 0.702 & 0.704 & 0.721 & 0.685 & 0.710 \\
+seas\_16\_20na & 0.062 & 0.111 & 0.109 & \cellcolor{blue!10}0.121 & \cellcolor{blue!10}0.113 & \cellcolor{blue!10}0.120 & \textbf{\cellcolor{blue!10}0.127} & 0.104 & \cellcolor{blue!10}0.111 & \cellcolor{blue!10}0.124 & \cellcolor{blue!10}0.119 \\
+taccruals\_at & \textbf{0.251} & 0.169 & 0.165 & 0.148 & 0.171 & 0.194 & 0.231 & 0.160 & 0.176 & 0.177 & 0.183 \\
+taccruals\_ni & \textbf{0.214} & 0.114 & 0.138 & 0.125 & 0.128 & 0.154 & 0.160 & 0.146 & 0.152 & 0.141 & 0.148 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel B. Debt Issuance}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 1.022 & 0.900 & 0.979 & 0.948 & 0.975 & \textbf{\cellcolor{blue!10}1.023} & 0.977 & 0.971 & 1.006 & 0.988 & 0.995 \\
+capex\_abn & 0.629 & 0.538 & 0.619 & 0.611 & 0.620 & \textbf{\cellcolor{blue!10}0.642} & 0.625 & 0.620 & 0.619 & 0.603 & \cellcolor{blue!10}0.629 \\
+debt\_gr3 & 0.553 & 0.564 & \cellcolor{blue!10}0.574 & 0.550 & \cellcolor{blue!10}0.565 & \textbf{\cellcolor{blue!10}0.598} & 0.517 & 0.545 & 0.560 & 0.546 & 0.560 \\
+fnl\_gr1a & \textbf{0.856} & 0.775 & 0.817 & 0.804 & 0.827 & 0.849 & 0.749 & 0.829 & 0.848 & 0.846 & 0.830 \\
+ncol\_gr1a & \textbf{0.080} & -0.123 & -0.070 & -0.073 & -0.062 & -0.019 & -0.063 & -0.047 & 0.001 & -0.034 & -0.042 \\
+nfna\_gr1a & \textbf{0.951} & 0.829 & 0.867 & 0.869 & 0.894 & 0.909 & 0.853 & 0.896 & 0.915 & 0.907 & 0.896 \\
+ni\_ar1 & 0.091 & -0.033 & -0.016 & -0.060 & -0.026 & 0.082 & \textbf{\cellcolor{blue!10}0.094} & -0.072 & 0.003 & 0.022 & 0.010 \\
+noa\_at & 0.993 & 1.180 & \textbf{\cellcolor{blue!10}1.238} & \cellcolor{blue!10}1.217 & \cellcolor{blue!10}1.234 & \cellcolor{blue!10}1.195 & \cellcolor{blue!10}1.216 & \cellcolor{blue!10}1.223 & \cellcolor{blue!10}1.236 & \cellcolor{blue!10}1.220 & \cellcolor{blue!10}1.234 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel C. Investment}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.405} & 0.213 & 0.290 & 0.286 & 0.302 & 0.307 & 0.314 & 0.324 & 0.321 & 0.306 & 0.310 \\
+aliq\_at & \textbf{0.136} & -0.073 & -0.002 & 0.003 & 0.010 & -0.020 & 0.007 & 0.037 & 0.005 & 0.007 & 0.006 \\
+at\_gr1 & \textbf{0.343} & 0.087 & 0.193 & 0.171 & 0.194 & 0.195 & 0.195 & 0.210 & 0.207 & 0.194 & 0.196 \\
+be\_gr1a & \textbf{0.265} & 0.052 & 0.120 & 0.116 & 0.123 & 0.111 & 0.130 & 0.132 & 0.128 & 0.118 & 0.123 \\
+capx\_gr1 & \textbf{0.539} & 0.307 & 0.410 & 0.433 & 0.439 & 0.426 & 0.465 & 0.455 & 0.444 & 0.429 & 0.442 \\
+capx\_gr2 & \textbf{0.474} & 0.158 & 0.248 & 0.248 & 0.265 & 0.290 & 0.300 & 0.281 & 0.274 & 0.264 & 0.274 \\
+capx\_gr3 & \textbf{0.361} & 0.165 & 0.251 & 0.240 & 0.248 & 0.256 & 0.255 & 0.260 & 0.245 & 0.242 & 0.251 \\
+coa\_gr1a & \textbf{0.287} & -0.000 & 0.074 & 0.076 & 0.083 & 0.104 & 0.109 & 0.114 & 0.112 & 0.098 & 0.103 \\
+col\_gr1a & \textbf{-0.004} & -0.334 & -0.272 & -0.261 & -0.253 & -0.235 & -0.248 & -0.234 & -0.231 & -0.247 & -0.246 \\
+emp\_gr1 & \textbf{0.272} & 0.167 & 0.199 & 0.195 & 0.207 & 0.206 & 0.197 & 0.226 & 0.210 & 0.193 & 0.206 \\
+inv\_gr1 & \textbf{0.616} & 0.472 & 0.500 & 0.488 & 0.512 & 0.535 & 0.546 & 0.548 & 0.554 & 0.536 & 0.534 \\
+inv\_gr1a & \textbf{0.517} & 0.379 & 0.423 & 0.409 & 0.431 & 0.426 & 0.442 & 0.434 & 0.440 & 0.430 & 0.437 \\
+lnoa\_gr1a & 0.641 & 0.556 & 0.612 & 0.625 & 0.634 & 0.618 & 0.613 & \cellcolor{blue!10}0.650 & \textbf{\cellcolor{blue!10}0.664} & \cellcolor{blue!10}0.660 & 0.639 \\
+mispricing\_mgmt & \textbf{0.623} & 0.502 & 0.554 & 0.532 & 0.563 & 0.560 & 0.596 & 0.574 & 0.578 & 0.578 & 0.575 \\
+ncoa\_gr1a & \textbf{0.739} & 0.535 & 0.607 & 0.636 & 0.648 & 0.631 & 0.629 & 0.667 & 0.682 & 0.664 & 0.653 \\
+nncoa\_gr1a & 0.729 & 0.582 & 0.661 & 0.672 & 0.690 & 0.704 & 0.686 & 0.710 & \textbf{\cellcolor{blue!10}0.730} & 0.713 & 0.707 \\
+noa\_gr1a & \textbf{0.767} & 0.611 & 0.701 & 0.686 & 0.713 & 0.704 & 0.723 & 0.714 & 0.721 & 0.702 & 0.713 \\
+ppeinv\_gr1a & 0.535 & 0.535 & \cellcolor{blue!10}0.581 & \cellcolor{blue!10}0.587 & \cellcolor{blue!10}0.590 & \cellcolor{blue!10}0.558 & \textbf{\cellcolor{blue!10}0.616} & \cellcolor{blue!10}0.595 & \cellcolor{blue!10}0.599 & \cellcolor{blue!10}0.591 & \cellcolor{blue!10}0.595 \\
+ret\_60\_12 & \textbf{0.139} & -0.128 & -0.045 & -0.056 & -0.042 & -0.097 & -0.120 & -0.039 & -0.064 & -0.079 & -0.071 \\
+sale\_gr1 & \textbf{0.235} & -0.041 & 0.051 & 0.055 & 0.061 & 0.085 & 0.115 & 0.083 & 0.065 & 0.046 & 0.070 \\
+sale\_gr3 & \textbf{0.156} & 0.049 & 0.079 & 0.066 & 0.075 & 0.091 & 0.092 & 0.114 & 0.078 & 0.065 & 0.082 \\
+saleq\_gr1 & \textbf{0.111} & -0.264 & -0.149 & -0.143 & -0.126 & -0.103 & -0.113 & -0.106 & -0.122 & -0.149 & -0.124 \\
+seas\_2\_5na & \textbf{0.195} & -0.093 & -0.009 & -0.017 & -0.003 & -0.055 & -0.023 & 0.017 & -0.014 & -0.028 & -0.020 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel D. Low Leverage}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.028 & -0.011 & 0.001 & 0.011 & 0.008 & \cellcolor{blue!10}0.037 & \textbf{\cellcolor{blue!10}0.052} & -0.011 & 0.019 & \cellcolor{blue!10}0.030 & 0.024 \\
+age & -0.137 & -0.065 & -0.085 & -0.070 & -0.074 & -0.075 & -0.092 & -0.094 & -0.081 & \textbf{\cellcolor{blue!10}-0.055} & -0.074 \\
+aliq\_mat & -0.294 & -0.262 & -0.303 & -0.286 & -0.294 & -0.300 & \textbf{\cellcolor{blue!10}-0.156} & -0.308 & -0.303 & -0.275 & -0.274 \\
+at\_be & \textbf{-0.149} & -0.224 & -0.225 & -0.229 & -0.216 & -0.201 & -0.178 & -0.222 & -0.196 & -0.200 & -0.209 \\
+bidaskhl\_21d & \textbf{-0.084} & -0.241 & -0.165 & -0.199 & -0.186 & -0.181 & -0.250 & -0.207 & -0.192 & -0.199 & -0.202 \\
+cash\_at & 0.140 & \textbf{0.304} & 0.247 & 0.252 & 0.250 & 0.239 & 0.270 & 0.229 & 0.264 & 0.266 & 0.259 \\
+netdebt\_me & 0.132 & 0.211 & 0.188 & 0.199 & 0.201 & 0.205 & \textbf{\cellcolor{blue!10}0.266} & 0.180 & 0.209 & \cellcolor{blue!10}0.235 & \cellcolor{blue!10}0.217 \\
+ni\_ivol & \textbf{-0.072} & -0.218 & -0.207 & -0.202 & -0.203 & -0.199 & -0.234 & -0.201 & -0.207 & -0.214 & -0.207 \\
+rd5\_at & 0.282 & 0.202 & 0.237 & 0.246 & 0.229 & 0.269 & \textbf{\cellcolor{blue!10}0.291} & 0.223 & 0.247 & 0.254 & 0.259 \\
+rd\_sale & 0.100 & 0.037 & 0.065 & 0.080 & 0.068 & \cellcolor{blue!10}0.101 & \textbf{\cellcolor{blue!10}0.107} & 0.040 & 0.084 & 0.100 & 0.086 \\
+tangibility & \textbf{0.245} & 0.059 & 0.122 & 0.108 & 0.115 & 0.156 & 0.100 & 0.108 & 0.147 & 0.112 & 0.123 \\
+z\_score & 0.046 & 0.166 & 0.138 & 0.150 & 0.152 & \cellcolor{blue!10}0.181 & \textbf{\cellcolor{blue!10}0.230} & 0.134 & 0.148 & \cellcolor{blue!10}0.176 & \cellcolor{blue!10}0.171 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel E. Low Risk}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.137 & 0.196 & 0.172 & \cellcolor{blue!10}0.203 & \cellcolor{blue!10}0.202 & 0.174 & \cellcolor{blue!10}0.204 & \textbf{\cellcolor{blue!10}0.225} & 0.194 & \cellcolor{blue!10}0.214 & \cellcolor{blue!10}0.204 \\
+beta\_60m & 0.011 & \textbf{0.201} & 0.136 & 0.147 & 0.150 & 0.166 & 0.160 & 0.181 & 0.160 & 0.176 & 0.164 \\
+beta\_dimson\_21d & \textbf{-0.002} & -0.100 & -0.071 & -0.047 & -0.051 & -0.068 & -0.058 & -0.043 & -0.084 & -0.067 & -0.062 \\
+betabab\_1260d & 0.017 & 0.171 & 0.133 & 0.154 & 0.153 & 0.150 & 0.127 & \textbf{\cellcolor{blue!10}0.188} & 0.161 & \cellcolor{blue!10}0.175 & 0.162 \\
+betadown\_252d & -0.026 & 0.001 & -0.040 & \cellcolor{blue!10}0.005 & -0.006 & -0.050 & -0.052 & \textbf{\cellcolor{blue!10}0.035} & -0.016 & -0.001 & -0.011 \\
+earnings\_variability & 0.132 & 0.150 & 0.114 & 0.110 & 0.119 & 0.124 & \textbf{\cellcolor{blue!10}0.159} & 0.129 & 0.093 & 0.118 & 0.124 \\
+ivol\_capm\_21d & 0.194 & 0.230 & 0.225 & \cellcolor{blue!10}0.263 & \cellcolor{blue!10}0.255 & 0.218 & \textbf{\cellcolor{blue!10}0.270} & \cellcolor{blue!10}0.270 & \cellcolor{blue!10}0.249 & \cellcolor{blue!10}0.266 & \cellcolor{blue!10}0.259 \\
+ivol\_capm\_252d & 0.147 & 0.181 & \cellcolor{blue!10}0.186 & \cellcolor{blue!10}0.231 & \cellcolor{blue!10}0.218 & 0.175 & \textbf{\cellcolor{blue!10}0.250} & \cellcolor{blue!10}0.247 & \cellcolor{blue!10}0.226 & \cellcolor{blue!10}0.239 & \cellcolor{blue!10}0.228 \\
+ivol\_ff3\_21d & 0.204 & 0.259 & 0.258 & \textbf{\cellcolor{blue!10}0.290} & \cellcolor{blue!10}0.281 & 0.203 & \cellcolor{blue!10}0.286 & \cellcolor{blue!10}0.284 & \cellcolor{blue!10}0.269 & \cellcolor{blue!10}0.287 & \cellcolor{blue!10}0.276 \\
+ivol\_hxz4\_21d & 0.198 & 0.256 & 0.240 & \cellcolor{blue!10}0.270 & \cellcolor{blue!10}0.268 & \cellcolor{blue!10}0.256 & \textbf{\cellcolor{blue!10}0.281} & \cellcolor{blue!10}0.275 & 0.247 & \cellcolor{blue!10}0.259 & \cellcolor{blue!10}0.264 \\
+ocfq\_saleq\_std & 0.216 & 0.252 & 0.238 & \cellcolor{blue!10}0.270 & \cellcolor{blue!10}0.277 & \cellcolor{blue!10}0.295 & \textbf{\cellcolor{blue!10}0.319} & \cellcolor{blue!10}0.275 & \cellcolor{blue!10}0.260 & \cellcolor{blue!10}0.285 & \cellcolor{blue!10}0.286 \\
+rmax1\_21d & 0.218 & 0.285 & 0.271 & \cellcolor{blue!10}0.289 & 0.284 & 0.237 & \cellcolor{blue!10}0.304 & \textbf{\cellcolor{blue!10}0.309} & 0.278 & \cellcolor{blue!10}0.299 & 0.284 \\
+rmax5\_21d & 0.235 & 0.275 & 0.267 & \cellcolor{blue!10}0.286 & \cellcolor{blue!10}0.286 & 0.253 & \textbf{\cellcolor{blue!10}0.311} & \cellcolor{blue!10}0.301 & \cellcolor{blue!10}0.277 & \cellcolor{blue!10}0.300 & \cellcolor{blue!10}0.288 \\
+rvol\_21d & 0.168 & 0.256 & 0.232 & \cellcolor{blue!10}0.259 & 0.254 & 0.228 & 0.254 & \cellcolor{blue!10}0.272 & 0.247 & \textbf{\cellcolor{blue!10}0.273} & \cellcolor{blue!10}0.258 \\
+seas\_6\_10na & 0.526 & 0.611 & \cellcolor{blue!10}0.614 & \cellcolor{blue!10}0.616 & \textbf{\cellcolor{blue!10}0.629} & \cellcolor{blue!10}0.618 & 0.588 & \cellcolor{blue!10}0.612 & 0.605 & \cellcolor{blue!10}0.616 & \cellcolor{blue!10}0.613 \\
+turnover\_126d & 0.067 & 0.074 & 0.059 & \cellcolor{blue!10}0.086 & \cellcolor{blue!10}0.087 & 0.062 & 0.073 & \textbf{\cellcolor{blue!10}0.103} & 0.069 & \cellcolor{blue!10}0.089 & \cellcolor{blue!10}0.084 \\
+zero\_trades\_126d & 0.080 & 0.091 & 0.074 & \cellcolor{blue!10}0.107 & \cellcolor{blue!10}0.106 & 0.069 & \cellcolor{blue!10}0.094 & \textbf{\cellcolor{blue!10}0.131} & \cellcolor{blue!10}0.093 & \cellcolor{blue!10}0.115 & \cellcolor{blue!10}0.107 \\
+zero\_trades\_21d & -0.078 & -0.081 & -0.096 & \cellcolor{blue!10}-0.069 & \cellcolor{blue!10}-0.067 & -0.108 & -0.084 & \textbf{\cellcolor{blue!10}-0.046} & -0.082 & \cellcolor{blue!10}-0.064 & \cellcolor{blue!10}-0.071 \\
+zero\_trades\_252d & 0.111 & 0.123 & 0.107 & \cellcolor{blue!10}0.141 & \cellcolor{blue!10}0.138 & 0.087 & 0.121 & \textbf{\cellcolor{blue!10}0.174} & \cellcolor{blue!10}0.134 & \cellcolor{blue!10}0.153 & \cellcolor{blue!10}0.141 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel F. Momentum}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.348 & \textbf{0.660} & 0.574 & 0.622 & 0.617 & 0.591 & 0.612 & 0.618 & 0.630 & 0.633 & 0.621 \\
+prc\_highprc\_252d & 0.198 & \textbf{0.495} & 0.411 & 0.455 & 0.450 & 0.440 & 0.473 & 0.456 & 0.454 & 0.469 & 0.459 \\
+resff3\_12\_1 & 0.741 & 0.710 & \cellcolor{blue!10}0.772 & \cellcolor{blue!10}0.779 & \cellcolor{blue!10}0.784 & \cellcolor{blue!10}0.759 & \cellcolor{blue!10}0.744 & \cellcolor{blue!10}0.799 & \textbf{\cellcolor{blue!10}0.800} & \cellcolor{blue!10}0.773 & \cellcolor{blue!10}0.781 \\
+resff3\_6\_1 & \textbf{0.383} & 0.194 & 0.196 & 0.214 & 0.228 & 0.248 & 0.245 & 0.227 & 0.235 & 0.227 & 0.234 \\
+ret\_12\_1 & 0.388 & \textbf{0.776} & 0.705 & 0.754 & 0.741 & 0.722 & 0.738 & 0.754 & 0.759 & 0.766 & 0.754 \\
+ret\_3\_1 & 0.064 & 0.180 & 0.152 & \cellcolor{blue!10}0.193 & \cellcolor{blue!10}0.197 & 0.146 & \textbf{\cellcolor{blue!10}0.216} & \cellcolor{blue!10}0.180 & \cellcolor{blue!10}0.192 & \cellcolor{blue!10}0.188 & \cellcolor{blue!10}0.188 \\
+ret\_6\_1 & 0.205 & \textbf{0.421} & 0.356 & 0.386 & 0.379 & 0.355 & 0.376 & 0.366 & 0.383 & 0.369 & 0.375 \\
+ret\_9\_1 & 0.342 & \textbf{0.638} & 0.588 & 0.627 & 0.623 & 0.565 & 0.587 & 0.616 & 0.618 & 0.624 & 0.613 \\
+seas\_1\_1na & 0.295 & 0.588 & 0.530 & 0.583 & 0.568 & 0.550 & 0.556 & 0.581 & 0.586 & \textbf{\cellcolor{blue!10}0.604} & 0.580 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel G. Profit Growth}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.434 & \textbf{0.752} & 0.716 & 0.713 & 0.715 & 0.680 & 0.690 & 0.683 & 0.679 & 0.695 & 0.700 \\
+dsale\_dinv & 0.604 & 0.637 & 0.633 & 0.635 & \cellcolor{blue!10}0.654 & \cellcolor{blue!10}0.660 & 0.607 & \cellcolor{blue!10}0.660 & \textbf{\cellcolor{blue!10}0.667} & \cellcolor{blue!10}0.659 & \cellcolor{blue!10}0.654 \\
+dsale\_drec & \textbf{-0.183} & -0.417 & -0.419 & -0.402 & -0.411 & -0.366 & -0.305 & -0.397 & -0.371 & -0.358 & -0.378 \\
+dsale\_dsga & \textbf{-0.010} & -0.055 & -0.064 & -0.054 & -0.051 & -0.029 & -0.075 & -0.061 & -0.051 & -0.040 & -0.052 \\
+niq\_at\_chg1 & 0.463 & 0.709 & 0.698 & \textbf{\cellcolor{blue!10}0.721} & \cellcolor{blue!10}0.715 & 0.679 & 0.690 & 0.693 & 0.689 & 0.692 & 0.702 \\
+niq\_be\_chg1 & 0.495 & \textbf{0.719} & 0.695 & 0.718 & 0.712 & 0.701 & 0.708 & 0.701 & 0.704 & 0.709 & 0.711 \\
+niq\_su & 0.468 & \textbf{0.624} & 0.603 & 0.617 & 0.612 & 0.604 & 0.589 & 0.588 & 0.601 & 0.592 & 0.607 \\
+ocf\_at\_chg1 & 0.576 & 0.762 & \cellcolor{blue!10}0.776 & 0.738 & \cellcolor{blue!10}0.769 & 0.756 & \textbf{\cellcolor{blue!10}0.784} & \cellcolor{blue!10}0.763 & \cellcolor{blue!10}0.767 & \cellcolor{blue!10}0.767 & \cellcolor{blue!10}0.772 \\
+ret\_12\_7 & 0.502 & 0.774 & \cellcolor{blue!10}0.775 & \cellcolor{blue!10}0.798 & \cellcolor{blue!10}0.792 & 0.774 & 0.766 & \textbf{\cellcolor{blue!10}0.799} & \cellcolor{blue!10}0.789 & \cellcolor{blue!10}0.792 & \cellcolor{blue!10}0.794 \\
+sale\_emp\_gr1 & 0.061 & 0.102 & \cellcolor{blue!10}0.110 & 0.084 & 0.097 & \textbf{\cellcolor{blue!10}0.123} & 0.055 & 0.085 & 0.087 & \cellcolor{blue!10}0.106 & 0.094 \\
+saleq\_su & 0.066 & 0.184 & 0.151 & 0.158 & 0.167 & 0.152 & \textbf{\cellcolor{blue!10}0.211} & 0.136 & 0.153 & 0.174 & 0.166 \\
+seas\_1\_1an & 0.179 & \textbf{0.381} & 0.302 & 0.283 & 0.287 & 0.329 & 0.342 & 0.279 & 0.284 & 0.313 & 0.305 \\
+tax\_gr1a & 0.164 & 0.276 & 0.256 & \textbf{\cellcolor{blue!10}0.283} & \cellcolor{blue!10}0.280 & 0.248 & 0.243 & 0.264 & 0.270 & 0.274 & 0.270 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel H. Profitability}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.422 & 0.508 & \cellcolor{blue!10}0.510 & \cellcolor{blue!10}0.515 & \cellcolor{blue!10}0.514 & \cellcolor{blue!10}0.540 & \textbf{\cellcolor{blue!10}0.589} & \cellcolor{blue!10}0.525 & \cellcolor{blue!10}0.514 & \cellcolor{blue!10}0.521 & \cellcolor{blue!10}0.538 \\
+dolvol\_var\_126d & \textbf{0.038} & -0.052 & -0.048 & -0.084 & -0.075 & -0.040 & 0.001 & -0.083 & -0.079 & -0.087 & -0.060 \\
+ebit\_bev & 0.540 & 0.595 & \cellcolor{blue!10}0.611 & \cellcolor{blue!10}0.636 & \cellcolor{blue!10}0.640 & \cellcolor{blue!10}0.651 & \textbf{\cellcolor{blue!10}0.674} & \cellcolor{blue!10}0.645 & \cellcolor{blue!10}0.633 & \cellcolor{blue!10}0.639 & \cellcolor{blue!10}0.651 \\
+ebit\_sale & \textbf{0.159} & 0.039 & 0.063 & 0.073 & 0.064 & 0.053 & 0.101 & 0.072 & 0.059 & 0.067 & 0.071 \\
+f\_score & 0.421 & \textbf{0.691} & 0.674 & 0.656 & 0.662 & 0.656 & 0.663 & 0.680 & 0.661 & 0.673 & 0.673 \\
+ni\_be & 0.342 & 0.340 & \cellcolor{blue!10}0.343 & \cellcolor{blue!10}0.363 & \cellcolor{blue!10}0.370 & \cellcolor{blue!10}0.350 & \textbf{\cellcolor{blue!10}0.388} & \cellcolor{blue!10}0.372 & \cellcolor{blue!10}0.350 & \cellcolor{blue!10}0.367 & \cellcolor{blue!10}0.370 \\
+niq\_be & 0.477 & 0.522 & \cellcolor{blue!10}0.554 & \cellcolor{blue!10}0.586 & \cellcolor{blue!10}0.574 & \cellcolor{blue!10}0.565 & \textbf{\cellcolor{blue!10}0.615} & \cellcolor{blue!10}0.575 & \cellcolor{blue!10}0.564 & \cellcolor{blue!10}0.561 & \cellcolor{blue!10}0.581 \\
+o\_score & 0.420 & 0.366 & 0.372 & 0.368 & 0.373 & 0.373 & \textbf{\cellcolor{blue!10}0.421} & 0.380 & 0.366 & 0.378 & 0.385 \\
+ocf\_at & 0.729 & 0.810 & \cellcolor{blue!10}0.861 & \cellcolor{blue!10}0.849 & \cellcolor{blue!10}0.847 & \cellcolor{blue!10}0.875 & \textbf{\cellcolor{blue!10}0.911} & \cellcolor{blue!10}0.851 & \cellcolor{blue!10}0.846 & \cellcolor{blue!10}0.842 & \cellcolor{blue!10}0.864 \\
+ope\_be & 0.452 & 0.525 & \cellcolor{blue!10}0.541 & \cellcolor{blue!10}0.562 & \cellcolor{blue!10}0.561 & \cellcolor{blue!10}0.544 & \textbf{\cellcolor{blue!10}0.578} & \cellcolor{blue!10}0.560 & \cellcolor{blue!10}0.553 & \cellcolor{blue!10}0.554 & \cellcolor{blue!10}0.565 \\
+ope\_bel1 & 0.326 & 0.356 & 0.354 & \cellcolor{blue!10}0.382 & \cellcolor{blue!10}0.376 & \cellcolor{blue!10}0.368 & \textbf{\cellcolor{blue!10}0.408} & \cellcolor{blue!10}0.370 & \cellcolor{blue!10}0.362 & \cellcolor{blue!10}0.365 & \cellcolor{blue!10}0.379 \\
+turnover\_var\_126d & \textbf{0.063} & -0.003 & -0.006 & -0.047 & -0.036 & -0.005 & 0.025 & -0.045 & -0.040 & -0.048 & -0.024 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel I. Quality}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & 0.654 & 0.602 & 0.617 & 0.628 & 0.637 & 0.641 & \textbf{\cellcolor{blue!10}0.658} & 0.619 & 0.633 & 0.634 & 0.640 \\
+at\_turnover & \textbf{0.437} & 0.385 & 0.366 & 0.369 & 0.387 & 0.388 & 0.367 & 0.368 & 0.376 & 0.373 & 0.378 \\
+cop\_at & 1.073 & 0.969 & \cellcolor{blue!10}1.112 & \cellcolor{blue!10}1.088 & \cellcolor{blue!10}1.115 & \cellcolor{blue!10}1.120 & \textbf{\cellcolor{blue!10}1.151} & \cellcolor{blue!10}1.092 & \cellcolor{blue!10}1.118 & \cellcolor{blue!10}1.095 & \cellcolor{blue!10}1.120 \\
+cop\_atl1 & 0.805 & 0.813 & \cellcolor{blue!10}0.921 & \cellcolor{blue!10}0.895 & \cellcolor{blue!10}0.911 & \cellcolor{blue!10}0.933 & \textbf{\cellcolor{blue!10}0.966} & \cellcolor{blue!10}0.882 & \cellcolor{blue!10}0.892 & \cellcolor{blue!10}0.887 & \cellcolor{blue!10}0.917 \\
+dgp\_dsale & 0.138 & 0.229 & 0.203 & 0.202 & 0.204 & 0.228 & \textbf{\cellcolor{blue!10}0.239} & 0.184 & 0.194 & 0.226 & 0.215 \\
+gp\_at & \textbf{0.535} & 0.387 & 0.381 & 0.395 & 0.409 & 0.395 & 0.418 & 0.384 & 0.391 & 0.396 & 0.400 \\
+gp\_atl1 & 0.289 & 0.286 & 0.266 & 0.282 & \cellcolor{blue!10}0.296 & \cellcolor{blue!10}0.311 & \textbf{\cellcolor{blue!10}0.328} & 0.274 & 0.282 & \cellcolor{blue!10}0.300 & \cellcolor{blue!10}0.297 \\
+mispricing\_perf & 0.559 & 0.651 & 0.648 & 0.650 & \textbf{\cellcolor{blue!10}0.665} & 0.638 & \cellcolor{blue!10}0.659 & 0.648 & 0.650 & 0.640 & \cellcolor{blue!10}0.655 \\
+ni\_inc8q & 0.187 & 0.247 & 0.238 & \textbf{\cellcolor{blue!10}0.265} & \cellcolor{blue!10}0.256 & 0.227 & \cellcolor{blue!10}0.257 & \cellcolor{blue!10}0.249 & 0.242 & \cellcolor{blue!10}0.257 & \cellcolor{blue!10}0.255 \\
+niq\_at & \textbf{0.417} & 0.321 & 0.345 & 0.367 & 0.367 & 0.368 & 0.370 & 0.365 & 0.355 & 0.345 & 0.366 \\
+op\_at & \textbf{0.513} & 0.362 & 0.402 & 0.422 & 0.426 & 0.419 & 0.450 & 0.410 & 0.430 & 0.425 & 0.429 \\
+op\_atl1 & \textbf{0.314} & 0.212 & 0.192 & 0.222 & 0.216 & 0.245 & 0.252 & 0.205 & 0.208 & 0.219 & 0.225 \\
+opex\_at & \textbf{0.407} & 0.284 & 0.305 & 0.329 & 0.332 & 0.332 & 0.316 & 0.322 & 0.349 & 0.328 & 0.332 \\
+qmj & 0.478 & 0.553 & 0.537 & 0.549 & \cellcolor{blue!10}0.568 & \cellcolor{blue!10}0.572 & \textbf{\cellcolor{blue!10}0.613} & 0.541 & \cellcolor{blue!10}0.560 & \cellcolor{blue!10}0.568 & \cellcolor{blue!10}0.571 \\
+qmj\_growth & 0.437 & 0.477 & 0.452 & \cellcolor{blue!10}0.487 & \textbf{\cellcolor{blue!10}0.489} & 0.475 & 0.474 & 0.459 & 0.464 & \cellcolor{blue!10}0.480 & \cellcolor{blue!10}0.479 \\
+qmj\_prof & 0.659 & 0.584 & 0.658 & \cellcolor{blue!10}0.667 & \cellcolor{blue!10}0.677 & \cellcolor{blue!10}0.692 & \textbf{\cellcolor{blue!10}0.729} & \cellcolor{blue!10}0.670 & \cellcolor{blue!10}0.692 & \cellcolor{blue!10}0.692 & \cellcolor{blue!10}0.694 \\
+qmj\_safety & 0.166 & \textbf{0.316} & 0.271 & 0.279 & 0.274 & 0.287 & 0.312 & 0.292 & 0.281 & 0.303 & 0.292 \\
+sale\_bev & \textbf{0.731} & 0.584 & 0.630 & 0.618 & 0.629 & 0.619 & 0.628 & 0.595 & 0.613 & 0.605 & 0.620 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel J. Seasonality}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.655} & 0.380 & 0.452 & 0.471 & 0.488 & 0.547 & 0.414 & 0.493 & 0.537 & 0.526 & 0.502 \\
+corr\_1260d & -0.028 & 0.002 & \cellcolor{blue!10}0.029 & \cellcolor{blue!10}0.059 & \cellcolor{blue!10}0.051 & \cellcolor{blue!10}0.004 & -0.020 & \textbf{\cellcolor{blue!10}0.065} & \cellcolor{blue!10}0.060 & \cellcolor{blue!10}0.050 & \cellcolor{blue!10}0.034 \\
+coskew\_21d & \textbf{0.300} & 0.165 & 0.243 & 0.266 & 0.274 & 0.279 & 0.202 & 0.267 & 0.272 & 0.264 & 0.263 \\
+dbnetis\_at & \textbf{0.468} & 0.302 & 0.344 & 0.365 & 0.359 & 0.389 & 0.296 & 0.378 & 0.415 & 0.359 & 0.370 \\
+kz\_index & \textbf{-0.206} & -0.448 & -0.419 & -0.391 & -0.407 & -0.354 & -0.443 & -0.391 & -0.387 & -0.394 & -0.400 \\
+lti\_gr1a & \textbf{0.172} & -0.098 & -0.048 & -0.033 & -0.027 & 0.023 & -0.044 & 0.012 & 0.025 & 0.031 & -0.000 \\
+pi\_nix & 0.088 & 0.001 & 0.044 & 0.068 & 0.053 & 0.078 & \textbf{\cellcolor{blue!10}0.119} & \cellcolor{blue!10}0.104 & \cellcolor{blue!10}0.114 & \cellcolor{blue!10}0.095 & \cellcolor{blue!10}0.095 \\
+seas\_11\_15an & \textbf{0.469} & 0.359 & 0.387 & 0.391 & 0.406 & 0.430 & 0.393 & 0.417 & 0.411 & 0.429 & 0.413 \\
+seas\_11\_15na & 0.208 & 0.278 & 0.268 & 0.272 & 0.272 & \textbf{\cellcolor{blue!10}0.301} & 0.215 & 0.230 & 0.260 & 0.273 & 0.262 \\
+seas\_16\_20an & \textbf{0.630} & 0.367 & 0.404 & 0.398 & 0.404 & 0.468 & 0.410 & 0.400 & 0.397 & 0.419 & 0.416 \\
+seas\_2\_5an & 0.389 & 0.392 & \cellcolor{blue!10}0.431 & \cellcolor{blue!10}0.423 & \cellcolor{blue!10}0.437 & \textbf{\cellcolor{blue!10}0.445} & 0.374 & \cellcolor{blue!10}0.424 & \cellcolor{blue!10}0.422 & \cellcolor{blue!10}0.411 & \cellcolor{blue!10}0.423 \\
+seas\_6\_10an & \textbf{0.654} & 0.515 & 0.573 & 0.541 & 0.573 & 0.567 & 0.544 & 0.541 & 0.562 & 0.547 & 0.557 \\
+sti\_gr1a & \textbf{-0.369} & -0.390 & -0.414 & -0.410 & -0.397 & -0.385 & -0.386 & -0.398 & -0.410 & -0.393 & -0.393 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel K. Short-Term Reversal}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.276} & 0.074 & 0.146 & 0.131 & 0.135 & 0.183 & 0.149 & 0.125 & 0.145 & 0.151 & 0.144 \\
+iskew\_capm\_21d & \textbf{0.070} & -0.121 & -0.060 & -0.081 & -0.079 & -0.009 & -0.062 & -0.065 & -0.054 & -0.017 & -0.057 \\
+iskew\_ff3\_21d & \textbf{-0.032} & -0.252 & -0.240 & -0.248 & -0.246 & -0.143 & -0.203 & -0.241 & -0.205 & -0.195 & -0.215 \\
+iskew\_hxz4\_21d & \textbf{-0.082} & -0.371 & -0.380 & -0.378 & -0.378 & -0.224 & -0.255 & -0.338 & -0.309 & -0.279 & -0.314 \\
+ret\_1\_0 & 0.275 & 0.253 & \cellcolor{blue!10}0.290 & 0.265 & 0.274 & \textbf{\cellcolor{blue!10}0.293} & 0.265 & 0.274 & \cellcolor{blue!10}0.283 & 0.257 & 0.275 \\
+rmax5\_rvol\_21d & 0.439 & 0.321 & 0.415 & 0.420 & 0.417 & \textbf{\cellcolor{blue!10}0.443} & 0.423 & 0.399 & 0.429 & 0.419 & 0.424 \\
+rskew\_21d & \textbf{0.160} & 0.070 & 0.083 & 0.110 & 0.106 & 0.128 & 0.094 & 0.108 & 0.106 & 0.136 & 0.114 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel L. Size}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.155} & -0.136 & -0.065 & -0.064 & -0.065 & -0.053 & -0.131 & -0.074 & -0.105 & -0.115 & -0.087 \\
+ami\_126d & \textbf{0.003} & -0.161 & -0.099 & -0.081 & -0.080 & -0.142 & -0.177 & -0.099 & -0.116 & -0.121 & -0.116 \\
+dolvol\_126d & \textbf{0.083} & -0.029 & -0.004 & 0.011 & 0.012 & -0.059 & -0.085 & -0.005 & -0.036 & -0.038 & -0.028 \\
+market\_equity & \textbf{0.085} & -0.173 & -0.073 & -0.083 & -0.078 & -0.084 & -0.106 & -0.078 & -0.112 & -0.114 & -0.093 \\
+prc & \textbf{-0.038} & -0.480 & -0.368 & -0.403 & -0.388 & -0.378 & -0.413 & -0.407 & -0.414 & -0.436 & -0.411 \\
+rd\_me & \textbf{0.456} & 0.279 & 0.320 & 0.334 & 0.315 & 0.351 & 0.276 & 0.312 & 0.296 & 0.286 & 0.313 \\
+\hline
+\multicolumn{12}{@{}l}{\textit{Panel M. Value}} \\
+\hline
+Factor & Unmanaged & Random walk & HAR & HARX & ENET & RF & XGB & NN1 & NN2 & NN3 & EW \\
+\hline
+\textbf{Cluster aggregate} & \textbf{0.331} & 0.227 & 0.311 & 0.316 & 0.318 & 0.324 & 0.281 & 0.328 & 0.321 & 0.308 & 0.314 \\
+at\_me & \textbf{0.166} & -0.067 & 0.046 & 0.050 & 0.043 & 0.044 & -0.007 & 0.048 & 0.053 & 0.026 & 0.033 \\
+be\_me & \textbf{0.162} & -0.022 & 0.038 & 0.027 & 0.034 & 0.066 & -0.026 & 0.029 & 0.049 & 0.025 & 0.028 \\
+bev\_mev & \textbf{0.146} & -0.117 & -0.033 & -0.036 & -0.032 & -0.003 & -0.083 & -0.028 & -0.013 & -0.045 & -0.039 \\
+chcsho\_12m & 0.369 & 0.286 & 0.333 & 0.347 & 0.353 & 0.349 & \textbf{\cellcolor{blue!10}0.389} & \cellcolor{blue!10}0.383 & 0.344 & 0.344 & 0.361 \\
+debt\_me & \textbf{0.062} & -0.164 & -0.085 & -0.071 & -0.078 & -0.101 & -0.156 & -0.064 & -0.076 & -0.103 & -0.097 \\
+div12m\_me & \textbf{0.133} & 0.059 & 0.081 & 0.088 & 0.091 & 0.051 & 0.092 & 0.107 & 0.082 & 0.080 & 0.084 \\
+ebitda\_mev & 0.417 & 0.360 & \cellcolor{blue!10}0.455 & \cellcolor{blue!10}0.433 & \cellcolor{blue!10}0.441 & \textbf{\cellcolor{blue!10}0.466} & 0.385 & \cellcolor{blue!10}0.446 & \cellcolor{blue!10}0.438 & \cellcolor{blue!10}0.429 & \cellcolor{blue!10}0.437 \\
+eq\_dur & \textbf{0.258} & 0.026 & 0.115 & 0.093 & 0.110 & 0.132 & 0.055 & 0.102 & 0.094 & 0.073 & 0.092 \\
+eqnetis\_at & 0.396 & 0.369 & \cellcolor{blue!10}0.439 & \cellcolor{blue!10}0.457 & \cellcolor{blue!10}0.465 & \cellcolor{blue!10}0.455 & \textbf{\cellcolor{blue!10}0.468} & \cellcolor{blue!10}0.463 & \cellcolor{blue!10}0.460 & \cellcolor{blue!10}0.444 & \cellcolor{blue!10}0.464 \\
+eqnpo\_12m & \textbf{0.294} & 0.168 & 0.221 & 0.229 & 0.237 & 0.178 & 0.252 & 0.251 & 0.221 & 0.223 & 0.228 \\
+eqnpo\_me & \textbf{0.316} & 0.142 & 0.226 & 0.248 & 0.250 & 0.213 & 0.209 & 0.244 & 0.218 & 0.212 & 0.228 \\
+eqpo\_me & \textbf{0.250} & 0.149 & 0.169 & 0.178 & 0.172 & 0.169 & 0.162 & 0.174 & 0.165 & 0.162 & 0.169 \\
+fcf\_me & 0.672 & 0.662 & \cellcolor{blue!10}0.730 & \cellcolor{blue!10}0.753 & \cellcolor{blue!10}0.749 & \cellcolor{blue!10}0.740 & \cellcolor{blue!10}0.752 & \textbf{\cellcolor{blue!10}0.771} & \cellcolor{blue!10}0.739 & \cellcolor{blue!10}0.748 & \cellcolor{blue!10}0.756 \\
+ival\_me & \textbf{0.355} & 0.169 & 0.222 & 0.213 & 0.221 & 0.249 & 0.173 & 0.187 & 0.212 & 0.195 & 0.208 \\
+netis\_at & 0.488 & 0.518 & \cellcolor{blue!10}0.535 & \cellcolor{blue!10}0.570 & \cellcolor{blue!10}0.568 & \cellcolor{blue!10}0.549 & \cellcolor{blue!10}0.570 & \textbf{\cellcolor{blue!10}0.589} & \cellcolor{blue!10}0.585 & \cellcolor{blue!10}0.582 & \cellcolor{blue!10}0.582 \\
+ni\_me & \textbf{0.288} & 0.174 & 0.248 & 0.260 & 0.253 & 0.250 & 0.222 & 0.275 & 0.253 & 0.252 & 0.253 \\
+ocf\_me & 0.469 & 0.543 & \cellcolor{blue!10}0.610 & \cellcolor{blue!10}0.594 & \cellcolor{blue!10}0.594 & \cellcolor{blue!10}0.591 & 0.536 & \textbf{\cellcolor{blue!10}0.616} & \cellcolor{blue!10}0.601 & \cellcolor{blue!10}0.591 & \cellcolor{blue!10}0.594 \\
+sale\_me & 0.365 & 0.290 & \cellcolor{blue!10}0.371 & 0.363 & \cellcolor{blue!10}0.365 & \textbf{\cellcolor{blue!10}0.390} & 0.266 & \cellcolor{blue!10}0.382 & \cellcolor{blue!10}0.388 & 0.348 & 0.357 \\
+\hline
+\end{longtable}
+\endgroup
+\end{landscape}

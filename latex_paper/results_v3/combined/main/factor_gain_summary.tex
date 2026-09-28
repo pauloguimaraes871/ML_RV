@@ -1,0 +1,38 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.91}\setlength{\tabcolsep}{4pt}
+\caption[]{\footnotesize \textbf{: Distribution of out-of-sample RMSE gains across the 153 equity factors.} Positive percentage gains indicate lower RMSE than HAR. Quantiles describe the cross-sectional distribution across factors. Forecast evaluation spans June 1947 to December 2024 in the long sample and July 2006 to December 2024 in the short sample.}
+\label{tab:rv-factor_gain_summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Panel A. Long sample}} \\
+\hline
+Model & Factors & Beating HAR & Median gain (\%) & P25 (\%) & P75 (\%) \\
+\hline
+HAR & 153 & 0 & 0.00 & 0.00 & 0.00 \\
+HARX & 153 & 126 & 1.45 & 0.19 & 2.46 \\
+ENET & 153 & 127 & 1.63 & 0.48 & 2.84 \\
+RF & 153 & 92 & 1.46 & -1.49 & 4.10 \\
+XGB & 153 & 58 & -2.30 & -5.62 & 2.41 \\
+NN1 & 153 & 82 & 0.20 & -1.40 & 2.05 \\
+NN2 & 153 & 111 & 1.80 & -0.10 & 3.42 \\
+NN3 & 153 & 118 & 2.02 & 0.20 & 3.87 \\
+EW & 153 & 145 & 3.24 & 2.11 & 4.95 \\
+\hline
+\multicolumn{6}{@{}l}{\textit{Panel B. Short sample}} \\
+\hline
+Model & Factors & Beating HAR & Median gain (\%) & P25 (\%) & P75 (\%) \\
+\hline
+HAR & 153 & 0 & 0.00 & 0.00 & 0.00 \\
+HARX & 153 & 74 & -0.57 & -5.65 & 6.82 \\
+ENET & 153 & 107 & 3.49 & -0.93 & 8.63 \\
+RF & 153 & 112 & 4.49 & -0.63 & 7.80 \\
+XGB & 153 & 101 & 3.19 & -1.68 & 7.35 \\
+NN1 & 153 & 76 & -0.09 & -5.57 & 6.63 \\
+NN2 & 153 & 69 & -0.92 & -6.89 & 5.83 \\
+NN3 & 153 & 77 & 0.28 & -6.44 & 6.32 \\
+EW & 153 & 110 & 4.00 & -0.56 & 10.46 \\
+\hline
+\end{tabular}}
+\end{table}

@@ -1,0 +1,66 @@
+\begin{table}[p]
+\centering\footnotesize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.88}\setlength{\tabcolsep}{4pt}
+\caption[]{\footnotesize \textbf{: Out-of-sample predictive performance.} Statistics pool errors across the stated target-month observations. RMSE is Root Mean Squared Error. MAE is Mean Absolute Error. MPHE is mean pseudo-Huber error, MAPE is mean absolute percentage error and R-squared is the out-of-sample R² computed in relation to the target mean. Bias is realized minus predicted log variance. EW averages seven log forecasts, excluding HAR. Forecast evaluation spans June 1947 to December 2024 in the long sample and July 2006 to December 2024 in the short sample.}
+\label{tab:rv-performance}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrrr}
+\multicolumn{7}{@{}l}{\textit{Panel A. Long sample: Pooled factor and market panel}} \\
+\hline
+Model & RMSE & MAE & MPHE & MAPE & R-squared & Bias \\
+\hline
+HAR & 0.7335 & 0.5602 & 0.2050 & 0.0721 & 0.6508 & 0.1147 \\
+HARX & 0.7230 & 0.5509 & 0.1996 & 0.0710 & 0.6607 & 0.1266 \\
+ENET & 0.7234 & 0.5513 & 0.1998 & 0.0711 & 0.6603 & 0.1081 \\
+RF & 0.7201 & 0.5470 & 0.1976 & 0.0706 & 0.6634 & 0.1196 \\
+XGB & 0.7420 & 0.5696 & 0.2098 & 0.0725 & 0.6426 & 0.0207 \\
+NN1 & 0.7291 & 0.5557 & 0.2025 & 0.0717 & 0.6549 & 0.1331 \\
+NN2 & 0.7188 & 0.5489 & 0.1978 & 0.0705 & 0.6646 & 0.0999 \\
+NN3 & 0.7164 & 0.5483 & 0.1973 & 0.0704 & 0.6669 & 0.1105 \\
+EW & 0.7076 & 0.5385 & 0.1922 & 0.0694 & 0.6750 & 0.1026 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel B. Long sample: Market portfolio from pooled estimation}} \\
+\hline
+Model & RMSE & MAE & MPHE & MAPE & R-squared & Bias \\
+\hline
+HAR & 0.8630 & 0.6677 & 0.2701 & 0.1102 & 0.1485 & 0.4904 \\
+HARX & 0.8695 & 0.6835 & 0.2765 & 0.1121 & 0.1357 & 0.5070 \\
+ENET & 0.8934 & 0.7040 & 0.2895 & 0.1156 & 0.0875 & 0.5416 \\
+RF & 0.7708 & 0.5859 & 0.2215 & 0.0958 & 0.3207 & 0.3438 \\
+XGB & 0.7987 & 0.6149 & 0.2358 & 0.1005 & 0.2707 & 0.3878 \\
+NN1 & 0.8886 & 0.7028 & 0.2875 & 0.1145 & 0.0973 & 0.5393 \\
+NN2 & 0.8489 & 0.6580 & 0.2635 & 0.1071 & 0.1761 & 0.4809 \\
+NN3 & 0.8490 & 0.6592 & 0.2639 & 0.1073 & 0.1759 & 0.4891 \\
+EW & 0.8336 & 0.6467 & 0.2555 & 0.1060 & 0.2056 & 0.4699 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel C. Short sample: Pooled factor and market panel}} \\
+\hline
+Model & RMSE & MAE & MPHE & MAPE & R-squared & Bias \\
+\hline
+HAR & 0.7287 & 0.5723 & 0.2079 & 0.0742 & 0.6743 & -0.1308 \\
+HARX & 0.7267 & 0.5593 & 0.2033 & 0.0757 & 0.6761 & 0.1832 \\
+ENET & 0.6990 & 0.5415 & 0.1915 & 0.0728 & 0.7003 & 0.0958 \\
+RF & 0.6973 & 0.5452 & 0.1923 & 0.0722 & 0.7017 & 0.0214 \\
+XGB & 0.7046 & 0.5512 & 0.1959 & 0.0724 & 0.6955 & -0.0296 \\
+NN1 & 0.7246 & 0.5584 & 0.2028 & 0.0755 & 0.6779 & 0.1429 \\
+NN2 & 0.7284 & 0.5627 & 0.2053 & 0.0758 & 0.6746 & 0.1108 \\
+NN3 & 0.7267 & 0.5595 & 0.2035 & 0.0757 & 0.6760 & 0.1158 \\
+EW & 0.6936 & 0.5352 & 0.1885 & 0.0719 & 0.7049 & 0.0915 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel D. Short sample: Market portfolio from pooled estimation}} \\
+\hline
+Model & RMSE & MAE & MPHE & MAPE & R-squared & Bias \\
+\hline
+HAR & 0.8205 & 0.6279 & 0.2459 & 0.1107 & 0.3643 & 0.1755 \\
+HARX & 0.8246 & 0.6371 & 0.2482 & 0.1127 & 0.3580 & 0.2488 \\
+ENET & 0.8254 & 0.6472 & 0.2520 & 0.1143 & 0.3566 & 0.2916 \\
+RF & 0.8206 & 0.6346 & 0.2464 & 0.1127 & 0.3641 & 0.2195 \\
+XGB & 0.8465 & 0.6512 & 0.2588 & 0.1157 & 0.3234 & 0.3353 \\
+NN1 & 0.8600 & 0.6601 & 0.2645 & 0.1173 & 0.3017 & 0.2897 \\
+NN2 & 0.8759 & 0.6704 & 0.2715 & 0.1195 & 0.2755 & 0.3411 \\
+NN3 & 0.9040 & 0.6812 & 0.2829 & 0.1229 & 0.2283 & 0.3809 \\
+EW & 0.8289 & 0.6321 & 0.2476 & 0.1130 & 0.3512 & 0.3010 \\
+\hline
+\end{tabular}}
+\end{table}

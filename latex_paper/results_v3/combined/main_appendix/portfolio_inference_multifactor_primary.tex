@@ -1,0 +1,116 @@
+\begin{table}[p]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.91}\setlength{\tabcolsep}{4pt}
+\caption[]{\footnotesize \textbf{: Paired Sharpe comparisons for multifactor strategies.} Each row compares the EW forecast ensemble with the stated benchmark, using net returns. Intervals are pointwise 95 percent percentile intervals from 10,000 paired stationary-bootstrap draws with expected block length five months. One-sided p-values use centered bootstrap errors. Holm and Benjamini-Hochberg (BH) adjustments use the same prespecified family across Sharpe, mean and CER, separately within each sample. BH controls the false discovery rate under its dependence assumptions. Inference is conditional on fitted forecasts. Long-sample evaluation spans January 1980 to December 2024. Short-sample evaluation spans July 2011 to December 2024.}
+\label{tab:rv-portfolio_inference_multifactor_primary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrrr}
+\multicolumn{7}{@{}l}{\textit{Panel A. Long sample: EW allocation, CMV, pooled market}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.046 & [0.010, 0.071] & 0.000 & 0.015 & 0.001 \\
+Lagged market & Raw & -0.017 & [-0.039, 0.018] & 0.937 & 1.000 & 0.999 \\
+HAR & Raw & 0.008 & [0.001, 0.014] & 0.007 & 0.461 & 0.025 \\
+HARX & Raw & 0.008 & [0.000, 0.013] & 0.005 & 0.356 & 0.023 \\
+UMV & Capped & 0.046 & [0.010, 0.071] & 0.000 & 0.015 & 0.001 \\
+Lagged market & Capped & -0.017 & [-0.038, 0.018] & 0.939 & 1.000 & 0.999 \\
+HAR & Capped & 0.008 & [0.001, 0.014] & 0.007 & 0.461 & 0.025 \\
+HARX & Capped & 0.008 & [0.000, 0.013] & 0.005 & 0.356 & 0.023 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel B. Long sample: EW allocation, FCMV}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.060 & [0.014, 0.093] & 0.000 & 0.029 & 0.002 \\
+HAR & Raw & 0.019 & [0.012, 0.028] & 0.000 & 0.008 & 0.001 \\
+HARX & Raw & 0.014 & [0.009, 0.019] & 0.000 & 0.008 & 0.001 \\
+UMV & Capped & 0.060 & [0.014, 0.093] & 0.000 & 0.029 & 0.002 \\
+HAR & Capped & 0.019 & [0.012, 0.028] & 0.000 & 0.008 & 0.001 \\
+HARX & Capped & 0.014 & [0.009, 0.019] & 0.000 & 0.008 & 0.001 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel C. Long sample: HEW allocation, CMV, pooled market}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.056 & [-0.031, 0.100] & 0.007 & 0.461 & 0.025 \\
+Lagged market & Raw & -0.019 & [-0.068, 0.066] & 0.775 & 1.000 & 0.999 \\
+HAR & Raw & 0.016 & [0.006, 0.026] & 0.001 & 0.077 & 0.006 \\
+HARX & Raw & 0.020 & [-0.002, 0.033] & 0.002 & 0.122 & 0.008 \\
+UMV & Capped & 0.056 & [-0.031, 0.100] & 0.007 & 0.461 & 0.025 \\
+Lagged market & Capped & -0.021 & [-0.068, 0.061] & 0.805 & 1.000 & 0.999 \\
+HAR & Capped & 0.016 & [0.006, 0.026] & 0.001 & 0.077 & 0.006 \\
+HARX & Capped & 0.020 & [-0.002, 0.033] & 0.002 & 0.122 & 0.008 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel D. Long sample: HEW allocation, FCMV}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.131 & [0.024, 0.183] & 0.000 & 0.008 & 0.001 \\
+HAR & Raw & 0.029 & [0.018, 0.042] & 0.000 & 0.008 & 0.001 \\
+HARX & Raw & 0.027 & [0.012, 0.036] & 0.000 & 0.008 & 0.001 \\
+UMV & Capped & 0.131 & [0.024, 0.183] & 0.000 & 0.008 & 0.001 \\
+HAR & Capped & 0.029 & [0.018, 0.042] & 0.000 & 0.008 & 0.001 \\
+HARX & Capped & 0.027 & [0.012, 0.036] & 0.000 & 0.008 & 0.001 \\
+\hline
+\end{tabular}}
+\end{table}
+\begin{table}[p]
+\ContinuedFloat
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{0.91}\setlength{\tabcolsep}{4pt}
+\caption[]{\footnotesize \textbf{: Paired Sharpe comparisons for multifactor strategies. Continued.} Short-sample results. Definitions and conventions follow the preceding panels.}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrrr}
+\multicolumn{7}{@{}l}{\textit{Panel E. Short sample: EW allocation, CMV, pooled market}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.000 & [-0.070, 0.071] & 0.479 & 1.000 & 0.529 \\
+Lagged market & Raw & 0.021 & [-0.038, 0.075] & 0.215 & 1.000 & 0.365 \\
+HAR & Raw & 0.020 & [-0.010, 0.048] & 0.078 & 1.000 & 0.365 \\
+HARX & Raw & 0.012 & [-0.005, 0.030] & 0.101 & 1.000 & 0.365 \\
+UMV & Capped & 0.000 & [-0.070, 0.071] & 0.479 & 1.000 & 0.529 \\
+Lagged market & Capped & 0.021 & [-0.030, 0.067] & 0.183 & 1.000 & 0.365 \\
+HAR & Capped & 0.020 & [-0.010, 0.048] & 0.078 & 1.000 & 0.365 \\
+HARX & Capped & 0.011 & [-0.006, 0.030] & 0.104 & 1.000 & 0.365 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel F. Short sample: EW allocation, FCMV}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.026 & [-0.039, 0.099] & 0.221 & 1.000 & 0.365 \\
+HAR & Raw & 0.016 & [-0.009, 0.038] & 0.072 & 1.000 & 0.365 \\
+HARX & Raw & 0.013 & [0.001, 0.027] & 0.027 & 1.000 & 0.365 \\
+UMV & Capped & 0.026 & [-0.039, 0.099] & 0.221 & 1.000 & 0.365 \\
+HAR & Capped & 0.016 & [-0.009, 0.038] & 0.072 & 1.000 & 0.365 \\
+HARX & Capped & 0.013 & [0.001, 0.027] & 0.027 & 1.000 & 0.365 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel G. Short sample: HEW allocation, CMV, pooled market}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & -0.022 & [-0.105, 0.053] & 0.670 & 1.000 & 0.670 \\
+Lagged market & Raw & 0.067 & [0.002, 0.134] & 0.027 & 1.000 & 0.365 \\
+HAR & Raw & 0.038 & [-0.001, 0.077] & 0.030 & 1.000 & 0.365 \\
+HARX & Raw & 0.014 & [-0.004, 0.035] & 0.091 & 1.000 & 0.365 \\
+UMV & Capped & -0.022 & [-0.105, 0.053] & 0.670 & 1.000 & 0.670 \\
+Lagged market & Capped & 0.050 & [-0.004, 0.105] & 0.040 & 1.000 & 0.365 \\
+HAR & Capped & 0.038 & [-0.001, 0.077] & 0.030 & 1.000 & 0.365 \\
+HARX & Capped & 0.013 & [-0.004, 0.033] & 0.091 & 1.000 & 0.365 \\
+\hline
+\multicolumn{7}{@{}l}{\textit{Panel H. Short sample: HEW allocation, FCMV}} \\
+\hline
+Benchmark & Exposure & Sharpe difference & 95\% interval & p-value & Holm p-value & BH p-value \\
+\hline
+UMV & Raw & 0.041 & [-0.057, 0.127] & 0.161 & 1.000 & 0.365 \\
+HAR & Raw & 0.030 & [-0.007, 0.070] & 0.070 & 1.000 & 0.365 \\
+HARX & Raw & 0.018 & [-0.002, 0.040] & 0.049 & 1.000 & 0.365 \\
+UMV & Capped & 0.041 & [-0.057, 0.127] & 0.161 & 1.000 & 0.365 \\
+HAR & Capped & 0.030 & [-0.007, 0.070] & 0.070 & 1.000 & 0.365 \\
+HARX & Capped & 0.018 & [-0.002, 0.040] & 0.049 & 1.000 & 0.365 \\
+\hline
+\end{tabular}}
+\end{table}

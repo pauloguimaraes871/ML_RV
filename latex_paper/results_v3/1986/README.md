@@ -1,6 +1,6 @@
 # V3 forecast reporting
 
-Regenerate from the ML_RV project with source('R/report_results.R'). No estimation is performed.
+Regenerate with source('R/report_results.R'); report_results('1986'). No estimation is performed.
 The project R library must be available. The script stops on inconsistent inputs.
 
 Compile from latex_paper: pdflatex -interaction=nonstopmode -halt-on-error -output-directory=results_v3/1986 results_v3/1986/results_preview.tex

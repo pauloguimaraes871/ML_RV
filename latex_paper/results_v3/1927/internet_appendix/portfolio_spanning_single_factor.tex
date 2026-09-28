@@ -1,0 +1,25 @@
+\begin{table}[htbp]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{2.2pt}
+\caption[Spanning regressions for net single-factor portfolios relative to unmanaged exposure.]{\footnotesize \textbf{: Spanning regressions for net single-factor portfolios relative to unmanaged exposure.} Each row regresses the EW forecast-ensemble portfolio return on the corresponding unmanaged return over its full available evaluation history. Panel A reports the fixed 50/50 combination at the capped implementation. Panel B reports Moreira--Muir management at both exposure implementations. Alpha is annualized and reported in percent. The intercept t-statistic and p-value use Newey--West standard errors with one lag. The appraisal ratio is annualized alpha divided by the residual standard deviation. These regressions describe the ex post opportunity set and do not establish implementable allocation gains.}\label{tab:rv-portfolio_spanning_single_factor}
+\begin{tabular}{lrrrrrrr}
+\multicolumn{8}{@{}l}{\textit{Panel A. Fixed 50/50 combination}} \\
+\hline
+Scope & Exposure & Alpha (\%) & t(alpha) & p-value & Beta & R2 & Appraisal ratio \\
+\hline
+153-factor aggregate & Capped & 0.295 & 3.586 & 0.000 & 0.683 & 0.951 & 0.526 \\
+Pooled market & Capped & 0.569 & 1.451 & 0.147 & 0.852 & 0.945 & 0.183 \\
+\hline
+\multicolumn{8}{@{}l}{\textit{Panel B. Moreira--Muir management}} \\
+\hline
+Scope & Exposure & Alpha (\%) & t(alpha) & p-value & Beta & R2 & Appraisal ratio \\
+\hline
+153-factor aggregate & Capped & 0.588 & 3.946 & 0.000 & 0.358 & 0.618 & 0.576 \\
+153-factor aggregate & Raw & 0.590 & 3.586 & 0.000 & 0.366 & 0.582 & 0.526 \\
+Pooled market & Capped & 1.006 & 1.359 & 0.174 & 0.694 & 0.762 & 0.172 \\
+Pooled market & Raw & 1.138 & 1.451 & 0.147 & 0.703 & 0.744 & 0.183 \\
+\hline
+\end{tabular}
+\end{table}

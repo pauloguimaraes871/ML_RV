@@ -1,0 +1,34 @@
+\begin{table}[htbp]
+\centering\scriptsize
+\captionsetup{justification=raggedright,labelsep=none,singlelinecheck=false,labelformat=boldlabel}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{4pt}
+\caption[Economic performance of volatility-managed portfolios for the market portfolio estimated separately.]{\footnotesize \textbf{: Economic performance of volatility-managed portfolios for the market portfolio estimated separately.} Each forecasting model is estimated only on the market-portfolio time series. SR denotes the annualized excess-return Sharpe ratio. CER denotes annualized certainty-equivalent return in percent for relative risk aversion of five. Capped strategies restrict exposure to 1.5. Net strategies deduct 10 basis points per unit change in factor exposure. EW combines HARX, elastic net, random forest, XGBoost, and the three neural networks.}\label{tab:rv-portfolio_performance_market_separate}
+\begin{tabular}{lrrrrr}
+\multicolumn{6}{@{}l}{\textit{Market portfolio estimated separately}} \\
+\hline
+Model & Statistic & Raw & Capped & Net raw & Net capped \\
+\hline
+Unmanaged & Sharpe ratio & 0.499 & 0.499 & 0.499 & 0.499 \\
+Unmanaged & CER (\%) & 1.842 & 1.842 & 1.841 & 1.841 \\
+Unmanaged & Volatility ratio & 1.000 & 1.000 & 1.000 & 1.000 \\
+Unmanaged & Mean raw exposure & 1.000 & 1.000 & 1.000 & 1.000 \\
+Random walk & Sharpe ratio & 0.507 & 0.539 & 0.463 & 0.514 \\
+Random walk & CER (\%) & -0.385 & 2.752 & -1.280 & 2.424 \\
+Random walk & Volatility ratio & 1.392 & 0.877 & 1.389 & 0.877 \\
+Random walk & Mean raw exposure & 1.503 & 1.503 & 1.503 & 1.503 \\
+HAR & Sharpe ratio & 0.553 & 0.555 & 0.516 & 0.524 \\
+HAR & CER (\%) & 3.036 & 3.082 & 2.597 & 2.741 \\
+HAR & Volatility ratio & 0.794 & 0.737 & 0.793 & 0.737 \\
+HAR & Mean raw exposure & 0.912 & 0.912 & 0.912 & 0.912 \\
+HARX & Sharpe ratio & 0.577 & 0.580 & 0.543 & 0.551 \\
+HARX & CER (\%) & 3.320 & 3.366 & 2.904 & 3.030 \\
+HARX & Volatility ratio & 0.802 & 0.763 & 0.802 & 0.763 \\
+HARX & Mean raw exposure & 0.919 & 0.919 & 0.919 & 0.919 \\
+EW & Sharpe ratio & 0.547 & 0.551 & 0.516 & 0.525 \\
+EW & CER (\%) & 2.918 & 3.006 & 2.533 & 2.692 \\
+EW & Volatility ratio & 0.837 & 0.806 & 0.837 & 0.806 \\
+EW & Mean raw exposure & 0.968 & 0.968 & 0.968 & 0.968 \\
+\hline
+\end{tabular}
+\end{table}
