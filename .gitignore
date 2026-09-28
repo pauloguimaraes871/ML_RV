@@ -1,9 +1,11 @@
 .Rproj.user
 .Rhistory
 .Rdata
+Rplots.pdf
 .httr-oauth
 .DS_Store
 .quarto
+tmp/
 
 # Raw JKP daily factor returns (~225 MB). Kept out of history on purpose; its
 # SHA-256 is recorded in data/manifest_v3.csv so provenance stays verifiable.
@@ -46,6 +48,8 @@ latex_paper/*.pdf
 latex_paper/*.spl
 latex_paper/*.synctex.gz
 latex_paper/*.toc
+latex_paper/**/*.aux
+latex_paper/**/*.log
 latex_paper/figures/
 
 # Snapshots of models_v3/ kept for comparison across a change, such as

@@ -34,7 +34,9 @@ compose_sample_reports <- function(project_dir = here::here()) {
     staging <- file.path(project_dir, "tmp", "report_short_inference_tables", section, paste0(name, ".tex"))
     path <- if (sample_id == "1986" && startsWith(name, "portfolio_inference_") && file.exists(staging))
       staging else file.path(root, sample_id, section, paste0(name, ".tex"))
-    source_files <<- c(source_files, path)
+    # Staged TeX wrappers are reproducible intermediates. Their durable input,
+    # portfolio_inference_bootstrap.csv, is recorded separately in the manifest.
+    if (!identical(path, staging)) source_files <<- c(source_files, path)
     readLines(path, warn = FALSE)
   }
   caption_from <- function(lines) {
@@ -334,14 +336,6 @@ compose_sample_reports <- function(project_dir = here::here()) {
   for (name in c("validation_test", "hyperparameters_all",
                  "theme_history_panel", "theme_history_spx", "portfolio_ew_sharpe_waterfall"))
     pair_figure(name, "internet_appendix", split_pages = name != "final_theme_net_share")
-  # No long-sample full-sample-normalizer backtest exists. Include only the
-  # observed sensitivity and make its short-sample status explicit.
-  name <- "portfolio_performance_full_sample"
-  lines <- source_lines("1986", "internet_appendix", name)
-  lines <- gsub("\\textbf{: ", "\\textbf{: Short sample. ", lines, fixed = TRUE)
-  lines <- gsub("{1.0}", "{0.98}", lines, fixed = TRUE)
-  writeLines(lines, file.path(output, "internet_appendix", paste0(name, ".tex")))
-  register("internet_appendix", name)
   combine_longtable("portfolio_factor_sharpe")
   combine_table("portfolio_performance_market_separate", "internet_appendix", split_pages = TRUE)
   combine_table("portfolio_implementation", "internet_appendix", split_pages = TRUE, landscape = TRUE)
