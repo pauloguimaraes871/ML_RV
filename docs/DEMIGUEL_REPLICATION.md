@@ -296,3 +296,72 @@ failures; OOS entry dates in Section 6 confirmed; serialization counts and the
 surrogate-warning attribution confirmed against the artifacts. Still unverified:
 bit-exact refits, reloading serialized networks, historical working tree and
 package versions.
+
+## 9. Step 3: Table I, Panels A and C (`R/demiguel_replication.R`)
+
+### Specification, taken from the authors' code
+
+The authors' replication package (Mendeley Data, DOI 10.17632/dmjfztbc4y.3,
+CC BY 4.0; `ReplicationPackage.zip`, SHA-256
+`e2dc5e677004141a25cdce575c853bb2ce415c00cfc3e989a0f9a25680dbb5a7`, 457 MB) was
+downloaded on 2026-10-11 to `C:\Users\paulo.fonteles\Downloads\DMU_replication\`,
+outside the repository. Table I comes from `JF_Table1.m`, `VMPnew_TC_FFHXZBAB.m`
+(in-sample) and `VMP_OOS_noshortconst_FFHXZBAB.m` (OOS). Their code settles the
+choices the paper leaves open:
+
+- **Weights are signed and unconstrained**: b = (1/gamma) Sigma^-1 mu, gamma = 5.
+  Nonnegativity applies only to the multifactor portfolios.
+- **The window is February 1977 - December 2020 (527 months)**, both for the
+  in-sample estimation/evaluation and the OOS period. The data start in
+  February 1967 because the first month is consumed by the variance lag; with
+  M = 120 the evaluation starts at row M + 1. The paper rounds this to
+  "January 1977".
+- In-sample weights are rescaled to b/|b2|, falling back to the unmanaged factor
+  if |b2| <= 0.001. OOS weights use an expanding window from the first sample
+  month and are neither rescaled nor capped.
+- The managed factor is r_{t+1} c / sigma2_t, where sigma2_t is the **sample
+  variance (N - 1) of daily returns in month t** (their `VolatilityF`; our
+  formula reproduces it to 7e-16 on their daily data). c = sd(r)/sd(r/sigma2)
+  over the sample; returns and Sharpe ratios do not depend on it.
+- p-values: 10,000 stationary-bootstrap draws of the realized return pair,
+  average block 5, no re-estimation; p = fraction of draws in which the managed
+  Sharpe ratio does not exceed the unmanaged one (uncentred). Their MATLAB random
+  stream cannot be reproduced, so our p-values carry Monte Carlo error.
+
+### Implementation check on the authors' data
+
+Run on the package's own factor returns and daily returns (scratch check, not
+part of the pipeline), our helpers reproduce **all 27 Panel A/C Sharpe ratios to
+the third decimal (maximum difference 0.000)**; p-values differ by at most 0.017
+(bootstrap noise). Scripts and the CSV export are kept in
+`tmp/demiguel_table1_validation_20261011/` (gitignored).
+
+### Result on our provider data (2025 / 202608 vintage)
+
+`data/demiguel/table1_panels_ac.csv` and `table1_panels_ac_vs_paper.csv`.
+Sharpe ratios are within 0.015 of the paper; p-values within 0.081. The same
+code matches the paper exactly on the authors' data, so these gaps are data
+revisions, not implementation differences. One inference changes at 5%: the OOS
+p-value of IA falls from .062 to .038.
+
+| | MKT | SMB | HML | RMW | CMA | UMD | ROE | IA | BAB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A: SR(r_k, r^sigma) paper | .585 | .246 | .215 | .739 | .419 | 1.088 | 1.153 | .621 | 1.397 |
+| A: ours | .589 | .240 | .205 | .751 | .422 | 1.078 | 1.155 | .633 | 1.393 |
+| C: SR(r_k, r^sigma) paper | .408 | .068 | .194 | .527 | .355 | 1.035 | 1.094 | .605 | 1.321 |
+| C: ours | .412 | .068 | .190 | .539 | .362 | 1.022 | 1.098 | .619 | 1.318 |
+
+Note: the Step 1 check in Section 1 uses January 1977 - December 2020 (528
+months); Table I itself uses February 1977 (527 months), hence small differences
+in SR(r_k) between the two (e.g. MKT .527 vs .534).
+
+### Not yet done (Panels B, D, E)
+
+The package also contains the stock-level inputs behind the costs
+(`MainDataRep.mat`: stock weights `RPS`, half-spreads `BidAskSpreads`, stock
+returns `rRisky`), with noise added by the authors to protect proprietary data.
+Their Panel D cost is |a| times the unmanaged sleeve's stock-level rebalancing
+cost plus |b| times the managed sleeve's, averaged over time. Whether to derive
+per-factor cost series from these data, instead of the Figure 5 calibration
+proposed in Section 2, is an open owner decision. Panel E (trading
+diversification) needs the same stock-level netting.
