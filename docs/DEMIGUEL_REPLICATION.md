@@ -6,7 +6,8 @@ https://doi.org/10.1111/jofi.13395.
 
 The JKP factor panel is replaced by the paper's nine factors and the existing V3
 pipeline (forecasts, MM portfolios, Cederburg, multifactor allocations) is rerun
-on them. A separate replication path, without ML, reproduces Tables I and III.
+on them. A separate replication path, without ML, will reproduce Tables I and
+III (not yet implemented; see Section 8).
 
 ## 1. Data (`R/load_demiguel_data.R`, `R/demiguel_helpers.R`)
 
@@ -58,9 +59,10 @@ pooled into this panel.
 
 Both samples use the JKP inclusion rule: each key drops its first two months and
 then needs a complete HAR block, so factors enter with their own provider
-history. Long sample = 1927 covariate tier (MKT, SMB, HML, UMD from 1927; BAB from
-1931; RMW, CMA from 1963; ROE, IA from 1967). Short sample = 1986 tier (all keys
-from February 1986). Sample ids remain `1927`/`1986` so the runners' switches are
+history. Long sample = 1927 covariate tier. Keys enter the covariate panel in
+1927-01 (MKT, SMB, HML, UMD), 1931-02 (BAB), 1963-09 (RMW, CMA) and 1967-03
+(ROE, IA); these are covariate-panel dates, not OOS forecast dates (Section 6).
+Short sample = 1986 tier (all keys from February 1986). Sample ids remain `1927`/`1986` so the runners' switches are
 unchanged. The shared macro, implied-volatility and calendar covariates are the
 saved `covariates_<tier>v2.rds` artifacts of `load_data.R`, verified equal to the
 values in the JKP panel, so the two universes differ only in their factors.
@@ -106,3 +108,191 @@ and the DeMiguel mean-variance portfolios become CMV/UMV/FCMV.
   equals EW (decision 7).
 - FCMV with own-factor lagged RV is added for the DeMiguel dataset only. **JKP
   allocations still lack it and must be rerun** to include it (decision 9).
+
+## 5. Step 2 review decisions (owner instruction, 2026-10-11)
+
+Step 2 means the dataset switch and ML model fits. It does not mean the later
+Table I replication (Step 3), portfolio/cost changes, or Table III replication.
+The owner supplied Claude's independent review in the conversation and asked
+Codex to record the following decisions and request Step 2 closeout.
+
+- Accept the stored OOS forecasts and comparisons as **trusted with
+  qualifications**, following the successful artifact audits and Claude's
+  independent review. This does not establish bit-exact replay or successful
+  reloading of serialized neural networks.
+- Keep the current DeMiguel runner defaults intentionally for this phase:
+  `dataset = "demiguel"`, `run_1986 = TRUE`, `run_1927 = TRUE`,
+  `run_panel = TRUE`, `run_spx_only = FALSE`, eight models, `range`
+  preprocessing, and `grid_search` (HAR/HARX remain untuned).
+- Preserve the existing estimation engine, split/tuning/seed logic and JKP
+  signatures. No refitting is indicated by the review.
+- Record JKP reproduction settings below. Do not silently change the
+  production runner's defaults while checking JKP.
+- Keep provenance hardening in a separately scoped change. Unsigned descriptive
+  code/environment metadata improves traceability but does **not** prevent
+  false cache hits. Prevention requires an explicitly designed cache-validation
+  policy using relevant code/environment fingerprints, with compatibility and
+  migration considered before implementation.
+- Distinguish provider/covariate entry dates from actual OOS forecast entry
+  dates. Do not use provider history to describe the OOS panel composition.
+- Interpret pooled JKP-versus-DeMiguel scores as different prediction panels.
+  Lower RMSE across panels is not evidence of universally better forecasting;
+  comparisons against HAR within each panel are more informative.
+
+### Safe JKP reproduction check
+
+For the complete JKP regression check, override the following top-level
+settings **in memory**, without editing the production script:
+
+    dataset <- "jkp"
+    run_1986 <- TRUE
+    run_1927 <- TRUE
+    run_panel <- TRUE
+    run_spx_only <- TRUE
+    models_to_run <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
+    preprocessing_to_run <- "range"
+    tuning_methods_to_run <- "grid_search"
+    dry_run <- TRUE
+
+Claude reported **32/32 cache hits** with this configuration. Recheck it before
+closeout. The DeMiguel dry run should give **16/16 cache hits** with standalone
+market disabled. A missing dataset, unexpected cache miss, hash mismatch, or
+coverage mismatch stops closeout; do not launch a fit or relax a check.
+
+## 6. Implemented Step 2 scope and verified fit state
+
+At registration, branch is `feat/demiguel-replication`, HEAD `775fb81`.
+The production-code diff remains the original three uncommitted Step 2 files:
+
+- `R/helpers.R`: `build_run_matrix(..., panel_universe = "panel")` supports
+  `"panel"` and `"demiguel"` while keeping the existing default.
+- `R/fit_models.R`: dataset specifications route the target, covariates, model
+  outputs and inclusion-policy text; pooled panels retain `key_col = "name"`;
+  standalone market is restricted to JKP. The JKP inclusion-policy string
+  participates in run signatures and must remain unchanged.
+- `tests/testthat/test-dados_gold.R`: default-equality/universe-renaming and
+  invalid-universe tests for the run matrix.
+
+The core estimation engine was not modified by Codex. Codex created temporary
+execution harnesses under `tmp/`, fitted missing artifacts, and audited saved
+results. This documentation update is an additional closeout change; it is
+not part of Claude's earlier three-file code review.
+
+All eight models (HAR, HARX, glmnet, RF, XGB, NN1, NN2, NN3) are saved for both
+samples under `models_v3/demiguel/<sample>/`.
+
+- The 8 October run saved NN2 for 1927, then terminated during NN3 refitting.
+  Its `RUNNING` marker is stale; no completed NN3 artifact was saved by that run.
+  The logs do not establish the termination cause.
+- The 10 October run reused 15 cached models, fitted only NN3 for 1927, and
+  completed its final audit on **2026-10-10 at 20:40 Sao Paulo time**.
+- Its audit called `read_model_result()` on all 16 saved artifacts and verified
+  identical observation keys and targets across models within each sample.
+- Recorded inputs and the 15 existing model files were unchanged during that
+  final run. Codex independently rehashed all 16 current artifacts and all
+  recorded final-run inputs on 2026-10-11; they still match the final manifests.
+
+| Sample | Observations per model | Distinct OOS months | First OOS month | Last OOS month |
+| --- | ---: | ---: | --- | --- |
+| 1927 | 7,371 | 931 | 1947-06 | 2024-12 |
+| 1986 | 1,998 | 222 | 2006-07 | 2024-12 |
+
+The long panel is unbalanced. Codex's per-factor audit established these OOS
+entry dates (different from provider/covariate history in Section 1):
+
+| Keys | First OOS month | Observations per key |
+| --- | --- | ---: |
+| `mkt`, `smb`, `hml`, `umd`, `bab` | 1947-06 | 931 |
+| `rmw`, `cma` | 1966-09 | 700 |
+| `roe`, `ia` | 1970-03 | 658 |
+
+All nine short-sample keys have 222 observations from 2006-07 to 2024-12.
+
+Local execution evidence, currently gitignored:
+
+- `tmp/demiguel_resume_20261008/`: first harness, logs, launch record, inputs and
+  14-existing-model hash manifest. Preserve this evidence.
+- `tmp/demiguel_resume_20261010/`: successful NN3-only harness, preflight logs,
+  run logs, launch record, inputs, 15-existing-model hash manifest, final
+  `status.txt`, and `audit_models.csv` for all 16 artifacts.
+
+## 7. Claude review evidence and remaining qualifications
+
+The following are findings **reported by Claude in the owner-supplied review**,
+not additional tests run by Codex during this documentation update:
+
+- Independent audit of 32 panel artifacts (16 JKP, 16 DeMiguel); method metadata,
+  feature vectors/order and forecast/rebalance calendars match. Seven
+  provenance fields differ as expected for the dataset substitution.
+- No detected look-ahead in feature lags, truncated preprocessing checks or
+  daily-return target construction. Equivalence alone does not rule out a
+  shared upstream data-vintage or economic-availability defect.
+- Every DeMiguel NN artifact contains 10 serialized ensemble members. The three
+  JKP 1986 NN artifacts contain zero serialized members; Claude traced this
+  to fits predating serialization fixes. Their stored forecasts/metrics remain
+  auditable, but reloading those historical fitted ensembles is not established.
+- JKP regression dry run: 32/32 hits. Data tests: 17 tests, 54 expectations,
+  zero failures. Run-matrix tests: 23 expectations, zero failures.
+- JKP published report metrics agree with the artifacts to about `4e-16`.
+  EW ensembles were excluded from this comparison.
+- Native and common-calendar metric comparisons coincide: the two panels use
+  the same OOS month calendars, but different cross-sections and entry dates.
+- RF has the lowest long-sample DeMiguel RMSE; NN1 is worse than HAR in both
+  DeMiguel samples. Most DeMiguel pooled RMSEs are lower than their JKP
+  counterparts, without establishing greater forecasting skill across panels.
+- The `summary.lm()` near-perfect-fit warning was traced to the auxiliary
+  surrogate of linear-model predictions, rather than the forecasts themselves.
+
+Unverified: bit-exact fit reproduction, actual reloading/prediction from the
+serialized networks, and historical working-tree/package environments.
+The current provenance does not establish historical code or installed package
+versions. Do not claim that a descriptive metadata addition retroactively
+recovers those facts.
+
+Resolved at closeout: the JKP artifacts and their signed covariate files contain
+154 keys = 153 JKP factors plus `spx_vw`; the runner comment was corrected.
+Claude's review scripts, outputs (including `metrics_comparison.csv`) and
+dry-run logs are preserved, hash-verified, in `tmp/demiguel_review_20261011/`
+(gitignored), alongside the fit evidence.
+
+## 8. Step 2 closeout still required
+
+The implementation and model fitting are complete. Claude should now:
+
+1. Re-read the original handoff, this decision record and its own review;
+   inspect the current branch, status, commits and exact diff.
+2. Review this newly added documentation, including the intentional defaults,
+   JKP dry-run settings, corrected OOS entry dates and evidence attribution.
+3. Recheck final artifact/input hashes and audit status, 16/16 DeMiguel and
+   32/32 JKP dry-run hits, targeted data/run-matrix tests, and the important
+   metadata/coverage equivalence claims. Stop on discrepancies.
+4. Confirm the recorded serialization limitation and warning attribution against
+   the actual artifacts; leave network reloading unverified unless separately
+   tested with approval. Do not refit the historical JKP NNs.
+5. Ensure the review/metric comparison evidence is available and correct any
+   report wording that confuses provider history with OOS coverage.
+6. Present the final diff, validation summary and proposed commit for the
+   owner's explicit approval. Proposed title:
+   `feat: add dataset switch to fit the DeMiguel factor panel`.
+
+The anticipated source/documentation scope is now **four** files:
+`R/fit_models.R`, `R/helpers.R`, `tests/testthat/test-dados_gold.R`, and
+`docs/DEMIGUEL_REPLICATION.md`. Do not stage `data/cluster_labels.csv`,
+gitignored models, `tmp/`, or unrelated files. No commit, push, merge or PR action
+has been authorized by the decision-registration request. Obtain the exact
+owner-required co-author line before committing; do not invent it.
+
+Provenance/cache redesign and a new inclusion-policy-string test are not
+implemented by this closeout and require their own approved scope. Table I/III,
+transaction-cost calibration, portfolio dataset switches, inference/reporting
+changes, and the missing JKP own-factor lagged-RV FCMV remain later steps.
+
+### Closeout result (2026-10-11)
+
+Rechecked by Claude: 32/32 artifacts unchanged since the review; input manifests
+8/8, 14/14, 15/15; DeMiguel dry run 16/16 and JKP dry run (Section 5 settings,
+in memory) 32/32 cache hits; data tests 17/54/0 failures; run-matrix 23/0
+failures; OOS entry dates in Section 6 confirmed; serialization counts and the
+surrogate-warning attribution confirmed against the artifacts. Still unverified:
+bit-exact refits, reloading serialized networks, historical working tree and
+package versions.

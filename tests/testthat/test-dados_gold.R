@@ -1133,6 +1133,28 @@ testthat::test_that("the run flags control the matrix without editing anything e
 })
 
 
+testthat::test_that("the DeMiguel panel only renames the panel universe", {
+
+  # The default is unchanged, so every JKP run keeps its universe label and
+  # therefore its signature
+  testthat::expect_identical(build_run_matrix(),
+                             build_run_matrix(panel_universe = "panel"))
+
+  demiguel <- build_run_matrix(panel_universe = "demiguel", run_spx_only = TRUE)
+  jkp <- build_run_matrix(run_spx_only = TRUE)
+  testthat::expect_setequal(unique(demiguel$universe), c("demiguel", "spx"))
+  testthat::expect_identical(
+    dplyr::mutate(demiguel, universe = dplyr::if_else(universe == "demiguel", "panel", universe)),
+    jkp
+  )
+
+  # Only the two known panels; "spx" stays reserved for the standalone market
+  testthat::expect_error(build_run_matrix(panel_universe = "spx"), "panel_universe")
+  testthat::expect_error(build_run_matrix(panel_universe = c("panel", "demiguel")),
+                         "panel_universe")
+})
+
+
 testthat::test_that("panel preprocessing rejects a month factor with dropped levels", {
 
   # model.matrix() codes `month` from its declared levels, so a key carrying a
