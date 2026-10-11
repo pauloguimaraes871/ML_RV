@@ -365,3 +365,44 @@ cost plus |b| times the managed sleeve's, averaged over time. Whether to derive
 per-factor cost series from these data, instead of the Figure 5 calibration
 proposed in Section 2, is an open owner decision. Panel E (trading
 diversification) needs the same stock-level netting.
+
+## 10. Stock-level transaction costs (`R/load_demiguel_costs.R`, `R/demiguel_cost_helpers.R`)
+
+Owner decision (2026-10-11): use the authors' stock-level cost data instead of
+the Figure 5 calibration of Section 2. Kept inside OneDrive, gitignored, with
+hashes in `data/manifest_demiguel_costs_v3.csv`. New dependency: `hdf5r` 1.3.12
+(reads the MATLAB 7.3 file; recorded alone in `renv.lock`).
+
+**What the data are.** `MainDataRep.mat` holds, for February 1967 - December
+2020 (647 months, 24,991 stock slots): the stock weights of the authors' own
+CRSP rebuild of each of the nine factors (`RPS`; long legs sum to +1, short legs
+to -1, BAB legs scaled by 1/beta), each stock's cost per dollar traded kappa
+(`BidAskSpreads`, Abdi-Ranaldo), and stock returns (`rRisky`). The rebuilt
+factor returns correlate 0.91-1.00 with the provider returns, as in the paper's
+footnote 5. The authors added noise to protect proprietary data; at factor level
+it is small (Figure 2B within 0.4 bp, below).
+
+**How it is used.** As in the paper: returns come from the providers; costs come
+from pricing the stock trades implied by a path of factor exposures. Any of our
+portfolios, including the ML-managed ones, is a path w_{j,t} on factor sleeves
+(theta for unmanaged sleeves, theta x signal for managed ones), so the same
+engine prices them, with three netting levels: `sleeve` (no trading
+diversification), `factor` (netting within each factor) and `portfolio` (full
+trading diversification). Only the nine DeMiguel factors and only February 1967 -
+December 2020 are covered; outside that window the existing flat factor-level
+proxy is kept and labelled (owner decision (i)).
+
+**Exact conventions mirrored from their MATLAB.** trade = x_t w_t - x_{t-1}
+w_{t-1} (1 + r_{t-1}); NA terms are dropped (`nansum`), so stocks outside CRSP in
+either month (NaN weight or return) are not charged, while listed stocks entering
+or leaving a factor (weight 0) are. The first month of an OOS path is charged as
+entry from cash. Their Table III OOS weights are re-estimated every 12 months.
+
+**Check.** Average monthly cost of each unmanaged factor, trades March 1977 -
+December 2020 (`data/demiguel/fig2b_factor_costs.csv`); the engine matches an
+independent replica of their figure code to 1e-8:
+
+| bp/month | MKT | SMB | HML | RMW | CMA | UMD | ROE | IA | BAB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Engine | 1.54 | 7.17 | 9.95 | 9.86 | 13.44 | 45.84 | 30.74 | 21.66 | 28.17 |
+| Paper (p. 3870, Fig. 2B) | ~1.5 | 7.5 | 10 | 10 | 13 | 46 | 31 | 22 | 28 |
