@@ -90,7 +90,8 @@ build_table1_sample <- function(monthly, variance, factor_name, start, end) {
   validate_port_data(data, "month_id", c("factor_exc", "variance"))
 
   scale <- stats::sd(data$factor_exc) / stats::sd(data$factor_exc / data$variance)
-  dplyr::mutate(data, managed = factor_exc * scale / variance, name = factor_name, .before = 1)
+  dplyr::mutate(data, managed = factor_exc * scale / variance, scale = scale,
+                name = factor_name, .before = 1)
 }
 
 #' Signed mean-variance weights on the two sleeves, (1 / gamma) Sigma^-1 mu
@@ -241,12 +242,296 @@ run_table1_cost_free <- function(monthly, daily, start, end, M = 120L, gamma = 5
                        weights = "signed, (1/gamma) Sigma^-1 mu; in-sample rescaled b/|b2|"))
 }
 
+#' Write an output only when its content changes
+#'
+#' Rewriting a byte-identical file still changes its timestamp, which the
+#' OneDrive backup check (C:\git-backup) reports as a changed data file. Writes
+#' to a temporary file, compares SHA-256 with the existing file and replaces it
+#' only if they differ. type: "csv" (utils::write.csv, no row names) or "rds".
+#' Returns TRUE if the file was (re)written.
+save_if_changed <- function(x, path, type = c("csv", "rds")) {
+  type <- match.arg(type)
+  tmp <- tempfile(fileext = paste0(".", type))
+  on.exit(unlink(tmp), add = TRUE)
+  if (type == "csv") utils::write.csv(x, tmp, row.names = FALSE) else saveRDS(x, tmp)
+  if (file.exists(path) &&
+      identical(digest::digest(file = tmp, algo = "sha256"), digest::digest(file = path, algo = "sha256"))) {
+    return(invisible(FALSE))
+  }
+  if (!file.copy(tmp, path, overwrite = TRUE)) rlang::abort(paste("Could not write", path))
+  invisible(TRUE)
+}
+
 #' Compare a Table I result with the published values
 compare_table1 <- function(table) {
   table %>%
     dplyr::select(name, sr_unmanaged, sr_is, p_is, sr_oos, p_oos) %>%
     tidyr::pivot_longer(-name, names_to = "statistic", values_to = "ours") %>%
     dplyr::inner_join(tidyr::pivot_longer(demiguel_table1_paper, -name,
+                                          names_to = "statistic", values_to = "paper"),
+                      by = c("name", "statistic"), relationship = "one-to-one") %>%
+    dplyr::mutate(difference = ours - paper)
+}
+
+# Table I, Panels B, D and E: transaction costs from the stock-level data
+# ------------------------------------------------------------------------------
+#
+# Costs come from R/demiguel_cost_helpers.R (the authors' stock weights and
+# kappas). Each formula below names the MATLAB line it reproduces in
+# VMPnew_TC_FFHXZBAB.m (in-sample) or VMP_OOS_noshortconst_FFHXZBAB.m (OOS).
+
+  demiguel_table1_paper_costs <- tibble::tibble(
+    name = demiguel_table1_paper$name,
+    sr_unmanaged_net = c(.519, .125, .053, .356, .159, .114, .311, .107, .606),
+    sr_is_net = c(.521, .125, .053, .356, .159, .251, .311, .107, .703),
+    p_is_net = c(.464, .500, .500, .500, .500, .249, .407, .500, .161),
+    sr_oos_net = c(.324, -.295, -.041, -.453, -.047, .194, .269, -.127, .690),
+    p_oos_net = c(.976, 1.000, .879, 1.000, 1.000, .342, .672, 1.000, .281),
+    sr_oos_td = c(.433, .035, .089, .226, .153, .209, .324, .193, .746),
+    p_oos_td = c(.917, .858, .243, .965, .547, .097, .405, .029, .064)
+  )
+
+#' Covariance used by the authors' cost-aware optimizers
+#'
+#' They shrink with cov1para.m when cond(Sigma) > 1e9. That never happens for a
+#' two-sleeve problem on these data; abort rather than silently differ.
+demiguel_covariance <- function(x) {
+  sigma <- stats::cov(x)
+  if (kappa(sigma, exact = TRUE) > 1e9) {
+    rlang::abort("Covariance condition number exceeds 1e9: the authors would shrink (cov1para).")
+  }
+  sigma
+}
+
+#' Exact mean-variance weights with separable L1 costs (pppquadprog_sc.m)
+#'
+#' Solves min gamma/2 b'Sigma b - mu'b + sum_j cost_j |b_j| exactly, by
+#' enumerating sign patterns (K is small) and checking the KKT conditions:
+#' on the support, gamma Sigma b - mu + cost * sign(b) = 0; off it,
+#' |gamma (Sigma b)_j - mu_j| <= cost_j. The problem is strictly convex, so the
+#' feasible pattern is the unique optimum.
+mv_l1_separable <- function(mu, sigma, gamma, cost, tol = 1e-12) {
+
+  k <- length(mu)
+  if (k > 8L || nrow(sigma) != k || length(cost) != k || any(cost < 0)) {
+    rlang::abort("mv_l1_separable expects a small problem with nonnegative costs.")
+  }
+  patterns <- as.matrix(expand.grid(rep(list(c(-1, 0, 1)), k)))
+  candidates <- purrr::map(seq_len(nrow(patterns)), function(p) {
+    s <- patterns[p, ]
+    on <- s != 0
+    b <- rep(0, k)
+    if (any(on)) b[on] <- solve(sigma[on, on, drop = FALSE], mu[on] - cost[on] * s[on]) / gamma
+    if (any(on) && any(sign(b[on]) != s[on])) return(NULL)
+    gradient <- gamma * as.vector(sigma %*% b) - mu
+    if (any(abs(gradient[!on]) > cost[!on] + tol * (1 + abs(mu[!on])))) return(NULL)
+    list(b = b, value = gamma / 2 * sum(b * (sigma %*% b)) - sum(mu * b) + sum(cost * abs(b)))
+  }) %>% purrr::compact()
+  if (!length(candidates)) rlang::abort("No KKT point found for the separable-cost problem.")
+  candidates[[which.min(purrr::map_dbl(candidates, "value"))]]$b
+}
+
+#' Ray structure of a set of phi rows, sorted once by angle
+#'
+#' Each nonzero row phi_r defines two rays where phi_r'b changes sign. Crossing
+#' the ray at angle(phi_r) + pi/2 (counter-clockwise) flips its contribution
+#' to the cost slope l from +phi_r to -phi_r; the ray at angle(phi_r) - pi/2
+#' flips it back. group (e.g. the trade month) lets callers select a window of
+#' rows without re-sorting.
+phi_rays <- function(phi, group) {
+  keep <- rowSums(phi != 0) > 0
+  phi <- phi[keep, , drop = FALSE]
+  group <- group[keep]
+  beta <- atan2(phi[, 2], phi[, 1])
+  angle <- c(beta + pi / 2, beta - pi / 2) %% (2 * pi)
+  angle[angle == 0] <- 2 * pi
+  delta <- rbind(-2 * phi, 2 * phi)
+  ## Sign of phi_r'b just after direction 0, i.e. at b = (1, epsilon)
+  s0 <- ifelse(phi[, 1] != 0, sign(phi[, 1]), sign(phi[, 2]))
+  ord <- order(angle)
+  list(phi = phi, s0 = s0, group = group,
+       angle = angle[ord], delta = delta[ord, , drop = FALSE],
+       ray_group = c(group, group)[ord])
+}
+
+#' Subset a phi_rays() structure to rows with group <= g, scaling phi by scale
+window_rays <- function(rays, g, scale = 1) {
+  rows <- rays$group <= g
+  keep <- rays$ray_group <= g
+  list(l0 = colSums(rays$phi[rows, , drop = FALSE] * rays$s0[rows]) * scale,
+       angle = rays$angle[keep], delta = rays$delta[keep, , drop = FALSE] * scale)
+}
+
+#' Exact two-sleeve mean-variance weights with stock-level L1 costs (pppfminunc.m)
+#'
+#' Solves min gamma/2 b'Sigma b - mu'b + sum_r |phi_r'b| over b in R^2, phi
+#' rows being kappa-weighted stock trades already divided by D. The authors
+#' use a smoothed quasi-Newton search on the same convex problem; this solves
+#' it exactly. Between consecutive rays the cost is linear, l_c'b, so the
+#' optimum is the stationary point of one cone (if it lies inside that cone),
+#' a point on one ray, or zero. rays: window_rays() output.
+mv_l1_phi_2d <- function(mu, sigma, gamma, rays) {
+
+  inv <- solve(sigma)
+  if (!length(rays$angle)) return(as.vector(inv %*% mu) / gamma)
+
+  ## Cost slope in each cone, in angular order from direction 0+
+  cumulative <- matrix(apply(rays$delta, 2, cumsum), ncol = 2)
+  l <- rbind(rays$l0, sweep(cumulative, 2, rays$l0, "+"))
+  lower <- c(0, rays$angle)
+  upper <- c(rays$angle, 2 * pi)
+
+  ## Interior candidates: b_c = Sigma^-1 (mu - l_c) / gamma, valid inside cone c
+  b <- inv %*% (mu - t(l)) / gamma
+  psi <- atan2(b[2, ], b[1, ]) %% (2 * pi)
+  psi[psi == 0] <- 2 * pi
+  inside <- which(psi > lower & psi < upper & colSums(b^2) > 0)
+  best <- list(b = c(0, 0), value = 0)
+  if (length(inside)) {
+    k <- inside[1]
+    v <- gamma / 2 * sum(b[, k] * (sigma %*% b[, k])) - sum((mu - l[k, ]) * b[, k])
+    if (v < best$value) best <- list(b = b[, k], value = v)
+  }
+  ## Ray candidates: along direction d the cost is t * l'd (continuous at the ray)
+  d <- rbind(cos(rays$angle), sin(rays$angle))
+  slope <- colSums(t(l[-1, , drop = FALSE]) * d)
+  gain <- pmax(0, colSums(mu * d) - slope)
+  curvature <- gamma * colSums(d * (sigma %*% d))
+  ray_value <- -gain^2 / (2 * curvature)
+  k <- which.min(ray_value)
+  if (ray_value[k] < best$value) best <- list(b = d[, k] * gain[k] / curvature[k], value = ray_value[k])
+  best$b
+}
+
+#' Table I Panels B, D and E for one factor
+#'
+#' sample: build_table1_sample() output (months 1..T, February 1967 onwards).
+#' stock: read_demiguel_stock_data() output. Mirrors the authors' code:
+#'   B  in-sample (rows M+1..T): weights from the separable-cost problem with
+#'      the sleeves' average own costs, rescaled b/|b2|;
+#'      net = gross - mean_t |PTC_t . b| (lines 70-79 of VMPnew_TC_FFHXZBAB.m).
+#'   D  OOS: Panel C weights; net = gross - mean_i (|b1_i| PTC_1 + |b2_i| PTC_2)
+#'      at the holding month (lines 60-61, 88 of VMP_OOS_noshortconst).
+#'   E  OOS: weights from the stock-level cost problem over months 1..t, with
+#'      trades into months 2..t+1 as in their window (line 65); net = gross -
+#'      mean cost of the current weights (lines 69-75, 92), entry from cash in
+#'      the first month.
+#' Benchmarks: Panel B, in-sample unmanaged net of its average own cost;
+#' Panels D and E, OOS unmanaged net of its own costs, entry included.
+table1_cost_panels <- function(sample, stock, factor_key, M = 120L, gamma = 5) {
+
+  n <- nrow(sample)
+  x <- cbind(unmanaged = sample$factor_exc, managed = sample$managed)
+  multiplier <- sample$scale / sample$variance
+  sleeves <- c("unmanaged", "managed")
+  exposures <- dplyr::bind_rows(
+    tibble::tibble(month_id = sample$month_id, sleeve = "managed", factor = factor_key, w = multiplier),
+    tibble::tibble(month_id = sample$month_id, sleeve = "unmanaged", factor = factor_key, w = 1)
+  )
+
+  ## PTCs: each sleeve's own stock-level cost at unit weight; row 1 is NA
+  ptc <- stock_cost(stock, exposures, "sleeve", charge_entry = FALSE, by_sleeve = TRUE) %>%
+    tidyr::pivot_wider(names_from = sleeve, values_from = cost) %>%
+    dplyr::arrange(month_id)
+  if (!identical(ptc$month_id, sample$month_id)) rlang::abort("Sleeve costs misaligned with the sample.")
+  ptc <- as.matrix(ptc[, sleeves])
+
+  ## Phiext: kappa-weighted trades of both sleeves, months 2..T (row t of the sample)
+  trades <- stock_trade_matrices(stock, exposures)
+  if (!identical(trades$months, sample$month_id[-1])) rlang::abort("Trade matrices misaligned with the sample.")
+  phi <- purrr::map(trades$phi, ~ .x[, sleeves, drop = FALSE])
+  rays <- phi_rays(do.call(rbind, phi), rep(seq_along(phi) + 1L, purrr::map_int(phi, nrow)))
+
+  ## Panel B
+  is_rows <- (M + 1L):n
+  tcp <- colMeans(ptc[is_rows, , drop = FALSE])
+  b <- mv_l1_separable(colMeans(x[is_rows, ]), demiguel_covariance(x[is_rows, ]), gamma, tcp)
+  b <- if (abs(b[2]) > .001) b / abs(b[2]) else c(1, 0)
+  gross_b <- as.vector(x[is_rows, ] %*% b)
+  net_b <- gross_b - mean(abs(ptc[is_rows, , drop = FALSE] %*% b))
+  unmanaged_net_is <- x[is_rows, 1] - mean(ptc[is_rows, 1])
+
+  ## OOS, i = 1..T-M; window 1..t with t = M + i - 1; holding month t + 1
+  entry_cost <- function(w, t) {
+    stock_cost(stock, tibble::tibble(month_id = sample$month_id[t], sleeve = sleeves,
+                                     factor = factor_key, w = c(w[1], w[2] * multiplier[t])),
+               "factor", charge_entry = TRUE)$cost
+  }
+  oos <- purrr::map_dfr(seq_len(n - M), function(i) {
+    t <- M + i - 1L
+    past <- seq_len(t)
+    b_c <- mv_signed_weights(x[past, , drop = FALSE], gamma)
+    b_e <- mv_l1_phi_2d(colMeans(x[past, ]), demiguel_covariance(x[past, ]), gamma,
+                        window_rays(rays, t + 1L, scale = 1 / t))
+    if (i == 1L) {
+      tc_td <- entry_cost(b_e, t + 1L)
+      tc_unmanaged <- entry_cost(c(1, 0), t + 1L)
+    } else {
+      tc_td <- sum(abs(phi[[t]] %*% b_e))
+      tc_unmanaged <- ptc[t + 1L, 1]
+    }
+    tibble::tibble(month_id = sample$month_id[t + 1L], unmanaged = x[t + 1L, 1],
+                   gross_c = sum(x[t + 1L, ] * b_c), tc_ntc = sum(abs(b_c) * ptc[t + 1L, ]),
+                   gross_e = sum(x[t + 1L, ] * b_e), tc_td = tc_td, tc_unmanaged = tc_unmanaged,
+                   a_e = b_e[1], b_e = b_e[2])
+  }) %>%
+    dplyr::mutate(net_d = gross_c - mean(tc_ntc), net_e = gross_e - mean(tc_td),
+                  unmanaged_net = unmanaged - mean(tc_unmanaged))
+
+  list(in_sample = tibble::tibble(month_id = sample$month_id[is_rows], unmanaged = x[is_rows, 1],
+                                  unmanaged_net = unmanaged_net_is, gross_b = gross_b, net_b = net_b),
+       oos = oos, b_is = b, tc_sleeves = tcp)
+}
+
+#' Table I Panels B, D and E for every factor
+#'
+#' Sharpe ratios divide the NET mean by the GROSS standard deviation
+#' (JF_Table1.m lines 65 and 86; footnote 24). p-values compare net returns:
+#' in-sample unmanaged vs Panel B; OOS unmanaged vs Panels D and E.
+run_table1_costs <- function(monthly, daily, stock, start, end, M = 120L, gamma = 5,
+                             draws = 10000L, block_length = 5, seed = 20261011L) {
+
+  variance <- prepare_factor_variance(daily)
+  factors <- demiguel_table1_paper$name
+  sr_net <- function(net, gross) sqrt(12) * mean(net) / stats::sd(gross)
+
+  results <- purrr::map(stats::setNames(factors, factors), function(k) {
+    message("Table I costs: ", k)
+    table1_cost_panels(build_table1_sample(monthly, variance, k, start, end), stock, k, M, gamma)
+  })
+  dates <- results[[1]]$oos$month_id
+  purrr::walk(results, function(r) {
+    if (!identical(r$oos$month_id, dates) || !identical(r$in_sample$month_id, dates)) {
+      rlang::abort("Cost-panel evaluation months must coincide across factors.")
+    }
+  })
+  calendar <- draw_portfolio_months(dates, draws = draws, block_length = block_length, seed = seed)
+
+  table <- purrr::imap_dfr(results, function(r, k) {
+    tibble::tibble(
+      name = k,
+      sr_unmanaged_net = sr_net(r$in_sample$unmanaged_net, r$in_sample$unmanaged),
+      sr_is_net = sr_net(r$in_sample$net_b, r$in_sample$gross_b),
+      p_is_net = demiguel_sr_pvalue(r$in_sample$unmanaged_net, r$in_sample$net_b, calendar),
+      sr_oos_net = sr_net(r$oos$net_d, r$oos$gross_c),
+      p_oos_net = demiguel_sr_pvalue(r$oos$unmanaged_net, r$oos$net_d, calendar),
+      sr_oos_td = sr_net(r$oos$net_e, r$oos$gross_e),
+      p_oos_td = demiguel_sr_pvalue(r$oos$unmanaged_net, r$oos$net_e, calendar),
+      a_is = r$b_is[1], b_is = r$b_is[2],
+      cost_unmanaged_bp = 1e4 * r$tc_sleeves[1], cost_managed_bp = 1e4 * r$tc_sleeves[2]
+    )
+  })
+  list(table = table, results = results,
+       settings = list(start = start, end = end, M = M, gamma = gamma, draws = draws,
+                       block_length = block_length, seed = seed))
+}
+
+#' Compare Table I Panels B, D and E with the published values
+compare_table1_costs <- function(table) {
+  table %>%
+    dplyr::select(dplyr::all_of(names(demiguel_table1_paper_costs))) %>%
+    tidyr::pivot_longer(-name, names_to = "statistic", values_to = "ours") %>%
+    dplyr::inner_join(tidyr::pivot_longer(demiguel_table1_paper_costs, -name,
                                           names_to = "statistic", values_to = "paper"),
                       by = c("name", "statistic"), relationship = "one-to-one") %>%
     dplyr::mutate(difference = ours - paper)

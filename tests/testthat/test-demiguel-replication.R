@@ -147,6 +147,86 @@ testthat::test_that("annual Sharpe uses sqrt(12) and the sample sd", {
 })
 
 
+# 3b. Cost-aware optimizers ====================================================
+
+objective_l1 <- function(b, mu, S, gam, cost = c(0, 0), phi = NULL) {
+  gam / 2 * sum(b * (S %*% b)) - sum(mu * b) + sum(cost * abs(b)) +
+    if (is.null(phi)) 0 else sum(abs(phi %*% b))
+}
+reference_min <- function(f, starts) {
+  min(purrr::map_dbl(starts, ~ stats::optim(.x, f, method = "Nelder-Mead",
+    control = list(reltol = 1e-15, maxit = 20000))$value))
+}
+S0 <- matrix(c(.04, .01, .01, .09), 2)
+mu0 <- c(.02, .015)
+
+testthat::test_that("separable-cost weights reduce to MV at zero cost and to cash at high cost", {
+  testthat::expect_equal(mv_l1_separable(mu0, S0, 5, c(0, 0)), as.vector(solve(S0, mu0)) / 5)
+  testthat::expect_equal(mv_l1_separable(mu0, S0, 5, c(1, 1)), c(0, 0))
+  ## One sleeve priced out: its weight is exactly zero, the other re-optimized
+  b <- mv_l1_separable(mu0, S0, 5, c(0, .05))
+  testthat::expect_equal(b[2], 0)
+  testthat::expect_equal(b[1], mu0[1] / (5 * S0[1, 1]))
+})
+
+testthat::test_that("separable-cost weights attain the global minimum", {
+  for (cost in list(c(.003, .004), c(.01, 0), c(.0001, .02))) {
+    b <- mv_l1_separable(mu0, S0, 5, cost)
+    ref <- reference_min(function(z) objective_l1(z, mu0, S0, 5, cost = cost),
+                         list(c(0, 0), as.vector(solve(S0, mu0)) / 5))
+    testthat::expect_lte(objective_l1(b, mu0, S0, 5, cost = cost), ref + 1e-14)
+  }
+})
+
+testthat::test_that("stock-level L1 weights attain the global minimum", {
+  set.seed(11)
+  phi <- matrix(stats::rnorm(400, 0, .002), ncol = 2)
+  phi[1:20, ] <- 0
+  rays <- window_rays(phi_rays(phi, rep(1L, nrow(phi))), 1L)
+  b <- mv_l1_phi_2d(mu0, S0, 5, rays)
+  ref <- reference_min(function(z) objective_l1(z, mu0, S0, 5, phi = phi),
+                       list(c(0, 0), as.vector(solve(S0, mu0)) / 5, b + c(.01, -.01)))
+  testthat::expect_lte(objective_l1(b, mu0, S0, 5, phi = phi), ref + 1e-14)
+  ## Without trades it is the closed-form MV solution
+  empty <- window_rays(phi_rays(matrix(0, 3, 2), rep(1L, 3)), 1L)
+  testthat::expect_equal(mv_l1_phi_2d(mu0, S0, 5, empty), as.vector(solve(S0, mu0)) / 5)
+})
+
+testthat::test_that("window_rays subsets and scales rows exactly like a fresh build", {
+  set.seed(12)
+  phi <- matrix(stats::rnorm(60, 0, .01), ncol = 2)
+  group <- rep(1:3, each = 10)
+  full <- phi_rays(phi, group)
+  sub <- window_rays(full, 2L, scale = .5)
+  fresh <- window_rays(phi_rays(phi[group <= 2, ] * .5, group[group <= 2]), 2L)
+  testthat::expect_equal(sub$l0, fresh$l0)
+  testthat::expect_equal(sub$angle, fresh$angle)
+  testthat::expect_equal(sub$delta, fresh$delta)
+  testthat::expect_equal(mv_l1_phi_2d(mu0, S0, 5, sub), mv_l1_phi_2d(mu0, S0, 5, fresh))
+})
+
+testthat::test_that("an ill-conditioned covariance aborts instead of being shrunk silently", {
+  x <- cbind(1:10 / 100, 1:10 / 100 + 1e-12 * (1:10)^2)
+  testthat::expect_error(demiguel_covariance(x), "1e9")
+})
+
+
+testthat::test_that("outputs are rewritten only when their content changes", {
+  path <- tempfile(fileext = ".csv")
+  x <- data.frame(a = 1:3)
+  testthat::expect_true(save_if_changed(x, path))
+  stamp <- file.info(path)$mtime
+  Sys.sleep(1.1)
+  testthat::expect_false(save_if_changed(x, path))
+  testthat::expect_equal(file.info(path)$mtime, stamp)
+  testthat::expect_true(save_if_changed(data.frame(a = 1:4), path))
+  testthat::expect_equal(utils::read.csv(path)$a, 1:4)
+  rds <- tempfile(fileext = ".rds")
+  testthat::expect_true(save_if_changed(list(1, "a"), rds, "rds"))
+  testthat::expect_false(save_if_changed(list(1, "a"), rds, "rds"))
+})
+
+
 # 4. Saved result ==============================================================
 
 saved_path <- file.path(here::here(), "data", "demiguel_table1_ac_v3.rds")
@@ -162,11 +242,49 @@ if (file.exists(saved_path)) {
     testthat::expect_setequal(saved$table$name, demiguel_table1_paper$name)
   })
 
-  testthat::test_that("saved Sharpe ratios are within data-vintage distance of the paper", {
+  testthat::test_that("saved Sharpe ratios (Panels A, C) are within data-vintage distance of the paper", {
     ## 0.03 is the pre-set tolerance of the unmanaged Sharpe check in Step 1.
     ## The same code reproduces the paper exactly on the authors' own data.
     cmp <- compare_table1(saved$table)
     sr <- dplyr::filter(cmp, startsWith(statistic, "sr_"))
     testthat::expect_true(all(abs(sr$difference) <= .03))
+  })
+}
+
+costs_path <- file.path(here::here(), "data", "demiguel_table1_bde_v3.rds")
+if (file.exists(costs_path) && file.exists(saved_path)) {
+  costs <- readRDS(costs_path)
+
+  ## Implementation invariants only. Distance to the paper is reported in
+  ## data/demiguel/table1_panels_bde_vs_paper.csv, not asserted: on the
+  ## authors' own data the same code matches the paper within 0.001 except
+  ## the knife-edge ROE Panel B cell (docs/DEMIGUEL_REPLICATION.md, Section 11).
+  testthat::test_that("saved cost panels share Panel A/C's window and gross returns", {
+    testthat::expect_equal(costs$settings[c("M", "gamma", "draws", "block_length", "seed")],
+                           saved$settings[c("M", "gamma", "draws", "block_length", "seed")])
+    for (k in names(costs$results)) {
+      r <- costs$results[[k]]
+      c_ret <- dplyr::filter(saved$returns, name == k, panel == "C_out_of_sample")
+      testthat::expect_equal(r$oos$month_id, c_ret$month_id)
+      testthat::expect_equal(r$oos$gross_c, c_ret$managed_combo, tolerance = 1e-12)
+      testthat::expect_equal(nrow(r$oos), 527L)
+    }
+  })
+
+  testthat::test_that("saved costs are nonnegative and only lower net returns", {
+    for (r in costs$results) {
+      testthat::expect_true(all(r$oos$tc_ntc >= 0) && all(r$oos$tc_td >= 0) &&
+                              all(r$oos$tc_unmanaged >= 0))
+      testthat::expect_true(all(r$oos$net_d <= r$oos$gross_c) && all(r$oos$net_e <= r$oos$gross_e))
+      testthat::expect_true(all(r$in_sample$net_b <= r$in_sample$gross_b))
+    }
+  })
+
+  testthat::test_that("unmanaged sleeve costs equal the Figure 2B engine values", {
+    fig2b <- utils::read.csv(file.path(here::here(), "data", "demiguel", "fig2b_factor_costs.csv"))
+    ## Table I averages over trades into Feb 1977 - Dec 2020 (527 months); the
+    ## figure over trades into Mar 1977 - Dec 2020 (526), hence a small gap.
+    joined <- dplyr::inner_join(costs$table, fig2b, by = "name")
+    testthat::expect_true(all(abs(joined$cost_unmanaged_bp - joined$cost_bp) < .2))
   })
 }

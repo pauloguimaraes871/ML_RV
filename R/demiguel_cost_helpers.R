@@ -106,23 +106,13 @@ read_demiguel_stock_data <- function(path) {
          tidyr::pivot_longer(-month_id, names_to = "name", values_to = "factor_exc"))
 }
 
-#' Price a path of factor exposures through the stock trades it implies
+#' Validate exposures and return a per-month trade builder (internal)
 #'
-#' stock: read_demiguel_stock_data() output.
-#' exposures: month_id/sleeve/factor/w. One row per sleeve and month over a
-#'   consecutive window; w is the multiplier on factor `factor`'s stock weights
-#'   (theta for an unmanaged sleeve, theta * signal for a managed one).
-#' netting: "sleeve", "factor" or "portfolio" (see the file header).
-#' charge_entry: TRUE charges the first month as entry from cash (their
-#'   first-OOS-month branch); FALSE returns no cost for the first month, which
-#'   only serves as the previous position (Figure 2B and in-sample Phi).
-#' by_sleeve: return one cost per sleeve and month (netting = "sleeve" only).
-#' Returns month_id/cost (or month_id/sleeve/cost) in decimal return units.
-stock_cost <- function(stock, exposures, netting = c("sleeve", "factor", "portfolio"),
-                       charge_entry = TRUE, by_sleeve = FALSE) {
+#' Shared by stock_cost() and stock_trade_matrices() so both price exactly the
+#' same trades. trades(i) returns the stock x sleeve trade matrix of month i of
+#' the window (NA kept) and the month's kappa; month 1 has no previous position.
+prepare_stock_trades <- function(stock, exposures) {
 
-  netting <- match.arg(netting)
-  if (by_sleeve && netting != "sleeve") rlang::abort("by_sleeve requires netting = 'sleeve'.")
   validate_port_data(exposures, c("month_id", "sleeve"), "w", consecutive = FALSE)
   if (!all(exposures$factor %in% stock$factors)) rlang::abort("Unknown factor in exposures.")
   sleeves <- exposures %>% dplyr::distinct(sleeve, factor)
@@ -141,21 +131,67 @@ stock_cost <- function(stock, exposures, netting = c("sleeve", "factor", "portfo
   col <- match(sleeves$factor, stock$factors)
 
   ## Per-stock, per-sleeve trades for one month; previous values aligned by id
-  sleeve_trades <- function(i) {
+  trades <- function(i) {
     now <- stock$panels[[rows[i]]]
     current <- sweep(now$x[, col, drop = FALSE], 2, W[i, ], "*")
+    colnames(current) <- sleeves$sleeve
     if (i == 1L) return(list(trade = current, kappa = now$kappa))
     prev <- stock$panels[[rows[i] - 1L]]
     at <- match(now$id, prev$id)
     drift <- prev$x[at, col, drop = FALSE] * (1 + prev$ret[at])
     list(trade = current - sweep(drift, 2, W[i - 1L, ], "*"), kappa = now$kappa)
   }
+
+  list(sleeves = sleeves, window = window, trades = trades)
+}
+
+#' The authors' Phi matrices: kappa-weighted trades per stock and sleeve
+#'
+#' For each month of the window after the first, kappa_{i,t} * trade_{j,i,t},
+#' with NA set to zero exactly as `Phiext(isnan(Phiext)) = 0` in their code.
+#' Rows of month t are stocks; columns are the sleeves (sorted by name). The
+#' L1 cost of constant sleeve weights b in month t is sum(abs(Phi_t %*% b)),
+#' i.e. trades netted across the sleeves (within the factor, for Table I).
+#' Returns list(months, phi) with one matrix per month 2, ..., T of the window.
+stock_trade_matrices <- function(stock, exposures) {
+  prepared <- prepare_stock_trades(stock, exposures)
+  idx <- seq_along(prepared$window)[-1]
+  phi <- purrr::map(idx, function(i) {
+    tr <- prepared$trades(i)
+    m <- tr$trade * tr$kappa
+    m[is.na(m)] <- 0
+    m
+  })
+  list(months = prepared$window[idx], sleeves = prepared$sleeves$sleeve, phi = phi)
+}
+
+#' Price a path of factor exposures through the stock trades it implies
+#'
+#' stock: read_demiguel_stock_data() output.
+#' exposures: month_id/sleeve/factor/w. One row per sleeve and month over a
+#'   consecutive window; w is the multiplier on factor `factor`'s stock weights
+#'   (theta for an unmanaged sleeve, theta * signal for a managed one).
+#' netting: "sleeve", "factor" or "portfolio" (see the file header).
+#' charge_entry: TRUE charges the first month as entry from cash (their
+#'   first-OOS-month branch); FALSE returns no cost for the first month, which
+#'   only serves as the previous position (Figure 2B and in-sample Phi).
+#' by_sleeve: return one cost per sleeve and month (netting = "sleeve" only).
+#' Returns month_id/cost (or month_id/sleeve/cost) in decimal return units.
+stock_cost <- function(stock, exposures, netting = c("sleeve", "factor", "portfolio"),
+                       charge_entry = TRUE, by_sleeve = FALSE) {
+
+  netting <- match.arg(netting)
+  if (by_sleeve && netting != "sleeve") rlang::abort("by_sleeve requires netting = 'sleeve'.")
+  prepared <- prepare_stock_trades(stock, exposures)
+  sleeves <- prepared$sleeves
+  window <- prepared$window
+
   ## MATLAB nansum: NA terms dropped, an all-NA sum is zero
   nansum_rows <- function(m) rowSums(m, na.rm = TRUE)
 
   per_month <- purrr::map(seq_along(window), function(i) {
     if (i == 1L && !charge_entry) return(rep(NA_real_, if (by_sleeve) nrow(sleeves) else 1L))
-    tr <- sleeve_trades(i)
+    tr <- prepared$trades(i)
     if (netting == "sleeve") {
       costs <- colSums(abs(tr$trade) * tr$kappa, na.rm = TRUE)
       return(if (by_sleeve) unname(costs) else sum(costs))

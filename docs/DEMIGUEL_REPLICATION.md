@@ -406,3 +406,56 @@ independent replica of their figure code to 1e-8:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Engine | 1.54 | 7.17 | 9.95 | 9.86 | 13.44 | 45.84 | 30.74 | 21.66 | 28.17 |
 | Paper (p. 3870, Fig. 2B) | ~1.5 | 7.5 | 10 | 10 | 13 | 46 | 31 | 22 | 28 |
+
+## 11. Step 3b: Table I, Panels B, D and E (`R/demiguel_replication.R`)
+
+Costs come from the stock-level engine of Section 10 with our provider returns
+and our own-variance signal. The formulas mirror `VMPnew_TC_FFHXZBAB.m`
+(in-sample) and `VMP_OOS_noshortconst_FFHXZBAB.m` (OOS) line by line:
+
+- **B (in-sample, no trading diversification).** Weights solve
+  min gamma/2 b'Sigma b - mu'b + sum_j C_j |b_j|, C_j = each sleeve's average
+  own stock-level cost at unit weight (their `pppquadprog_sc.m`), then b/|b2|.
+  Net return = gross - mean_t |sum_j c_{j,t} b_j|, their exact expression.
+- **D (OOS, no trading diversification).** Panel C weights; cost
+  sum_j |b_{j,t}| c_{j,t} at the holding month, averaged and subtracted.
+- **E (OOS, with trading diversification).** Weights solve
+  min gamma/2 b'Sigma b - mu'b + ||Phi b||_1 / D, Phi = stock-level trades of
+  both sleeves (netted within the factor) over the estimation window (their
+  `pppfminunc.m`). As in their code, the window's trades run up to the trade
+  INTO the holding month (a small look-ahead in kappa and weights that we
+  mirror, not endorse). Cost = netted stock-level cost of the current weights;
+  the first OOS month is charged as entry from cash.
+- Sharpe ratios divide the net mean by the gross SD (footnote 24). Benchmarks:
+  the in-sample unmanaged factor net of its average own cost (B); the OOS
+  unmanaged factor net of its own costs, entry included (D, E).
+- Their optimizers are a smoothed quasi-Newton (E) and quadprog (B). We solve
+  the same convex problems exactly: sign-pattern enumeration with KKT checks
+  (B) and an angular sweep over the cones where the L1 cost is linear (E). On
+  300 random problems neither is ever worse than a brute-force search.
+
+**Implementation check on the authors' data** (their returns, daily data and
+stock-level data): 26 of 27 cost-panel Sharpe ratios match the paper within
+0.001; p-values within 0.015 (bootstrap noise). The exception is **ROE, Panel
+B: .331 vs .311**. In the paper ROE's Panel B Sharpe equals the unmanaged one,
+i.e. the managed sleeve is (nearly) priced out; on the noise-added package data
+it enters, but a 10.5% higher managed-sleeve cost would price it out (MKT, UMD,
+BAB need 23-39%). We attribute it to the authors' deliberate data noise; it
+cannot be verified without their clean data.
+
+**Result on our provider data** (`data/demiguel/table1_panels_bde.csv`,
+`table1_panels_bde_vs_paper.csv`): Sharpe ratios within 0.04 of the paper
+(largest: IA Panel D, -.087 vs -.127); every Panel B/D/E conclusion keeps its
+sign. Distance to the paper is reported, not asserted in tests.
+
+| | MKT | SMB | HML | RMW | CMA | UMD | ROE | IA | BAB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B: SR(r_k, r^sigma) paper | .521 | .125 | .053 | .356 | .159 | .251 | .311 | .107 | .703 |
+| B: ours | .525 | .127 | .066 | .343 | .161 | .247 | .326 | .112 | .696 |
+| D: paper | .324 | -.295 | -.041 | -.453 | -.047 | .194 | .269 | -.127 | .690 |
+| D: ours | .329 | -.298 | -.039 | -.450 | -.024 | .196 | .252 | -.087 | .681 |
+| E: paper | .433 | .035 | .089 | .226 | .153 | .209 | .324 | .193 | .746 |
+| E: ours | .437 | .033 | .096 | .210 | .152 | .206 | .320 | .206 | .743 |
+
+Runtime: about one hour (`run_cost_panels <- TRUE`), dominated by Panel E's
+9 x 527 OOS re-solves. Validation scripts: `tmp/demiguel_table1_validation_20261011/`.
