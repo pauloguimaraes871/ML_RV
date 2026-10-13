@@ -75,6 +75,28 @@ testthat::test_that("the cost-aware nonnegative optimizer is certified and consi
   }
 })
 
+testthat::test_that("run_table3 accepts per-factor sigma; equal columns reproduce the vector case", {
+  stock_file <- file.path(here::here(), "data", "demiguel_stock_costs_v3.rds")
+  testthat::skip_if_not(file.exists(stock_file), "Stock-level cost data not built")
+  stock <- readRDS(stock_file)
+  months <- seq(as.Date("1967-02-01"), by = "month", length.out = 36)
+  R <- matrix(stats::rnorm(36 * 9, .005, .03), ncol = 9, dimnames = list(NULL, stock$factors))
+  s <- stats::runif(36, .5, 1.5)
+  run <- function(sig) suppressMessages(run_table3(R, months, sig, stock, M = 24L, draws = 200L))
+  by_vector <- run(s)
+  ## Same signal for every factor, columns deliberately out of order
+  S <- matrix(s, 36, 9, dimnames = list(NULL, rev(stock$factors)))
+  testthat::expect_identical(run(S), by_vector)
+  ## Factor-specific signal: the managed sleeves are r_k / sigma_k (a different
+  ## time pattern; a constant multiple would only rescale the sleeve weight)
+  S[, "umd"] <- rev(s)
+  own <- run(S)
+  testthat::expect_false(identical(own$table, by_vector$table))
+  testthat::expect_identical(own$weights$in_sample[, "umv_notc"], by_vector$weights$in_sample[, "umv_notc"])
+  testthat::expect_error(run(S[, -1]), "one column per factor")
+  testthat::expect_error(run(s[-1]), "one value per month")
+})
+
 testthat::test_that("panel statistics follow JF_performancematrixTable4.m", {
   dates <- seq(as.Date("2000-01-01"), by = "month", length.out = 60)
   cal <- draw_portfolio_months(dates, draws = 500L, block_length = 5, seed = 2L)

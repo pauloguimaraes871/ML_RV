@@ -546,3 +546,44 @@ in Panel E match or beat `lagvar` for every factor up to +/-0.003. Open item:
 UMD in Panel D turns negative under ML despite lower costs (diagnosis pending).
 
 Runtime about 5 hours (Panel E's exact cone sweep for 5 signals).
+
+## 14. Step 8: Table III, lagged RV versus ML (`R/demiguel_table3_ml.R`)
+
+Same multifactor portfolios as Section 12; only the volatility signal changes
+(`lagvar`, `lagss`, `harx`, `ew` as in Section 13, sigma = sqrt(signal)).
+`run_table3()` now accepts sigma as a T x 9 matrix (one column per factor);
+a vector gives exactly the previous results (tested).
+
+- `cmv`: every factor scaled by the market signal; sample February 1967 -
+  December 2020, M = 120 (the paper's months). The `lagvar` run reproduces
+  `data/demiguel/table3.csv` (checked in the runner).
+- `fcmv` (our extension): each factor scaled by its own signal. ROE and IA
+  forecasts start in March 1970, so all FCMV runs use March 1970 - December
+  2020 with M = 83 (owner decision, 2026-10-13); evaluation is still February
+  1977 - December 2020. A `cmv`/`lagvar` run on that sample is the reference.
+  In `fcmv` rows the `cmv_*` columns hold FCMV.
+- UMV is identical across signals within each sample (checked).
+
+Output: `data/demiguel/table3_ml.csv`. Sharpe ratios (p-value of SR minus the
+matching UMV SR):
+
+| | B gross (3) | C no TD (3) | C no TD (6) | D TD (3) | D TD (6) |
+| --- | --- | --- | --- | --- | --- |
+| UMV, 1967 sample | 1.284 | .702 | .755 | .884 | .938 |
+| CMV lagvar | 1.610 | .612 (.92) | .734 (.74) | 1.006 (.061) | 1.062 (.005) |
+| CMV lagss | 1.612 | .637 (.85) | .747 (.63) | 1.016 (.047) | 1.070 (.006) |
+| CMV harx | 1.535 | .735 (.29) | .791 (.22) | 1.039 (.004) | 1.069 (.001) |
+| CMV ew | 1.532 | .755 (.19) | .802 (.16) | 1.045 (.003) | 1.077 (.001) |
+| UMV, 1970 sample | 1.255 | .669 | .722 | .852 | .906 |
+| CMV lagvar, 1970 | 1.556 | .538 | .664 | .941 (.133) | 1.018 (.015) |
+| FCMV lagvar | 1.702 | .592 | .738 | 1.025 (.055) | 1.058 (.003) |
+| FCMV lagss | 1.669 | .588 | .737 | 1.001 (.074) | 1.036 (.003) |
+| FCMV harx | 1.545 | .603 | .745 | .941 (.105) | 1.010 (.001) |
+| FCMV ew | 1.558 | .668 | .757 | .985 (.032) | 1.028 (.001) |
+
+ML market signals give CMV a lower gross Sharpe (B) but lower turnover: TC in
+column (3) of Panel D falls from .345 to about .27, so net Sharpe ratios rise
+and the CMV-UMV gains become strongly significant (D: p .003-.004 vs .061;
+C: the loss without trading diversification shrinks). FCMV with lagged own
+RV beats CMV on the 1970 sample; ML own-factor signals cut costs further but
+do not beat lagged own RV in Panel D. Runtime 1.7 hours (9 runs).

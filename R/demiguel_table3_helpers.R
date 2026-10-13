@@ -8,7 +8,8 @@
 # pppquadprog_notc_nonegative.m, pppfminuncNonnegative.m and
 # JF_performancematrixTable4.m. Columns (1) UMV and (3) CMV are optimized
 # ignoring costs; (4) UMV and (6) CMV account for stock-level costs with
-# trading diversification. CFW, columns (2) and (5), is deferred.
+# trading diversification. CFW, columns (2) and (5), is deferred. Our FCMV
+# extension scales each factor by its own volatility (sigma as a matrix).
 #
 # Conventions taken from that code, not guessed:
 #   * sigma_t is the sample SD of daily market returns in the previous month
@@ -172,7 +173,10 @@ table3_panel_stats <- function(gross, net, calendar) {
 #'
 #' returns: T x K matrix of monthly factor excess returns (columns named by
 #' factor), rows = months (consecutive, first sample month first).
-#' sigma: length-T positive market volatility signal for each holding month.
+#' sigma: positive volatility signal for each holding month, either a length-T
+#'   vector (market volatility scales every factor: CMV, as in the paper) or a
+#'   T x K matrix with columns named by factor (each factor scaled by its own
+#'   volatility: FCMV). A vector gives exactly the same results as before.
 #' stock: read_demiguel_stock_data() output (BAB zeros are set missing here).
 #' M = 120, gamma = 5, refit = 12 months. Returns list(table, returns, weights).
 run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit = 12L,
@@ -180,12 +184,21 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
 
   n <- nrow(returns)
   factors <- colnames(returns)
-  if (length(months) != n || length(sigma) != n || any(!is.finite(sigma) | sigma <= 0) ||
+  K <- length(factors)
+  if (is.matrix(sigma)) {
+    if (nrow(sigma) != n || !setequal(colnames(sigma), factors)) {
+      rlang::abort("A sigma matrix must have one row per month and one column per factor.")
+    }
+    sigma <- sigma[, factors, drop = FALSE]
+  } else {
+    if (length(sigma) != n) rlang::abort("A sigma vector must have one value per month.")
+    sigma <- matrix(sigma, n, K, dimnames = list(NULL, factors))
+  }
+  if (length(months) != n || any(!is.finite(sigma) | sigma <= 0) ||
       any(!is.finite(returns)) || !identical(months, seq(months[1], by = "month", length.out = n))) {
     rlang::abort("Table III inputs must be finite, positive and on consecutive months.")
   }
   stock <- stock_zero_as_missing(stock, "bab")
-  K <- length(factors)
   ext <- cbind(returns, returns / sigma)
   colnames(ext) <- c(paste0("u_", factors), paste0("m_", factors))
 
@@ -194,7 +207,7 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
     tidyr::expand_grid(month_id = months, factor = factors) %>%
       dplyr::mutate(sleeve = paste0("u_", factor), w = 1),
     tibble::tibble(month_id = rep(months, K), factor = rep(factors, each = n)) %>%
-      dplyr::mutate(sleeve = paste0("m_", factor), w = rep(1 / sigma, K))
+      dplyr::mutate(sleeve = paste0("m_", factor), w = as.vector(1 / sigma))
   )
   trades <- stock_trade_matrices(stock, unit)
   phi <- do.call(rbind, purrr::map(trades$phi, ~ .x[, colnames(ext), drop = FALSE]))
@@ -246,7 +259,7 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
     exposures <- purrr::map_dfr(oos_index, function(i) {
       w <- weights[[i]][, col]
       tibble::tibble(month_id = hold[i], sleeve = colnames(ext),
-                     factor = rep(factors, 2), w = w * c(rep(1, K), rep(1 / sigma[M + i], K)))
+                     factor = rep(factors, 2), w = w * c(rep(1, K), 1 / sigma[M + i, ]))
     })
     list(td = stock_cost(stock, exposures, "portfolio", charge_entry = TRUE)$cost,
          ntd = stock_cost(stock, exposures, "sleeve", charge_entry = TRUE)$cost)
