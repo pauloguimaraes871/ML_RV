@@ -185,40 +185,74 @@ demiguel_sr_pvalue <- function(benchmark, policy, calendar) {
   mean(delta > x_j)
 }
 
+#' Value of a scalar or per-factor setting for factor k
+#'
+#' x is either one value used for every factor, or a vector named by factor.
+factor_setting <- function(x, k) {
+  if (is.null(names(x))) {
+    if (length(x) != 1L) rlang::abort("An unnamed setting must be a single value.")
+    return(x)
+  }
+  if (!k %in% names(x)) rlang::abort(paste("Setting has no value for factor", k))
+  x[[k]]
+}
+
+#' Bootstrap calendars, shared across factors with the same evaluation months
+#'
+#' dates: list of evaluation-month vectors by factor. Factors with identical
+#' months share one plan (as in the paper, where all nine coincide); a factor
+#' with a different window gets its own plan from the same seed.
+table1_calendars <- function(dates, draws, block_length, seed) {
+  keys <- purrr::map_chr(dates, ~ paste(format(.x), collapse = ","))
+  plans <- purrr::map(stats::setNames(unique(keys), unique(keys)), function(key) {
+    draw_portfolio_months(dates[[match(key, keys)]], draws = draws,
+                          block_length = block_length, seed = seed)
+  })
+  purrr::map(keys, ~ plans[[.x]]) %>% stats::setNames(names(dates))
+}
+
 #' Table I Panels A and C for every factor
 #'
 #' monthly, daily: the DeMiguel return artifacts. start: first sample month
 #' (one month after the first daily month common to all nine factors; February
 #' 1967 in the paper). end: last month (December 2020). M, gamma: 120 and 5.
+#' start, end and M may also be vectors named by factor, for per-factor windows.
+#' variance: optional name/month_id/variance signal stamped to the holding
+#' month, replacing the paper's lagged daily variance (e.g. an ML forecast);
+#' when NULL it is built from daily.
 #' draws/block_length/seed: bootstrap settings (10,000 and 5 in the paper; the
 #' authors' MATLAB stream cannot be reproduced, so p-values carry Monte Carlo
 #' error). Returns list(table, returns): one row per factor, and the monthly
 #' unmanaged/managed-combination returns behind it.
 run_table1_cost_free <- function(monthly, daily, start, end, M = 120L, gamma = 5,
-                                 draws = 10000L, block_length = 5, seed = 20261011L) {
+                                 draws = 10000L, block_length = 5, seed = 20261011L,
+                                 variance = NULL) {
 
-  variance <- prepare_factor_variance(daily)
+  if (is.null(variance)) variance <- prepare_factor_variance(daily)
+  validate_port_data(variance, c("name", "month_id"), "variance", consecutive = FALSE)
+  if (any(variance$variance <= 0)) rlang::abort("Scaling signals must be positive.")
   factors <- demiguel_table1_paper$name
   if (!all(factors %in% monthly$name) || !all(factors %in% variance$name)) {
     rlang::abort("Monthly returns and daily variances must cover all nine factors.")
   }
 
   results <- purrr::map(stats::setNames(factors, factors), function(k) {
-    sample <- build_table1_sample(monthly, variance, k, start, end)
-    list(is = table1_in_sample(sample, M, gamma), oos = table1_out_of_sample(sample, M, gamma))
+    m <- factor_setting(M, k)
+    sample <- build_table1_sample(monthly, variance, k, factor_setting(start, k), factor_setting(end, k))
+    list(is = table1_in_sample(sample, m, gamma), oos = table1_out_of_sample(sample, m, gamma))
   })
 
-  ## One calendar for all factors and both panels, so their p-values share
-  ## draws (the evaluation months coincide by construction; checked here).
-  dates <- results[[1]]$is$month_id
+  ## Within a factor both panels share their months and one bootstrap plan;
+  ## factors with identical windows (all nine in the paper) share draws.
   purrr::walk(results, function(r) {
-    if (!identical(r$is$month_id, dates) || !identical(r$oos$month_id, dates)) {
-      rlang::abort("In-sample and OOS evaluation months must coincide across factors.")
+    if (!identical(r$is$month_id, r$oos$month_id)) {
+      rlang::abort("In-sample and OOS evaluation months must coincide within a factor.")
     }
   })
-  calendar <- draw_portfolio_months(dates, draws = draws, block_length = block_length, seed = seed)
+  calendars <- table1_calendars(purrr::map(results, ~ .x$is$month_id), draws, block_length, seed)
 
   table <- purrr::imap_dfr(results, function(r, k) {
+    calendar <- calendars[[k]]
     tibble::tibble(
       name = k, n = nrow(r$is), start = min(r$is$month_id), end = max(r$is$month_id),
       sr_unmanaged = annual_sharpe(r$is$unmanaged),
@@ -488,26 +522,32 @@ table1_cost_panels <- function(sample, stock, factor_key, M = 120L, gamma = 5) {
 #' Sharpe ratios divide the NET mean by the GROSS standard deviation
 #' (JF_Table1.m lines 65 and 86; footnote 24). p-values compare net returns:
 #' in-sample unmanaged vs Panel B; OOS unmanaged vs Panels D and E.
+#' start, end, M and variance work as in run_table1_cost_free(); every month
+#' of a factor's window must lie inside the stock-level data.
 run_table1_costs <- function(monthly, daily, stock, start, end, M = 120L, gamma = 5,
-                             draws = 10000L, block_length = 5, seed = 20261011L) {
+                             draws = 10000L, block_length = 5, seed = 20261011L,
+                             variance = NULL) {
 
-  variance <- prepare_factor_variance(daily)
+  if (is.null(variance)) variance <- prepare_factor_variance(daily)
+  validate_port_data(variance, c("name", "month_id"), "variance", consecutive = FALSE)
+  if (any(variance$variance <= 0)) rlang::abort("Scaling signals must be positive.")
   factors <- demiguel_table1_paper$name
   sr_net <- function(net, gross) sqrt(12) * mean(net) / stats::sd(gross)
 
   results <- purrr::map(stats::setNames(factors, factors), function(k) {
     message("Table I costs: ", k)
-    table1_cost_panels(build_table1_sample(monthly, variance, k, start, end), stock, k, M, gamma)
+    sample <- build_table1_sample(monthly, variance, k, factor_setting(start, k), factor_setting(end, k))
+    table1_cost_panels(sample, stock, k, factor_setting(M, k), gamma)
   })
-  dates <- results[[1]]$oos$month_id
   purrr::walk(results, function(r) {
-    if (!identical(r$oos$month_id, dates) || !identical(r$in_sample$month_id, dates)) {
-      rlang::abort("Cost-panel evaluation months must coincide across factors.")
+    if (!identical(r$oos$month_id, r$in_sample$month_id)) {
+      rlang::abort("Cost-panel in-sample and OOS months must coincide within a factor.")
     }
   })
-  calendar <- draw_portfolio_months(dates, draws = draws, block_length = block_length, seed = seed)
+  calendars <- table1_calendars(purrr::map(results, ~ .x$oos$month_id), draws, block_length, seed)
 
   table <- purrr::imap_dfr(results, function(r, k) {
+    calendar <- calendars[[k]]
     tibble::tibble(
       name = k,
       sr_unmanaged_net = sr_net(r$in_sample$unmanaged_net, r$in_sample$unmanaged),

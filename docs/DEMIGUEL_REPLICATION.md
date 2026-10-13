@@ -501,3 +501,48 @@ Sharpe ratios within 0.015 of the paper. Panel D, the headline:
 | t(alpha) paper / ours | | 2.759 / 2.828 | | 3.637 / 3.605 |
 
 Runtime about 15 minutes.
+
+## 13. Step 7: Table I, lagged RV versus ML (`R/demiguel_table1_ml.R`)
+
+Same individual-factor portfolios as Sections 9 and 11 (Panels A-E, authors'
+specification and stock-level costs); only the holding-month variance signal
+changes. `run_table1_cost_free()` / `run_table1_costs()` gained an optional
+`variance` argument and per-factor start/end/M (`factor_setting()`), with
+bootstrap calendars shared when windows coincide; with the defaults they
+reproduce the committed Sections 9 and 11 results bit for bit.
+
+Signals: `lagvar` (paper: previous month's daily sample variance), `lagss`
+(previous month's sum of squared daily returns, our target lagged), `har`,
+`harx`, `ew` (pooled long-sample forecasts, `models_v3/demiguel/1927`,
+exp(pred) - 1e-8; `ew` = EW of harx, glmnet, rf, xgb, nn1-nn3). All signals
+are evaluated on identical months within each factor (checked).
+
+- `paper_window` (`data/demiguel/table1_ml_paper_window.csv`): evaluation
+  February 1977 - December 2020 for all factors. ROE and IA forecasts start in
+  March 1970, so their first estimation window is 83 months, not 120; their
+  `lagvar` rows therefore differ slightly from Section 11. The other seven
+  `lagvar` rows equal the committed Panels A-E exactly.
+- `full_oos` (`data/demiguel/table1_ml_full_oos.csv`): each factor's whole
+  forecast history through December 2024 (MKT, SMB, HML, UMD, BAB from June
+  1957; RMW, CMA from September 1976; ROE, IA from March 1980), M = 120.
+  Panels A and C only (stock-level costs end in December 2020).
+
+Paper window, selected Sharpe ratios (C = OOS gross, D = OOS net of costs with
+cost-unaware weights, E = OOS cost-aware):
+
+| | C lagvar | C ew | D lagvar | D ew | E lagvar | E ew |
+| --- | --- | --- | --- | --- | --- | --- |
+| MKT | .412 | .414 | .329 | .360 | .437 | .450 |
+| UMD | 1.022 | 1.070 | .196 | -.285 | .206 | .269 |
+| ROE | 1.055 | 1.149 | .216 | .157 | .277 | .293 |
+| RMW | .539 | .529 | -.450 | -.606 | .210 | .209 |
+| BAB | 1.318 | 1.264 | .681 | .595 | .743 | .746 |
+
+SMB, HML, CMA and IA are within about 0.03 across signals in C and E. `lagss`
+tracks `lagvar` closely (definition is not the driver). ML signals cut the
+managed sleeve's trading cost (`cost_managed_bp`: in-sample mean monthly cost
+at unit exposure) by 15-45% (e.g. BAB 52 vs 72 bp/month), and
+in Panel E match or beat `lagvar` for every factor up to +/-0.003. Open item:
+UMD in Panel D turns negative under ML despite lower costs (diagnosis pending).
+
+Runtime about 5 hours (Panel E's exact cone sweep for 5 signals).
