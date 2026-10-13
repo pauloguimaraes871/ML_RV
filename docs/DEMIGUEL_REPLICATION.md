@@ -459,3 +459,45 @@ sign. Distance to the paper is reported, not asserted in tests.
 
 Runtime: about one hour (`run_cost_panels <- TRUE`), dominated by Panel E's
 9 x 527 OOS re-solves. Validation scripts: `tmp/demiguel_table1_validation_20261011/`.
+
+## 12. Step 6: Table III, columns (1), (3), (4), (6) (`R/demiguel_table3.R`)
+
+UMV and CMV multifactor portfolios of the nine factors, nonnegative weights,
+gamma = 5, CMV sleeves f / sigma_t with sigma_t the previous month's daily
+market SD (our French Mkt-RF daily; their `VIXmonth`). CFW (columns 2, 5)
+remains deferred. Mirrors `OOS_nonnegative.m` and `JF_performancematrixTable4.m`
+(`R/demiguel_table3_helpers.R`):
+
+- OOS weights are re-estimated every 12 months, expanding from February 1967,
+  and held fixed in between. The cost-aware window includes the trade into
+  the holding month, divided by D = number of return months (their convention).
+- Costs charge the actual stock trades between consecutive months, entry from
+  cash in the first OOS month: netted across all 18 sleeves (Panel D) or
+  sleeve by sleeve (Panel C). BAB's zero stock weights are treated as missing,
+  as in their Table III script (unlike Figure 2B).
+- Columns (1), (3): nonnegative MV (`quadprog`). Columns (4), (6): nonnegative
+  MV with the stock-level L1 cost; they use SQP, we use a smoothed L-BFGS-B
+  certified by a duality gap below 1e-7 of the no-cost utility. cov1para and
+  nwest are exact ports; cov1para applies when cond(Sigma) > 1e9.
+- Statistics: annualized net mean, gross SD, Sharpe, bootstrap p-value of
+  SR(CMV) - SR(UMV) on net returns, Newey-West(1) alpha of CMV net on UMV net,
+  TC = annualized gross minus net mean.
+
+**Implementation check on the authors' data** (their returns, `VIXmonth`,
+stock data; `tmp/demiguel_table3_validation_20261012/`): columns (1) and (3)
+reproduce the paper EXACTLY in all panels and statistics (p-values within
+bootstrap noise); columns (4) and (6) within 0.006 in means, 0.007 in Sharpe
+ratios and 0.06 in t-statistics (noise in their stock data and their
+approximate SQP versus our certified optimum).
+
+**Result on our data** (`data/demiguel/table3.csv`, `table3_vs_paper.csv`): all
+Sharpe ratios within 0.015 of the paper. Panel D, the headline:
+
+| | UMV (1) | CMV (3) | UMV (4) | CMV (6) |
+| --- | --- | --- | --- | --- |
+| SR paper | .891 | 1.010 | .940 | 1.062 |
+| SR ours | .884 | 1.006 | .938 | 1.062 |
+| p(SR_CMV - SR_UMV) paper / ours | | .072 / .061 | | .006 / .005 |
+| t(alpha) paper / ours | | 2.759 / 2.828 | | 3.637 / 3.605 |
+
+Runtime about 15 minutes.
