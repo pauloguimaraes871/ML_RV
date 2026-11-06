@@ -96,7 +96,7 @@
   purrr::walk(signals, validate_port_data, keys = c("name", "month_id"),
               numeric_cols = "variance", consecutive = FALSE)
 
-  ## All ML signals share one forecast calendar (checked); its first month per
+  ## All ML signals share one forecast calendar; its first month per
   ## factor fixes both windows.
   coverage <- purrr::map(signals[ml_models], ~ dplyr::select(.x, name, month_id) %>%
                            dplyr::arrange(name, month_id))
