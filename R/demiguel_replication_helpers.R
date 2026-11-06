@@ -317,7 +317,9 @@ compare_table1 <- function(table) {
   demiguel_table1_paper_costs <- tibble::tibble(
     name = demiguel_table1_paper$name,
     sr_unmanaged_net = c(.519, .125, .053, .356, .159, .114, .311, .107, .606),
-    sr_is_net = c(.521, .125, .053, .356, .159, .251, .311, .107, .703),
+    ## ROE .331 (paper p. 3871; package BarrosoDetzel_Cederburg_FFHXZBAB .tex).
+    ## Corrected 2026-10-25: it had been mistyped as .311, the SR(r_k) row.
+    sr_is_net = c(.521, .125, .053, .356, .159, .251, .331, .107, .703),
     p_is_net = c(.464, .500, .500, .500, .500, .249, .407, .500, .161),
     sr_oos_net = c(.324, -.295, -.041, -.453, -.047, .194, .269, -.127, .690),
     p_oos_net = c(.976, 1.000, .879, 1.000, 1.000, .342, .672, 1.000, .281),
@@ -365,24 +367,71 @@ mv_l1_separable <- function(mu, sigma, gamma, cost, tol = 1e-12) {
   candidates[[which.min(purrr::map_dbl(candidates, "value"))]]$b
 }
 
-#' Ray structure of a set of phi rows, sorted once by angle
+#' Prepare the cancellation rays used by the two-sleeve cost optimizer
 #'
-#' Each nonzero row phi_r defines two rays where phi_r'b changes sign. Crossing
-#' the ray at angle(phi_r) + pi/2 (counter-clockwise) flips its contribution
-#' to the cost slope l from +phi_r to -phi_r; the ray at angle(phi_r) - pi/2
-#' flips it back. group (e.g. the trade month) lets callers select a window of
-#' rows without re-sorting.
+#' phi has two columns, in the same sleeve order as the return matrix and
+#' optimization weights b = (u, m). Each row normally represents one stock
+#' in one trade month: (p, q) are its SIGNED trades at unit sleeve coefficients,
+#' already multiplied by that stock's transaction-cost rate. A negative entry
+#' describes a sale, not a negative expense. For arbitrary sleeve coefficients,
+#' the row's signed net amount is p*u + q*m; its COST is abs(p*u + q*m).
+#'
+#' The row's net trade cancels on the line p*u + q*m = 0 in the weight plane
+#' (horizontal = u, vertical = m). Example: (p, q) = (0.00104, -0.00242) gives
+#' m = 0.429752*u. The line has two opposite half-lines starting at (0, 0);
+#' these are its two rays. They mark where this row's net trade changes sign.
+#' All rows' rays partition the plane into wedges, called cones below. Inside
+#' one cone every row's trade SIGN stays fixed, although its amount can vary.
+#' Consequently, absolute values can be removed using those signs, and the
+#' total cost has a linear formula l[1]*u + l[2]*m within that cone.
+#'
+#' This function does NOT choose portfolio weights. It prepares the boundary
+#' directions and the changes in the cost coefficients needed to visit cones
+#' counter-clockwise. group labels each phi row (usually by trade month).
+#' window_rays() later selects rows with group <= g and scales their cost
+#' coefficients, e.g. by 1/D to obtain an average MONTHLY portfolio cost. D is
+#' the number of selected monthly trade observations, not the number of stocks
+#' or stock-month rows: costs add across stocks, then average across months.
+#'
+#' Returns phi, s0 and group in filtered input-row order; angle, delta and
+#' ray_group are in sorted RAY order. Each retained row supplies two ray
+#' records, so ray arrays have twice as many entries as phi has rows. Equal
+#' directions are retained; several stock-month rows can share a boundary.
 phi_rays <- function(phi, group) {
+  ## A (0, 0) row costs zero for every possible (u, m), so it contributes
+  ## neither a cost coefficient nor a meaningful cancellation boundary.
   keep <- rowSums(phi != 0) > 0
   phi <- phi[keep, , drop = FALSE]
   group <- group[keep]
+
+  ## atan2(y, x) gives the direction of the TRADE-COEFFICIENT vector (p, q),
+  ## not the cancellation line. The cancellation directions are perpendicular
+  ## to it: (p, q) dot (-q, p) = -p*q + q*p = 0. Rotating beta by +/- pi/2
+  ## (90 degrees) therefore gives the line's two opposite ray directions.
   beta <- atan2(phi[, 2], phi[, 1])
   angle <- c(beta + pi / 2, beta - pi / 2) %% (2 * pi)
+
+  ## %% wraps negative angles into [0, 2*pi), allowing a single circular sort.
+  ## Represent a ray exactly at direction zero by 2*pi: the sweep starts just
+  ## ABOVE the positive horizontal axis, so it crosses that ray at the end.
   angle[angle == 0] <- 2 * pi
+
+  ## When a row's signed net trade is positive, its cost coefficients are
+  ## +phi_row; when negative, they are -phi_row. Crossing beta + pi/2
+  ## counter-clockwise switches +phi_row to -phi_row, a change of -2*phi_row.
+  ## At beta - pi/2 the switch is reversed, giving +2*phi_row. These updates
+  ## let the optimizer change the total slope without repricing every row.
   delta <- rbind(-2 * phi, 2 * phi)
-  ## Sign of phi_r'b just after direction 0, i.e. at b = (1, epsilon)
+
+  ## Starting signs for direction 0+, equivalent to b = (1, epsilon) with
+  ## epsilon positive and sufficiently small. A nonzero p determines the
+  ## sign; if p is exactly zero, q determines it. window_rays() uses these
+  ## signs to compute l0 = sum_rows(s0 * phi_row), with any requested scaling.
   s0 <- ifelse(phi[, 1] != 0, sign(phi[, 1]), sign(phi[, 2]))
   ord <- order(angle)
+
+  ## Sort each ray's direction, slope update and month label TOGETHER.
+  ## Duplicate group labels because each retained phi row creates two rays.
   list(phi = phi, s0 = s0, group = group,
        angle = angle[ord], delta = delta[ord, , drop = FALSE],
        ray_group = c(group, group)[ord])
@@ -396,42 +445,116 @@ window_rays <- function(rays, g, scale = 1) {
        angle = rays$angle[keep], delta = rays$delta[keep, , drop = FALSE] * scale)
 }
 
-#' Exact two-sleeve mean-variance weights with stock-level L1 costs (pppfminunc.m)
+#' Two-sleeve mean-variance weights with netted stock-level costs (pppfminunc.m)
 #'
-#' Solves min gamma/2 b'Sigma b - mu'b + sum_r |phi_r'b| over b in R^2, phi
-#' rows being kappa-weighted stock trades already divided by D. The authors
-#' use a smoothed quasi-Newton search on the same convex problem; this solves
-#' it exactly. Between consecutive rays the cost is linear, l_c'b, so the
-#' optimum is the stationary point of one cone (if it lies inside that cone),
-#' a point on one ray, or zero. rays: window_rays() output.
+#' Choose signed sleeve coefficients b = (u, m) to minimize
+#'   gamma/2 * b' Sigma b - mu' b + sum_rows abs(A_row' b).
+#' mu and sigma are the two sleeves' estimated gross monthly mean returns and
+#' covariance; gamma is positive risk aversion. A represents the selected
+#' kappa-weighted stock trades divided by D, the number of monthly trade
+#' observations. Thus the last term is an average MONTHLY portfolio expense,
+#' comparable to the monthly payoff term, rather than an accumulated expense
+#' that increases merely because a longer history was supplied. The caller's
+#' window_rays(..., scale = 1/D) has already applied this normalization to l0
+#' and delta; this function must not divide the cost coefficients again.
+#'
+#' rays is window_rays() output: starting cost coefficients l0, sorted boundary
+#' angles and coefficient changes delta. The geometry is two-dimensional even
+#' with many stocks and months: there are only two unknown sleeve coefficients.
+#' No nonnegativity or sum-to-one restriction is imposed on those coefficients.
+#' The argument below assumes a positive-definite covariance and gamma > 0.
+#'
+#' Within a cone the stock-trade signs are fixed, so the cost is l_c' b and the
+#' objective is gamma/2*b'Sigma*b - (mu-l_c)'b. Its unconstrained stationary
+#' candidate is Sigma^-1*(mu-l_c)/gamma, but is valid for that formula only if
+#' it lies inside the associated cone. A constrained minimum can instead be
+#' on a boundary ray or at zero. The intended search compares these cases.
+#' The authors use a smoothed quasi-Newton optimizer for the underlying problem;
+#' this implementation works directly with its piecewise-linear absolute costs.
+#'
+#' One call estimates ONE portfolio for the selected window. table1_cost_panels()
+#' calls it again for each OOS holding month with updated moments and selected
+#' cost rows. The inner cone search considers alternatives for that one
+#' portfolio; it does not select a different portfolio for each historical row.
+#' Returns the selected two coefficients without the in-sample rescaling.
 mv_l1_phi_2d <- function(mu, sigma, gamma, rays) {
 
+  ## With no nonzero trade rows, costs vanish and ordinary signed MV applies.
   inv <- solve(sigma)
   if (!length(rays$angle)) return(as.vector(inv %*% mu) / gamma)
 
-  ## Cost slope in each cone, in angular order from direction 0+
+  ## Build the two cost coefficients for every angular interval. Starting at
+  ## l0, add delta at the first ray, then the second, etc. Each ROW of l is a
+  ## cone's formula C(b) = l[c, 1]*u + l[c, 2]*m. l has one more row than there
+  ## are ray records; lower[c] and upper[c] bound that row's angular interval.
+  ## Coincident rays create zero-width intervals; the closed check below only
+  ## accepts a candidate there if it lies exactly on that boundary.
   cumulative <- matrix(apply(rays$delta, 2, cumsum), ncol = 2)
   l <- rbind(rays$l0, sweep(cumulative, 2, rays$l0, "+"))
   lower <- c(0, rays$angle)
   upper <- c(rays$angle, 2 * pi)
 
-  ## Interior candidates: b_c = Sigma^-1 (mu - l_c) / gamma, valid inside cone c
+  ## Solve gamma*Sigma*b_c = mu-l_c for every cone simultaneously. Transposing
+  ## l makes each COLUMN a cone, so b is a 2 x number_of_cones matrix:
+  ## b[1, c] is its candidate unmanaged coefficient; b[2, c] is managed.
+  ## These are unconstrained candidates for each local formula, NOT necessarily
+  ## optima constrained to that cone. A candidate outside its assumed cone was
+  ## calculated with the wrong cost formula for its location and is rejected.
   b <- inv %*% (mu - t(l)) / gamma
+
+  ## atan2(managed, unmanaged) describes each candidate's direction from the
+  ## origin. It does not alter its weights. It operates column by column here:
+  ## b[2, ] supplies all vertical coordinates and b[1, ] all horizontal ones.
+  ## %% (2*pi) wraps negative directions into the same circular range as the
+  ## ray angles (e.g. -5 degrees and 355 degrees describe the same direction).
   psi <- atan2(b[2, ], b[1, ]) %% (2 * pi)
   psi[psi == 0] <- 2 * pi
-  inside <- which(psi > lower & psi < upper & colSums(b^2) > 0)
+
+  ## Match candidate c to its OWN lower[c]/upper[c] interval. Squared weights
+  ## sum to zero only at the origin, which is considered separately below.
+  ## CLOSED intervals: on a cone's boundary the cost still equals that cone's
+  ## linear formula, so l_c lies in the cost subdifferential there and a
+  ## stationary candidate on the closed cone satisfies the optimality
+  ## condition of the true problem (the unique optimum, by strict convexity).
+  ## Fixed 2026-10-25: strict > and < used to drop a stationary candidate with
+  ## u > 0, m = 0 exactly (psi = 2*pi, the artificial 0/2*pi seam, which is not
+  ## a trade ray), and the ray search did not recover it. An exact-optimality
+  ## scan of all 28,458 saved Panel E solutions found no affected window.
+  inside <- which(psi >= lower & psi <= upper & colSums(b^2) > 0)
+
+  ## Zero sleeve exposure is always available and has objective zero. Under
+  ## strict convexity a stationary point genuinely inside a cone is a global
+  ## optimum, so only the first accepted interior candidate needs evaluation.
+  ## Evaluate with that cone's formula, retaining it only if better than cash.
   best <- list(b = c(0, 0), value = 0)
   if (length(inside)) {
     k <- inside[1]
     v <- gamma / 2 * sum(b[, k] * (sigma %*% b[, k])) - sum((mu - l[k, ]) * b[, k])
     if (v < best$value) best <- list(b = b[, k], value = v)
   }
-  ## Ray candidates: along direction d the cost is t * l'd (continuous at the ray)
+
+  ## Check the corners as well as cone interiors. Each COLUMN of d is a unit
+  ## direction vector (cos(angle), sin(angle)) for a ray. Along it, b = s*d
+  ## with size s >= 0; the sleeve ratio is fixed and only total size varies.
   d <- rbind(cos(rays$angle), sin(rays$angle))
+
+  ## l[-1, ] pairs each ray with the cone immediately after crossing it.
+  ## slope = l'd is the nonnegative COST PER UNIT SIZE along the ray, not a
+  ## signed stock trade. Either adjacent cone gives the same boundary cost:
+  ## each row changing sign has zero net trade there, so cost is continuous.
   slope <- colSums(t(l[-1, , drop = FALSE]) * d)
+
+  ## gross benefit per unit size = mu'd; net benefit = mu'd - slope.
+  ## If this is nonpositive, the best feasible size on that ray is zero.
+  ## curvature = gamma*d'Sigma*d measures the quadratic risk penalty's growth.
+  ## With gain g and curvature h, F(s) = h*s^2/2 - g*s. Its best nonnegative
+  ## size is g/h (gain has been floored at zero), with value -g^2/(2*h).
   gain <- pmax(0, colSums(mu * d) - slope)
   curvature <- gamma * colSums(d * (sigma %*% d))
   ray_value <- -gain^2 / (2 * curvature)
+
+  ## Choose the best ray, compare it with the current interior/zero candidate,
+  ## and turn its optimal size back into the two actual sleeve coefficients.
   k <- which.min(ray_value)
   if (ray_value[k] < best$value) best <- list(b = d[, k] * gain[k] / curvature[k], value = ray_value[k])
   best$b

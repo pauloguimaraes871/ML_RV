@@ -205,6 +205,15 @@ testthat::test_that("window_rays subsets and scales rows exactly like a fresh bu
   testthat::expect_equal(mv_l1_phi_2d(mu0, S0, 5, sub), mv_l1_phi_2d(mu0, S0, 5, fresh))
 })
 
+testthat::test_that("the angular solver keeps an optimum on the 0/2*pi seam (u > 0, m = 0)", {
+  ## F(b) = .0025 |b|^2 - (.006, .001)'b + .001 |b1 + b2|. At (1, 0) the cost
+  ## is smooth (b1 + b2 > 0) and the gradient is zero: the unique optimum,
+  ## F = -.0025. Strict cone checks used to return (.5, -.5), F = -.00125.
+  phi <- matrix(c(.001, .001), 1, 2)
+  b <- mv_l1_phi_2d(c(.006, .001), diag(.001, 2), 5, window_rays(phi_rays(phi, 1L), 1L))
+  testthat::expect_equal(b, c(1, 0), tolerance = 1e-10)
+})
+
 testthat::test_that("an ill-conditioned covariance aborts instead of being shrunk silently", {
   x <- cbind(1:10 / 100, 1:10 / 100 + 1e-12 * (1:10)^2)
   testthat::expect_error(demiguel_covariance(x), "1e9")
@@ -257,8 +266,8 @@ if (file.exists(costs_path) && file.exists(saved_path)) {
 
   ## Implementation invariants only. Distance to the paper is reported in
   ## data/demiguel/table1_panels_bde_vs_paper.csv, not asserted: on the
-  ## authors' own data the same code matches the paper within 0.001 except
-  ## the knife-edge ROE Panel B cell (docs/DEMIGUEL_REPLICATION.md, Section 11).
+  ## authors' own data the same code matches all 27 published cost-panel
+  ## Sharpe ratios within 0.001 (docs/DEMIGUEL_REPLICATION.md, Section 11).
   testthat::test_that("saved cost panels share Panel A/C's window and gross returns", {
     testthat::expect_equal(costs$settings[c("M", "gamma", "draws", "block_length", "seed")],
                            saved$settings[c("M", "gamma", "draws", "block_length", "seed")])
@@ -269,6 +278,15 @@ if (file.exists(costs_path) && file.exists(saved_path)) {
       testthat::expect_equal(r$oos$gross_c, c_ret$managed_combo, tolerance = 1e-12)
       testthat::expect_equal(nrow(r$oos), 527L)
     }
+  })
+
+  testthat::test_that("published cost-panel references match the paper's Table I", {
+    ## Guards the transcription of demiguel_table1_paper_costs (paper p. 3871);
+    ## ROE Panel B was once mistyped as .311, the SR(r_k) row.
+    testthat::expect_equal(demiguel_table1_paper_costs$sr_is_net,
+                           c(.521, .125, .053, .356, .159, .251, .331, .107, .703))
+    testthat::expect_false(identical(demiguel_table1_paper_costs$sr_is_net,
+                                     demiguel_table1_paper_costs$sr_unmanaged_net))
   })
 
   testthat::test_that("saved costs are nonnegative and only lower net returns", {

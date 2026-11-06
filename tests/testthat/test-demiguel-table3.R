@@ -60,19 +60,37 @@ testthat::test_that("the cost-aware nonnegative optimizer is certified and consi
   for (sd_trade in c(2e-6, 2e-4)) {
     A <- matrix(stats::rnorm(1500, 0, sd_trade), ncol = 3)
     x <- mv_l1_nonneg(mu, S, 5, A)
+    ## A valid certificate is a gap in [0, tol] (up to rounding). A negative
+    ## gap means a wrong bound: the old sign bug passed the upper check only.
     testthat::expect_lte(attr(x, "gap"), 1e-7)
+    testthat::expect_gte(attr(x, "gap"), -1e-12)
     for (j in 1:50) {
       z <- pmax(as.vector(x) + stats::rnorm(3, 0, .01), 0)
       testthat::expect_gte(P(z, A), P(as.vector(x), A) - 1e-7 * scale)
     }
   }
-  ## Two positive sleeves: agrees with the exact angular solver of Table I
+  ## Two positive sleeves: agrees with the exact angular solver of Table I.
+  ## Costs small enough that the exact optimum is interior; asserted, so this
+  ## comparison can never be skipped silently.
   S2 <- matrix(c(.04, .01, .01, .09), 2); mu2 <- c(.03, .025)
-  A2 <- matrix(stats::rnorm(400, 0, 5e-4), ncol = 2)
+  A2 <- matrix(stats::rnorm(400, 0, 1e-5), ncol = 2)
   exact <- mv_l1_phi_2d(mu2, S2, 5, window_rays(phi_rays(A2, rep(1L, nrow(A2))), 1L))
-  if (all(exact > 0)) {
-    testthat::expect_equal(as.vector(mv_l1_nonneg(mu2, S2, 5, A2)), exact, tolerance = 1e-5)
-  }
+  testthat::expect_true(all(exact > 0))
+  x2 <- mv_l1_nonneg(mu2, S2, 5, A2)
+  P2 <- function(b) 5 / 2 * sum(b * (S2 %*% b)) - sum(mu2 * b) + sum(abs(A2 %*% b))
+  b0 <- nonneg_mv(mu2, S2, 5)
+  scale2 <- abs(5 / 2 * sum(b0 * (S2 %*% b0)) - sum(mu2 * b0))   # no-cost utility, as in the solver
+  testthat::expect_lte(P2(as.vector(x2)) - P2(exact), 1e-7 * scale2)
+  testthat::expect_equal(as.vector(x2), exact, tolerance = 1e-3)
+})
+
+testthat::test_that("the cost-aware optimizer solves a hand-checkable scalar problem", {
+  ## F(w) = .0025 w^2 - .01 w + .009 |w| = .0025 w^2 - .001 w on w >= 0:
+  ## unique minimizer w = .2, F = -1e-4. The sign bug returned .3945.
+  w <- mv_l1_nonneg(.01, matrix(.001, 1), 5, matrix(.009, 1))
+  testthat::expect_equal(as.vector(w), .2, tolerance = 1e-5)
+  testthat::expect_gte(attr(w, "gap"), -1e-12)
+  testthat::expect_lte(.0025 * as.vector(w)^2 - .001 * as.vector(w) - (-1e-4), 1e-10)
 })
 
 testthat::test_that("run_table3 accepts per-factor sigma; equal columns reproduce the vector case", {

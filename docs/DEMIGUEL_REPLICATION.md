@@ -435,13 +435,19 @@ and our own-variance signal. The formulas mirror `VMPnew_TC_FFHXZBAB.m`
   300 random problems neither is ever worse than a brute-force search.
 
 **Implementation check on the authors' data** (their returns, daily data and
-stock-level data): 26 of 27 cost-panel Sharpe ratios match the paper within
-0.001; p-values within 0.015 (bootstrap noise). The exception is **ROE, Panel
-B: .331 vs .311**. In the paper ROE's Panel B Sharpe equals the unmanaged one,
-i.e. the managed sleeve is (nearly) priced out; on the noise-added package data
-it enters, but a 10.5% higher managed-sleeve cost would price it out (MKT, UMD,
-BAB need 23-39%). We attribute it to the authors' deliberate data noise; it
-cannot be verified without their clean data.
+stock-level data): all 27 cost-panel Sharpe ratios match the paper within
+0.001; p-values within 0.015 (bootstrap noise).
+
+Correction (2026-10-25, Codex audit, independently verified): an earlier
+version of this section reported ROE Panel B as ".331 vs .311" and attributed
+the gap to the authors' data noise. There was no gap: the paper's ROE Panel B
+value is .331 (p. 3871; also the package's own
+`Manuscript/Tables/BarrosoDetzel_Cederburg_FFHXZBAB_14-May-2024.tex`), and
+our authors'-data estimate is .3310. The reference had been mistyped as .311,
+the SR(r_k) row, in `demiguel_table1_paper_costs`. It was a transcription
+error, not an estimation error; no estimate changed. The ROE "margin" analysis
+in `tmp/demiguel_table1_validation_20261011/roe_margin.R` explained a
+discrepancy that does not exist.
 
 **Result on our provider data** (`data/demiguel/table1_panels_bde.csv`,
 `table1_panels_bde_vs_paper.csv`): Sharpe ratios within 0.04 of the paper
@@ -450,7 +456,7 @@ sign. Distance to the paper is reported, not asserted in tests.
 
 | | MKT | SMB | HML | RMW | CMA | UMD | ROE | IA | BAB |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| B: SR(r_k, r^sigma) paper | .521 | .125 | .053 | .356 | .159 | .251 | .311 | .107 | .703 |
+| B: SR(r_k, r^sigma) paper | .521 | .125 | .053 | .356 | .159 | .251 | .331 | .107 | .703 |
 | B: ours | .525 | .127 | .066 | .343 | .161 | .247 | .326 | .112 | .696 |
 | D: paper | .324 | -.295 | -.041 | -.453 | -.047 | .194 | .269 | -.127 | .690 |
 | D: ours | .329 | -.298 | -.039 | -.450 | -.024 | .196 | .252 | -.087 | .681 |
@@ -483,12 +489,27 @@ remains deferred. Mirrors `OOS_nonnegative.m` and `JF_performancematrixTable4.m`
   SR(CMV) - SR(UMV) on net returns, Newey-West(1) alpha of CMV net on UMV net,
   TC = annualized gross minus net mean.
 
+**Optimizer correction (2026-10-25).** A Codex audit found, and an independent
+review confirmed, that `mv_l1_nonneg()` negated `quadprog::solve.QP()$value`,
+which already is the duality lower bound. The "gap" was then never positive,
+so every cost-aware fit stopped at the first, coarsest smoothing round and
+nothing was certified (scalar check: w = .3945 instead of the optimum .2).
+The sign is removed and a negative gap now aborts. Evidence
+(`Documents/ChatGPT/ML_RV/tmp/claude-review-20261025/`): with the fix, all
+270 fits of three full runs (our data, the authors' data, ML-EW) certify
+below 1e-7 of the no-cost utility and lie within 8.4e-8 of an independent
+certified reference; the old fits were 2.7e-5 to 2.0e-4 above the bound.
+Columns (1) and (3) do not use this solver and are unchanged. Tests now fail
+on the old code (scalar case, negative-gap check, a 2-D cross-check that can
+no longer be skipped).
+
 **Implementation check on the authors' data** (their returns, `VIXmonth`,
-stock data; `tmp/demiguel_table3_validation_20261012/`): columns (1) and (3)
-reproduce the paper EXACTLY in all panels and statistics (p-values within
-bootstrap noise); columns (4) and (6) within 0.006 in means, 0.007 in Sharpe
-ratios and 0.06 in t-statistics (noise in their stock data and their
-approximate SQP versus our certified optimum).
+stock data): columns (1) and (3) reproduce the paper EXACTLY in all panels
+and statistics (p-values within bootstrap noise). Columns (4) and (6), with
+the corrected optimizer, are within 0.0005 of the paper in means and Sharpe
+ratios and 0.001 in t-statistics. (Before the correction the distances were
+0.006, 0.007 and 0.06, which this section had wrongly attributed to data
+noise and their approximate SQP: they were our optimizer.)
 
 **Result on our data** (`data/demiguel/table3.csv`, `table3_vs_paper.csv`): all
 Sharpe ratios within 0.015 of the paper. Panel D, the headline:
@@ -496,11 +517,15 @@ Sharpe ratios within 0.015 of the paper. Panel D, the headline:
 | | UMV (1) | CMV (3) | UMV (4) | CMV (6) |
 | --- | --- | --- | --- | --- |
 | SR paper | .891 | 1.010 | .940 | 1.062 |
-| SR ours | .884 | 1.006 | .938 | 1.062 |
+| SR ours | .884 | 1.006 | .937 | 1.059 |
 | p(SR_CMV - SR_UMV) paper / ours | | .072 / .061 | | .006 / .005 |
-| t(alpha) paper / ours | | 2.759 / 2.828 | | 3.637 / 3.605 |
+| t(alpha) paper / ours | | 2.759 / 2.828 | | 3.637 / 3.639 |
 
-Runtime about 15 minutes.
+The correction moved column (6) by at most 0.008 in Sharpe ratio (Panel B
+1.538 to 1.531; Panel D 1.062 to 1.059); no conclusion changes.
+
+Runtime about 35 minutes (the certified loop now runs several smoothing
+rounds per fit).
 
 ## 13. Step 7: Table I, lagged RV versus ML (`R/demiguel_table1_ml.R`)
 
@@ -569,21 +594,25 @@ matching UMV SR):
 
 | | B gross (3) | C no TD (3) | C no TD (6) | D TD (3) | D TD (6) |
 | --- | --- | --- | --- | --- | --- |
-| UMV, 1967 sample | 1.284 | .702 | .755 | .884 | .938 |
-| CMV lagvar | 1.610 | .612 (.92) | .734 (.74) | 1.006 (.061) | 1.062 (.005) |
-| CMV lagss | 1.612 | .637 (.85) | .747 (.63) | 1.016 (.047) | 1.070 (.006) |
-| CMV harx | 1.535 | .735 (.29) | .791 (.22) | 1.039 (.004) | 1.069 (.001) |
-| CMV ew | 1.532 | .755 (.19) | .802 (.16) | 1.045 (.003) | 1.077 (.001) |
-| UMV, 1970 sample | 1.255 | .669 | .722 | .852 | .906 |
-| CMV lagvar, 1970 | 1.556 | .538 | .664 | .941 (.133) | 1.018 (.015) |
-| FCMV lagvar | 1.702 | .592 | .738 | 1.025 (.055) | 1.058 (.003) |
-| FCMV lagss | 1.669 | .588 | .737 | 1.001 (.074) | 1.036 (.003) |
-| FCMV harx | 1.545 | .603 | .745 | .941 (.105) | 1.010 (.001) |
-| FCMV ew | 1.558 | .668 | .757 | .985 (.032) | 1.028 (.001) |
+| UMV, 1967 sample | 1.284 | .702 | .754 | .884 | .937 |
+| CMV lagvar | 1.610 | .612 (.92) | .734 (.74) | 1.006 (.061) | 1.059 (.005) |
+| CMV lagss | 1.612 | .637 (.85) | .747 (.63) | 1.016 (.047) | 1.067 (.005) |
+| CMV harx | 1.535 | .735 (.29) | .790 (.22) | 1.039 (.004) | 1.066 (.001) |
+| CMV ew | 1.532 | .755 (.19) | .800 (.16) | 1.045 (.003) | 1.074 (.001) |
+| UMV, 1970 sample | 1.255 | .669 | .721 | .852 | .904 |
+| CMV lagvar, 1970 | 1.556 | .538 | .664 | .941 (.133) | 1.015 (.014) |
+| FCMV lagvar | 1.702 | .592 | .738 | 1.025 (.055) | 1.052 (.003) |
+| FCMV lagss | 1.669 | .588 | .737 | 1.001 (.074) | 1.031 (.002) |
+| FCMV harx | 1.545 | .603 | .744 | .941 (.105) | 1.005 (.001) |
+| FCMV ew | 1.558 | .668 | .755 | .985 (.032) | 1.023 (.001) |
+
+Column (6) values use the corrected cost-aware optimizer (Section 12,
+2026-10-25); columns (3) are unaffected by it.
 
 ML market signals give CMV a lower gross Sharpe (B) but lower turnover: TC in
 column (3) of Panel D falls from .345 to about .27, so net Sharpe ratios rise
 and the CMV-UMV gains become strongly significant (D: p .003-.004 vs .061;
 C: the loss without trading diversification shrinks). FCMV with lagged own
 RV beats CMV on the 1970 sample; ML own-factor signals cut costs further but
-do not beat lagged own RV in Panel D. Runtime 1.7 hours (9 runs).
+do not beat lagged own RV in Panel D. Runtime about 5 hours (9 runs, with the
+certified optimizer).
