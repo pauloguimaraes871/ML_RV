@@ -616,3 +616,102 @@ C: the loss without trading diversification shrinks). FCMV with lagged own
 RV beats CMV on the 1970 sample; ML own-factor signals cut costs further but
 do not beat lagged own RV in Panel D. Runtime about 5 hours (9 runs, with the
 certified optimizer).
+
+## 15. Step 9: Does the ML ensemble improve on DeMiguel? (`R/demiguel_ml_inference.R`)
+
+The tests of Tables I and III compare a managed portfolio with the unmanaged
+factor or UMV. This step tests the comparison that matters for the paper:
+DeMiguel's OWN portfolios, built by his unchanged code, with the EW ensemble
+forecast (strategy) versus his lagged daily variance (benchmark), on the same
+estimation history, costs and evaluation months (February 1977 - December
+2020). Secondary benchmark signals plugged into the same code: lagss (the
+manuscript's random walk), har, harx.
+
+**Scope (owner decisions, 2026-11-06): DeMiguel specifications only.**
+
+- Tested: Table III CMV (columns 3 and 6, Panels B, C, D) and the Table I
+  MVO combination (Panels C, D, E). In both, DeMiguel's normalizing constant
+  c is absorbed by the estimated weights, so his full-sample c has no effect
+  on any tested return.
+- Not tested: the standalone managed factor. It is not a DeMiguel
+  portfolio, and with his full-sample c (returns through 2020) a pooled
+  average of standalone sleeves would weight the factors with future
+  information (Codex review, finding 1). Its per-factor differences remain
+  descriptive output, where c cancels.
+- FCMV (own-factor volatility, March 1970 sample, M = 83) is our extension:
+  its own family `EXT_fcmv`, never part of the DeMiguel claim.
+- No contrast against the unmanaged factor or UMV (tested in Tables I and
+  III already; see the leverage note below).
+
+**Inference: the manuscript's machinery on DeMiguel's return series**
+(`infer_portfolio_pairs()`, `span_portfolio_returns()`; the settings and
+pooled design of `report_portfolio_inference()` / `portfolio_inference_inputs.R`):
+
+- Pooled, never per factor: the Table I MVO returns of the eight non-market
+  factors are averaged month by month into one series (as the manuscript's
+  153-factor aggregate); MKT is tested on its own (as the pooled market);
+  Table III is already multifactor. Averaging net returns equals the net
+  return of the equal-weighted portfolio under these conventions; there is no
+  cross-factor trade netting.
+- Paired stationary block bootstrap on one common calendar, 10,000 draws,
+  seed 20260918, block length 5 (3 and 10 sensitivity only); centered
+  one-sided test of H0: difference <= 0 for Sharpe, mean and CER (gamma 5);
+  Holm and BH within families `T3_primary`, `T3_cmv`, `T1_mvo`, `EXT_fcmv`;
+  Newey-West alpha at lags 1 (primary), 5, 10.
+- Robustness: `p_value_dmu`, DeMiguel's own uncentered Politis-Romano
+  procedure (`demiguel_sr_pvalue()`) with the replication's settings (10,000
+  draws, block 5, seed 20261011), for every Sharpe contrast; not adjusted.
+- Provenance: the EW ensemble is rebuilt in memory from its seven audited
+  members and must equal the cache; the members must be exactly the models
+  recorded by the saved Table I/III-ML runs; input SHA-256 hashes are saved
+  (`ml_inference_inputs.csv`). The runner requires the complete series x
+  month grid and the exact Table III reference keys, and reproduces every
+  saved Sharpe ratio before testing (Codex review, findings 2 and 3).
+
+**Prespecification and design history.** The primary test was fixed before
+any p-value was computed: Table III Panel D, CMV column (6), Sharpe,
+ensemble vs lagvar, L = 5. A first per-factor design, then a pooled design
+including the standalone factor, were run and their p-values seen before the
+final scope (pooled, DeMiguel specifications only) was adopted. Holm within
+families does not account for this sequence; all secondary results are
+exploratory.
+
+**Primary result: the null is not rejected.** Lead statistic: raw p for the
+single prespecified Sharpe endpoint; the Holm value adjusts over the three
+metrics of the primary family.
+
+| Ensemble minus lagvar, Table III Panel D CMV (6) | estimate | 95% interval | p | Holm p | DeMiguel p |
+| --- | --- | --- | --- | --- | --- |
+| Sharpe ratio (DeMiguel convention 1.074 vs 1.059) | +.017 | [-.018, .050] | .162 | .325 | .164 |
+| annualized mean | -.0008 | [-.017, .016] | .550 | .550 | |
+| annualized CER | +.017 | [-.004, .041] | .082 | .247 | |
+
+p (Sharpe) = .163 with L = 3 and .145 with L = 10. Spanning: alpha 1.06% per
+year, t = 1.36 (lag 1), p = .17.
+
+**Secondary (exploratory; vs lagvar, Sharpe, L = 5):**
+
+- Table III CMV, Panel C (no trading diversification), columns (3) and (6):
+  +.148 and +.069, Holm p .005 and .013 (significant at 5%): the ensemble's
+  lower turnover matters most when trades cannot net. Panel D column (3):
+  +.042, p .071 (Holm 1.00). Gross (Panel B), lagvar is ahead.
+- Table I MVO combination, eight-factor aggregate: Panel C +.020 (p .32),
+  Panel E +.013 (p .18); Panel D -.225 (p 1.00), driven by UMD's
+  cost-unaware hedge (Section 13). MKT: no significant difference.
+- Extension (FCMV): the ensemble does not beat FCMV with lagged own-factor
+  variance in Panel D (1.023 vs 1.052).
+- Descriptive, per factor: the standalone managed factor net of costs
+  improves for all eight non-market factors (mean +.157); gross, it does not
+  (mean -.016). The gain is lower trading costs.
+
+**Note on leverage.** DeMiguel's unconstrained gamma = 5 mean-variance
+portfolios are self-financing payoffs at high leverage: UMV column (1)
+carries a gross factor exposure of about 15x and loses 100.5% in January
+2001 after sleeve costs (UMD -25%, ROE -11%, IA -7% that month). This is why
+their annual means and costs are large, and why the manuscript's insolvency
+guard rejects UMV (1) as a series; it is not tested here. The lowest tested
+monthly total return is -89.6% (lagss CMV column (3), Panel C, December 1999).
+
+Full results: `data/demiguel/ml_inference_{bootstrap,spanning,series,
+contrasts,factor_effects,factor_summary,inputs}.csv`; read in
+`R/demiguel_results_extraction_annotated.R`. Runtime about one minute.

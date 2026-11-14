@@ -172,24 +172,21 @@ calendar <- draw_portfolio_months(eval_months, draws = table1_ac$settings$draws,
 # sample_start: estimation start per factor. Pure standalone results do not
 # depend on it (it only changes c); the "matched" column uses the ML runs'
 # starts (ROE/IA March 1970) to mirror the MVO comparison.
+## The monthly series come from standalone_managed_series()
+## (R/demiguel_replication_helpers.R), shared with R/demiguel_ml_inference.R.
 standalone_for <- function(signal, sample_start, unmanaged_net) {
   purrr::map_dfr(demiguel_table1_paper$name, function(k) {
-    s <- build_table1_sample(monthly, signal, factor_name = k,
-                             start = sample_start(k), end = as.Date("2020-12-01")) |>
-      dplyr::filter(month_id >= as.Date("1977-02-01"))
+    s <- standalone_managed_series(monthly, signal, stock, k, sample_start(k),
+                                   as.Date("2020-12-01"), min(eval_months))
     if (!identical(s$month_id, eval_months)) rlang::abort(paste("Evaluation months differ for", k))
-    cost <- stock_cost(stock, tibble::tibble(month_id = s$month_id, sleeve = "managed",
-                                             factor = k, w = s$scale / s$variance),
-                       netting = "sleeve", charge_entry = TRUE)$cost
-    net <- s$managed - mean(cost)
     tibble::tibble(
       name = k, n = nrow(s),
-      sr_unmanaged = annual_sharpe(s$factor_exc),
-      sr_managed = annual_sharpe(s$managed),
-      p_managed = demiguel_sr_pvalue(s$factor_exc, s$managed, calendar),
-      sr_managed_net = sqrt(12) * mean(net) / stats::sd(s$managed),
-      p_managed_net = demiguel_sr_pvalue(unmanaged_net[[k]], net, calendar),
-      cost_bp = 1e4 * mean(cost)
+      sr_unmanaged = annual_sharpe(s$unmanaged),
+      sr_managed = annual_sharpe(s$gross),
+      p_managed = demiguel_sr_pvalue(s$unmanaged, s$gross, calendar),
+      sr_managed_net = sqrt(12) * mean(s$net) / stats::sd(s$gross),
+      p_managed_net = demiguel_sr_pvalue(unmanaged_net[[k]], s$net, calendar),
+      cost_bp = 1e4 * mean(s$cost)
     )
   })
 }
@@ -361,9 +358,143 @@ print(as.data.frame(email_table3), row.names = FALSE)
 print(as.data.frame(email_fcmv), row.names = FALSE)
 print(round(email_cmv_costs_pct, 2))
 
+# ML ensemble versus lagged variance: manuscript inference ----------------------
+
+# Written by R/demiguel_ml_inference.R (run it first). Each contrast pairs a
+# DeMiguel portfolio, built by his unchanged code, with the EW ensemble
+# (strategy) and with a benchmark signal (lagvar = DeMiguel's own signal;
+# lagss, har, harx are secondary). Only DeMiguel specifications are tested:
+# Table III CMV and the Table I MVO combination. As in the manuscript, tests
+# are POOLED: Table I uses the equal-weighted average of the eight non-market
+# factors (scope aggregate_8) and MKT on its own (scope market). FCMV (scope
+# fcmv) is our extension, in family EXT_fcmv. The standalone managed factor
+# is not tested (descriptive per-factor output only). Paired stationary
+# bootstrap, 10,000 draws, seed 20260918, block lengths 5 (primary), 3 and 10;
+# one-sided centered test of H0: difference <= 0.
+#
+# ml_inference_bootstrap.csv: one row per contrast x metric x block length.
+#   metric: sharpe, mean_ann, cer_ann. estimate = ensemble minus benchmark
+#   (annualized; Sharpe on the tested series' own sd); ci_lower/ci_upper: 95%
+#   percentile interval; p_value raw; p_holm/p_bh within (block length, family).
+#   family: T3_primary (ONLY the prespecified primary test: Table III Panel D,
+#   CMV column 6, vs lagvar), T3_cmv, T1_mvo (Panels C/D/E), EXT_fcmv.
+#   p_value_dmu (Sharpe rows only): DeMiguel's own uncentered procedure,
+#   replication settings (block 5, seed 20261011); not adjusted.
+#   strategy_sharpe_dmu/benchmark_sharpe_dmu: DeMiguel's convention (net mean
+#   over gross sd), i.e. the numbers of Tables I and III.
+# ml_inference_spanning.csv: Newey-West alpha of the ensemble strategy on the
+#   benchmark strategy, lags 1 (primary), 5 and 10.
+# ml_inference_series.csv: per-series annualized mean, sd, Sharpe (both
+#   conventions) and CER. ml_inference_contrasts.csv: the design.
+# ml_inference_factor_effects.csv / _factor_summary.csv: per-factor Sharpe and
+#   CER differences (MVO panels C/D/E and the standalone managed factor,
+#   SAg gross / SAn net) and their distribution over the eight non-market
+#   factors (mean, median, quartiles, fraction positive). Descriptive: no
+#   p-values. ml_inference_inputs.csv: SHA-256 of every input.
+ml_inference <- utils::read.csv(file.path(data_dir, "demiguel", "ml_inference_bootstrap.csv"))
+ml_spanning <- utils::read.csv(file.path(data_dir, "demiguel", "ml_inference_spanning.csv"))
+
+# The primary test, all three metrics, primary block length.
+ml_primary <- dplyr::filter(ml_inference, primary, block_length == 5) |>
+  dplyr::select(metric, estimate, ci_lower, ci_upper, p_value, p_holm, p_value_dmu,
+                strategy_sharpe_dmu, benchmark_sharpe_dmu)
+
+# Robustness of the primary Sharpe p-value to the block length.
+ml_primary_blocks <- dplyr::filter(ml_inference, primary, metric == "sharpe") |>
+  dplyr::select(block_length, estimate, p_value, p_holm)
+
+# Ensemble vs lagvar, Sharpe, block 5, every secondary contrast, with the
+# DeMiguel-convention Sharpe ratios of both portfolios and the NW(1) alpha.
+ml_vs_lagvar <- ml_inference |>
+  dplyr::filter(comparator == "lagvar", metric == "sharpe", block_length == 5) |>
+  dplyr::left_join(dplyr::filter(ml_spanning, hac_lag == 1) |>
+                     dplyr::select(comparison_id, alpha_ann, t_alpha, p_alpha),
+                   by = "comparison_id") |>
+  dplyr::transmute(table, scope, panel, portfolio, family,
+                   sharpe_ensemble = strategy_sharpe_dmu, sharpe_lagvar = benchmark_sharpe_dmu,
+                   difference = estimate, p_value, p_holm, p_value_dmu, alpha_ann, t_alpha)
+
+# Per-factor differences (descriptive only), ensemble minus lagvar.
+ml_factor_effects <- utils::read.csv(file.path(data_dir, "demiguel", "ml_inference_factor_effects.csv")) |>
+  dplyr::filter(comparator == "lagvar")
+ml_factor_summary <- utils::read.csv(file.path(data_dir, "demiguel", "ml_inference_factor_summary.csv")) |>
+  dplyr::filter(comparator == "lagvar")
+
+# Number of contrasts per family and scope rejecting at 10% (block 5, Sharpe).
+ml_rejections <- ml_inference |>
+  dplyr::filter(metric == "sharpe", block_length == 5) |>
+  dplyr::group_by(family, scope) |>
+  dplyr::summarise(contrasts = dplyr::n(), positive = sum(estimate > 0),
+                   raw_10pct = sum(p_value < .10), holm_10pct = sum(p_holm < .10), .groups = "drop")
+
+print(as.data.frame(ml_primary), digits = 4, row.names = FALSE)
+print(as.data.frame(ml_primary_blocks), digits = 4, row.names = FALSE)
+print(as.data.frame(ml_rejections), row.names = FALSE)
+
+# Paired-test tables of the e-mail (ensemble vs lagged variance) ----------------
+
+# One row per DeMiguel portfolio, block length 5, comparator lagvar. Columns:
+#   Lagged variance / Ensemble: Sharpe ratios in DeMiguel's convention (net
+#     mean over gross sd), i.e. the numbers of Tables I and III;
+#   Difference: the TESTED statistic, Sharpe of the tested series on its own sd
+#     (equals the gap of the two Sharpe ratios in Table I; in Table III it
+#     differs slightly, because monthly costs change the net sd);
+#   p-value: manuscript paired bootstrap, one-sided H0: ensemble <= lagvar;
+#   Holm p-value: within the prespecified family (all scopes, comparators and
+#     the three metrics; for the primary row, its three metrics);
+#   DeMiguel p-value: his own uncentered procedure (replication settings), not
+#     adjusted; p (CER): manuscript test on certainty-equivalent return.
+email_paired_row <- function(x) {
+  s <- dplyr::filter(x, metric == "sharpe")
+  c <- dplyr::filter(x, metric == "cer_ann")
+  tibble::tibble(`Lagged variance` = fmt(s$benchmark_sharpe_dmu), Ensemble = fmt(s$strategy_sharpe_dmu),
+                 Difference = fmt(s$estimate), `p-value` = fmt_p(s$p_value),
+                 `Holm p-value` = fmt_p(s$p_holm), `DeMiguel p-value` = fmt_p(s$p_value_dmu),
+                 `p (CER)` = fmt_p(c$p_value))
+}
+fmt_p <- function(p) ifelse(is.na(p), "—", ifelse(p < .001, "<.001", fmt(p)))
+lagvar_5 <- dplyr::filter(ml_inference, comparator == "lagvar", block_length == 5)
+
+# Table III, CMV: columns (3) and (6), Panels B (gross), C (net, no trading
+# diversification), D (net, trading diversification). D (6) is the primary test.
+email_paired_cmv <- tidyr::expand_grid(panel = c("B", "C", "D"), portfolio = c("cmv_notc", "cmv_tc")) |>
+  purrr::pmap_dfr(function(panel, portfolio) {
+    x <- dplyr::filter(lagvar_5, table == "III", scope == "cmv", panel == !!panel, portfolio == !!portfolio)
+    dplyr::bind_cols(tibble::tibble(Panel = panel, Column = ifelse(portfolio == "cmv_notc", "(3)", "(6)"),
+                                    Primary = ifelse(any(x$primary), "yes", "")),
+                     email_paired_row(x))
+  })
+
+# Table I, MVO combination, pooled: equal-weighted eight non-market factors and
+# MKT on its own; Panels C (gross), D (net, cost-unaware), E (net, cost-aware).
+email_paired_mvo <- tidyr::expand_grid(scope = c("aggregate_8", "market"), panel = c("C", "D", "E")) |>
+  purrr::pmap_dfr(function(scope, panel) {
+    x <- dplyr::filter(lagvar_5, table == "I", scope == !!scope, panel == !!panel)
+    dplyr::bind_cols(tibble::tibble(Portfolio = ifelse(scope == "market", "MKT", "8-factor aggregate"),
+                                    Panel = panel),
+                     email_paired_row(x))
+  })
+
+# Extension (ours): FCMV, own-factor volatility, March 1970 sample.
+email_paired_fcmv <- tidyr::expand_grid(panel = c("B", "C", "D"), portfolio = c("cmv_notc", "cmv_tc")) |>
+  purrr::pmap_dfr(function(panel, portfolio) {
+    x <- dplyr::filter(lagvar_5, table == "III", scope == "fcmv", panel == !!panel, portfolio == !!portfolio)
+    dplyr::bind_cols(tibble::tibble(Panel = panel, Column = ifelse(portfolio == "cmv_notc", "(3)", "(6)")),
+                     email_paired_row(x))
+  })
+
+# Each table must have exactly one source row per metric and portfolio.
+stopifnot(nrow(email_paired_cmv) == 6L, nrow(email_paired_mvo) == 6L, nrow(email_paired_fcmv) == 6L,
+          sum(email_paired_cmv$Primary == "yes") == 1L)
+
+print(as.data.frame(email_paired_cmv), row.names = FALSE)
+print(as.data.frame(email_paired_mvo), row.names = FALSE)
+print(as.data.frame(email_paired_fcmv), row.names = FALSE)
+
 # Inspect, for example:
 # table1_ac_table
 # table1_bde_table
 # table1_ml_paper_window
 # table3_ml_panel_d
 # standalone_table; standalone_ensemble
+# ml_vs_lagvar; dplyr::filter(ml_inference, comparator == "lagss")

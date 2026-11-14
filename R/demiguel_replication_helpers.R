@@ -689,6 +689,31 @@ run_table1_costs <- function(monthly, daily, stock, start, end, M = 120L, gamma 
                        block_length = block_length, seed = seed))
 }
 
+#' Standalone managed factor: monthly gross and net returns
+#'
+#' The Moreira-Muir managed factor alone (no unmanaged sleeve, no MVO), an
+#' extension of Table I. managed_t = r_t * c / variance_t from
+#' build_table1_sample() over [start, end], evaluated from eval_start on.
+#' Net: the sleeve's own stock-level trades (exposure c / variance on the
+#' factor's stock weights), entry from cash in the first evaluation month, and,
+#' as in Table I, the AVERAGE realized monthly cost deducted from every month.
+#' c cancels from gross and net Sharpe ratios (costs scale with exposure).
+#' stock: read_demiguel_stock_data() output; needs R/demiguel_cost_helpers.R.
+#' Returns month_id, unmanaged, gross, cost, net (monthly decimals).
+standalone_managed_series <- function(monthly, variance, stock, factor_name, start, end,
+                                      eval_start) {
+  s <- build_table1_sample(monthly, variance, factor_name, start, end) %>%
+    dplyr::filter(month_id >= eval_start)
+  if (!nrow(s) || min(s$month_id) != eval_start) {
+    rlang::abort(paste("Standalone sample does not start at the evaluation month for", factor_name))
+  }
+  cost <- stock_cost(stock, tibble::tibble(month_id = s$month_id, sleeve = "managed",
+                                           factor = factor_name, w = s$scale / s$variance),
+                     netting = "sleeve", charge_entry = TRUE)$cost
+  tibble::tibble(month_id = s$month_id, unmanaged = s$factor_exc, gross = s$managed,
+                 cost = cost, net = s$managed - mean(cost))
+}
+
 #' Compare Table I Panels B, D and E with the published values
 compare_table1_costs <- function(table) {
   table %>%
