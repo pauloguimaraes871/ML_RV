@@ -903,15 +903,14 @@ if (length(missing_inputs) > 0) {
       row.names = FALSE
     )
 
-  ## Save legacy artifacts only after the full panel build and its checks pass.
+  ## Shared macro covariates read by R/load_demiguel_data.R (which checks them
+  ## against the JKP panel). Saved only after the full panel build and its
+  ## checks pass. The 1962 tier and crsp_monthly.rds are no longer written:
+  ## their only reader was the retired v1 report.
   saveRDS(covariates_1927_df,
           file = file.path(here::here(), "data", "covariates_1927v2.rds"))
-  saveRDS(covariates_1962_df,
-          file = file.path(here::here(), "data", "covariates_1962v2.rds"))
   saveRDS(covariates_1986_df,
           file = file.path(here::here(), "data", "covariates_1986v2.rds"))
-  saveRDS(crsp_monthly,
-          file = file.path(here::here(), "data", "crsp_monthly.rds"))
 
     cat("\nWrote", length(v3_outputs), "v3 artifacts and data/manifest_v3.csv\n")
 

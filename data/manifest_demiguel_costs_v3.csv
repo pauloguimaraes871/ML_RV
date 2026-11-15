@@ -1,0 +1,4 @@
+"role","artifact","sha256","notes"
+"input","ReplicationPackage.zip (Mendeley)","e2dc5e677004141a25cdce575c853bb2ce415c00cfc3e989a0f9a25680dbb5a7","Mendeley Data, DOI 10.17632/dmjfztbc4y.3 (CC BY 4.0), downloaded 2026-10-11"
+"input","demiguel/raw/MainDataRep.mat","9f3391e6d0beb191851b11e368fa276d6d3a4f4fee34d7c3093ac547a74d30df","unmodified member of the zip; NaN = stock outside CRSP that month"
+"output","demiguel_stock_costs_v3.rds","4d39384fab61bbf33d83135ea8116a454c93eac7d57712af0ab6981b938bf4d3","compacted RPS / BidAskSpreads / rRisky / Rchar; NA kept as in the package"

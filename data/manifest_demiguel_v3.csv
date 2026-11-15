@@ -1,0 +1,35 @@
+"role","artifact","sha256","n_rows","n_cols","n_keys","date_min","date_max","notes"
+"input","demiguel/raw/Betting-Against-Beta-Equity-Factors-Daily.xlsx","c34f1ac4130f69dd73440dd62a53caf22df47bc7cc50f5cf544f8e522c28a8c6",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/Betting-Against-Beta-Equity-Factors-Monthly.xlsx","b98d9ce68033e9ac38812737ab7444e6883348bcae6e4573abcdaa94fd164514",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Momentum_Factor_CSV.zip","c06d1c2e9a5e4f6985879722f23c6bb585f46b34eaf3fcb681d4de887e353f3e",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Momentum_Factor_daily_CSV.zip","ecf82b116e6ec56d2b79a2f27bd1d1598c217b5c6c25caa55b945bdd8a2c0b78",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Research_Data_5_Factors_2x3_CSV.zip","36756c5c2559648519ac4b22913d860c6afd865cfebce920e3e8927f8e2d10b7",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Research_Data_5_Factors_2x3_daily_CSV.zip","7881223b51929ee0d6d23b8a28524aaec478a2c3d4eeca47224955cc845c5186",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Research_Data_Factors_CSV.zip","593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/F-F_Research_Data_Factors_daily_CSV.zip","2f29e22546069914890a712680a6f81f3680ebc3543b52864484d209ca13a7db",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/q5_factors_daily_2024.csv","e34d93de787bfde1eab7f8ed941f19062ba06ee0f8f1cdc47faa44b29887e94d",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/q5_factors_daily_2025.csv","db88d58740315586e63b18af3d1c2242f5891fe1954502c84ced076a5971e14b",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/q5_factors_monthly_2024.csv","d2ec0d2e22bc0e94d3e10f4daa6c748303914046fd3ff97b8eaeee825d9639d1",NA,NA,NA,NA,NA,NA
+"input","demiguel/raw/q5_factors_monthly_2025.csv","8b2e2f1364890f8f5876da20e6bfad0acd8d272425de3b65c725f54b51128f6a",NA,NA,NA,NA,NA,NA
+"input","covariates_1927v2.rds","29fffaec1e5ef28091d354bf283d6c1739244d580ef44ba29d783fd170bcf6cd",NA,NA,NA,NA,NA,NA
+"input","covariates_1986v2.rds","eef0c0f7efa8d1619f74ad7885201daa4527b39efafcd0b44df60050164bf89d",NA,NA,NA,NA,NA,NA
+"input","covariates_panel_1927_v3.rds","08c128871bef0f4a558357cea9abe446a1ef8ddb1239d9510ab7a70e9f0ad47d",NA,NA,NA,NA,NA,NA
+"input","covariates_panel_1986_v3.rds","1a6caf5f5ebc1e9027046ef15e81c22875f8ebc58bad0c827a701d23245ee7c7",NA,NA,NA,NA,NA,NA
+"output","covariates_demiguel_1927_v3.rds","faa1e9316ade8e35834d36714d8d316ee6517c9ce3d7e4104b2eb4c93f3fa68f",8691,23,9,"1927-01-01","2024-12-01",NA
+"output","covariates_demiguel_1986_v3.rds","bd5c7531baf7a2ae374815cc838d9ea81c2a7edf74692798cc05719aeb6940e6",4203,35,9,"1986-02-01","2024-12-01",NA
+"output","covariates_demiguel_1927_zscore_v3.rds","d18860eaaa57ef5fe83cbcac849a54fc2c755606feefcba62d8ca5a195f46643",8367,35,9,"1930-01-01","2024-12-01",NA
+"output","covariates_demiguel_1986_zscore_v3.rds","a9bc7c72ad7b2b9d9cb7e85b58604c47af86f0a7ff4da5d483f684c0f6f6d36b",3879,47,9,"1989-02-01","2024-12-01",NA
+"output","covariates_demiguel_1927_range_v3.rds","cc37a4dc41d34cdc872b04358db334b274b57ffc847cea787908efd33dd1ddac",8367,35,9,"1930-01-01","2024-12-01",NA
+"output","covariates_demiguel_1986_range_v3.rds","c9fb4783941aa520f621220c63ba16bc59430656bb142bb959a5e7427880634a",3879,47,9,"1989-02-01","2024-12-01",NA
+"output","target_demiguel_v3.rds","4a9f57a957bc3ebef8e64e4edb08286f23407b8af241efd70d02dcb413cf8c87",8884,3,9,"1926-07-01","2026-08-01",NA
+"output","demiguel_returns_monthly_v3.rds","209562abc7b177c68efce3b8aa87e120a7a410f5debc9e75377bf009c4e20075",8882,4,9,"1926-07-01","2026-08-01",NA
+"output","demiguel_returns_daily_v3.rds","d84fe46b9ed7ccc571971705b24088df047510d07808c5b7dda9ec680ee3b1e5",192026,3,9,"1926-07-01","2026-08-31",NA
+"output","demiguel_rf_daily_v3.rds","96776188ccfc3193121a971188ba5f81223aaf87e811366ed6cadce0b26c6d07",26317,2,1,"1926-07-01","2026-08-31",NA
+"policy","universe",NA,NA,NA,NA,NA,NA,"DeMiguel et al. (2024) nine factors: mkt smb hml rmw cma umd roe ia bab"
+"policy","sources",NA,NA,NA,NA,NA,NA,"mkt_source=ff3; smb_source=ff3; hml_source=ff3; q5_vintage=2025"
+"policy","returns",NA,NA,NA,NA,NA,NA,"native monthly provider returns are earned; daily files only build RV and volatility"
+"policy","target",NA,NA,NA,NA,NA,NA,"monthly sum of squared daily returns, as the JKP target; mkt uses daily Mkt-RF"
+"policy","market_key",NA,NA,NA,NA,NA,NA,"mkt = French Mkt-RF; CRSP spx_vw is NOT pooled into this panel"
+"policy","min_history",NA,NA,NA,NA,NA,NA,"JKP rule: each key drops its first 2 months, then requires a complete HAR block"
+"policy","shared_covariates",NA,NA,NA,NA,NA,NA,"covariates_<tier>v2.rds minus HAR block columns; checked equal to the JKP panel"
+"policy","preprocessing",NA,NA,NA,NA,NA,NA,"expanding, within key; zscore winsorized 0.01/0.99, range 0.025/0.975, min_n=36"

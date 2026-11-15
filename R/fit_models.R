@@ -9,10 +9,16 @@
 
   ## The only switches that need editing. Nothing further down has to be touched
   ## to change sample, universe, preprocessing or tuning method.
-  run_1986     <- FALSE   # Initial sample
-  run_1927     <- TRUE  # Enable later as a longer-sample robustness check
-  run_panel    <- TRUE   # Pooled factor panel, including the spx_vw key
-  run_spx_only <- TRUE   # Standalone S&P 500 comparison
+  ## dataset picks the pooled factor panel: "jkp" (153 JKP factors plus spx_vw,
+  ## 154 keys)
+  ## or "demiguel" (the nine DeMiguel et al. 2024 factors, R/load_demiguel_data.R).
+  ## The standalone market models do not depend on the factor panel, so they are
+  ## fitted under "jkp" only and reused by the DeMiguel analysis.
+  dataset      <- "demiguel"
+  run_1986     <- TRUE    # Short sample
+  run_1927     <- TRUE    # Long sample
+  run_panel    <- TRUE   # Pooled factor panel (JKP: including the spx_vw key)
+  run_spx_only <- FALSE  # Standalone S&P 500 comparison (JKP only)
   models_to_run <- c("har", "harx", "glmnet", "rf", "xgb", "nn1", "nn2", "nn3")
   preprocessing_to_run <- "range"
   tuning_methods_to_run <- "grid_search"
@@ -21,9 +27,44 @@
   ## Set to FALSE to actually fit.
   dry_run <- FALSE
 
-  ## Where fitted objects are looked for and written
+  ## Where fitted objects are looked for and written. The cache scan is
+  ## recursive, so it also sees models_v3/demiguel; reuse is still decided only
+  ## by recorded provenance, never by folder or filename.
   model_dirs_v3 <- file.path(here::here(), "models_v3")
   cache_dirs    <- model_dirs_v3
+
+  ## Everything that distinguishes the two factor datasets. The JKP entries
+  ## reproduce the previous hard-coded values EXACTLY: inclusion_policy signs
+  ## every run, so changing one character here would orphan every cached JKP fit.
+  dataset_specs <- list(
+    jkp = list(
+      panel_universe   = "panel",
+      target_artifact  = "target_panel_v3.rds",
+      model_dir        = model_dirs_v3,
+      inclusion_policy = paste(
+        "usa JKP vw_cap factors, industries excluded, market series pooled in;",
+        "unbalanced, each key drops its first 2 months then requires a",
+        "complete HAR block"
+      )
+    ),
+    demiguel = list(
+      panel_universe   = "demiguel",
+      target_artifact  = "target_demiguel_v3.rds",
+      model_dir        = file.path(model_dirs_v3, "demiguel"),
+      inclusion_policy = paste(
+        "DeMiguel et al. (2024) nine factors (French, Hou-Xue-Zhang, AQR), mkt is",
+        "French Mkt-RF and CRSP spx_vw is not pooled in; unbalanced, each key",
+        "drops its first 2 months then requires a complete HAR block"
+      )
+    )
+  )
+
+  if (!dataset %in% names(dataset_specs)) stop("Unknown dataset: ", dataset)
+  dataset_spec <- dataset_specs[[dataset]]
+
+  if (dataset != "jkp" && isTRUE(run_spx_only)){
+    stop("Standalone market models are fitted under dataset = \"jkp\" only.")
+  }
 
   ## Shared experimental design
   design <- list(
@@ -179,7 +220,7 @@
 
   target_path <- function(universe){
     file.path(here::here(), "data",
-              if (universe == "panel") "target_panel_v3.rds" else "target_spx_v3.rds")
+              if (universe == "spx") "target_spx_v3.rds" else dataset_spec$target_artifact)
   }
 
   ## HAR uses only the three lagged RV terms; HARX uses every covariate.
@@ -265,7 +306,8 @@
     run_spx_only = run_spx_only,
     models       = models_to_run,
     preprocessing = preprocessing_to_run,
-    tuning_methods = tuning_methods_to_run
+    tuning_methods = tuning_methods_to_run,
+    panel_universe = dataset_spec$panel_universe
   )
 
   ## Output path. Encodes the run, but is never used to identify it: only the
@@ -273,7 +315,7 @@
   output_path_for <- function(row){
     method_tag <- if (is.na(row$tuning_method)) "none" else
       if (row$tuning_method == "grid_search") "grid" else "bayes"
-    file.path(model_dirs_v3, row$sample,
+    file.path(dataset_spec$model_dir, row$sample,
               paste0(paste(row$model_id, row$universe, row$preprocessing,
                            method_tag, row$sample, sep = "_"), ".rds"))
   }
@@ -284,7 +326,7 @@
   build_run <- function(row){
 
     spec     <- model_spec[[row$model_id]]
-    key_col  <- if (row$universe == "panel") "name" else NULL
+    key_col  <- if (row$universe == "spx") NULL else "name"
     cov_path <- dataset_path(row$universe, row$sample, row$preprocessing)
     tgt_path <- target_path(row$universe)
 
@@ -343,11 +385,7 @@
     run_spec <- list(
       dataset_version          = "v3",
       universe                 = paste(row$universe, row$sample, sep = "_"),
-      inclusion_policy         = paste(
-        "usa JKP vw_cap factors, industries excluded, market series pooled in;",
-        "unbalanced, each key drops its first 2 months then requires a",
-        "complete HAR block"
-      ),
+      inclusion_policy         = dataset_spec$inclusion_policy,
       covariates_artifact      = basename(cov_path),
       covariates_sha256        = hash_artifact(cov_path),
       target_artifact          = basename(tgt_path),

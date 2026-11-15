@@ -4019,18 +4019,29 @@ fit_rv_model <- function(
 ##
 ## LSTM, NN4 and NN5 are deliberately absent. Their helpers remain untouched in
 ## this file; they are simply not part of the current run plan.
+##
+## `panel_universe` names the pooled factor panel: "panel" for JKP (default, so
+## every existing run is unchanged) or "demiguel" for the DeMiguel et al. (2024)
+## nine factors. It cannot be "spx", which is reserved for the standalone market.
 build_run_matrix <- function(run_1986 = TRUE, run_1927 = TRUE,
                              run_panel = TRUE, run_spx_only = FALSE,
                              models = c("har", "harx", "glmnet", "rf",
                                         "xgb", "nn1", "nn2", "nn3"),
                              preprocessing = c("range", "zscore"),
                              tuning_methods = c("grid_search",
-                                                "bayesian_optimization")){
+                                                "bayesian_optimization"),
+                             panel_universe = "panel"){
+
+  if (!is.character(panel_universe) || length(panel_universe) != 1L ||
+      !panel_universe %in% c("panel", "demiguel")){
+    stop("panel_universe must be \"panel\" or \"demiguel\".")
+  }
 
   untuned <- c("har", "harx")
 
   samples   <- c(if (isTRUE(run_1986)) "1986", if (isTRUE(run_1927)) "1927")
-  universes <- c(if (isTRUE(run_panel)) "panel", if (isTRUE(run_spx_only)) "spx")
+  universes <- c(if (isTRUE(run_panel)) panel_universe,
+                 if (isTRUE(run_spx_only)) "spx")
 
   if (length(samples) == 0L || length(universes) == 0L){
     return(
