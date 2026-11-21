@@ -715,3 +715,44 @@ monthly total return is -89.6% (lagss CMV column (3), Panel C, December 1999).
 Full results: `data/demiguel/ml_inference_{bootstrap,spanning,series,
 contrasts,factor_effects,factor_summary,inputs}.csv`; read in
 `R/demiguel_results_extraction_annotated.R`. Runtime about one minute.
+## 16. Step 10: Table III with equal-weighted portfolios (co-author request)
+
+Same construction as Table III (stock-level costs, refit every 12 months on an
+expanding window, evaluation February 1977 - December 2020), with the
+manuscript's EW allocation (`allocate_portfolio(..., "ew")`) in place of
+mean-variance optimization. Enabled by `run_table3(..., allocation = "ew")`;
+the default `"mvo"` is unchanged.
+
+- `umv_ew`: 1/9 on each unmanaged factor (no signal).
+- `cmv_ew`: 1/18 on each unmanaged factor and on each managed sleeve f/sigma,
+  each managed sleeve first rescaled by sd(f)/sd(f/sigma) over the training
+  window (the manuscript's `managed_normalization = "training_vol"`). Without
+  it, f/sigma is about 100 times the scale of f and 1/18 has no meaning.
+- EW ignores costs, so there are no cost-aware columns. Panels B (gross),
+  C (sleeve-by-sleeve costs) and D (portfolio-netted costs) are reported;
+  Panel A and the comparison with the paper are not.
+- EW is fully invested (weights sum to one); DeMiguel's MVO is levered.
+  Sharpe ratios, alpha t-statistics and p-values compare across the two;
+  means and volatilities do not.
+
+Run, in this order:
+
+```r
+allocation <- "ew"
+source("R/demiguel_table3.R")            # table3_ew.csv, demiguel_table3_ew_v3.rds
+source("R/demiguel_table3_ml.R")         # table3_ml_ew.csv, demiguel_table3_ml_ew_v3.rds
+source("R/demiguel_table3_ew_inference.R")
+```
+
+`allocation` stays in the session: remove it (`rm(allocation)`) before
+rerunning the MVO tables.
+
+`R/demiguel_table3_ew_inference.R` tests each signal's EW portfolio (ensemble,
+HARX, lagss) against the same EW portfolio built with lagvar: CMV (1967
+sample) and FCMV (1970 sample, family `EXT_fcmv_ew`), Panels B, C and D, with
+the manuscript's paired bootstrap of the Sharpe, mean and CER differences and
+the settings of Section 15 (10,000 draws, seed 20260918, block lengths 5, 3
+and 10, Holm and BH within family), DeMiguel's own Sharpe p-value as
+robustness and Newey-West spanning alphas. No contrast is prespecified:
+all are exploratory. Outputs: `data/demiguel/table3_ew_inference_{bootstrap,
+spanning,series}.csv`, read in `R/demiguel_results_extraction_annotated.R`.
