@@ -56,6 +56,12 @@
   draws <- 10000L
   block_length <- 5
   seed <- 20261011L
+  # Allocation rule: "mvo" (the paper) unless set before sourcing, e.g.
+  # allocation <- "ew"; source("R/demiguel_table3.R"). EW has no published
+  # reference and writes its own files; Panel A (in sample) is not reported.
+  if (!exists("allocation")) allocation <- "mvo"
+  allocation <- match.arg(allocation, c("mvo", "ew"))
+  suffix <- if (allocation == "mvo") "" else paste0("_", allocation)
 
 # Inputs------------------------------------------------------------------------
 
@@ -102,19 +108,22 @@
   # dates after M months, but differ in which data estimate the coefficients.
   result <- run_table3(as.matrix(returns[, stock$factors]), months, sigma$sigma, stock,
                        M = M, gamma = gamma, refit = refit, draws = draws,
-                       block_length = block_length, seed = seed)
+                       block_length = block_length, seed = seed, allocation = allocation)
+  if (allocation == "ew") result$table <- dplyr::filter(result$table, panel %in% c("B", "C", "D"))
   # Compare statistics with hard-coded published references; no parameter
   # is chosen to minimize these differences. Provider inputs may differ
   # from the paper, so matching methodology need not give matching numbers.
+  # EW columns have no published counterpart, so the comparison is empty.
   comparison <- compare_table3(result$table)
 
   # Round only the DISPLAY to three decimal places. The result objects and
   # saved outputs retain unrounded numbers. Decimal return statistics such
   # as .415 represent 41.5%, while Sharpe ratios and t-statistics are ratios.
-  cat("\nTable III (ours):\n")
+  cat("\nTable III (ours, ", allocation, "):\n", sep = "")
   print(as.data.frame(result$table %>% dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ round(.x, 3)))),
         row.names = FALSE)
-  cat("\nDifference from the paper:\n")
+  if (allocation == "mvo") cat("\nDifference from the paper:\n")
+  if (allocation == "mvo")
   print(as.data.frame(tidyr::pivot_wider(dplyr::select(comparison, panel, column, statistic, difference),
                                          names_from = statistic, values_from = difference) %>%
                         dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ round(.x, 3)))),
@@ -126,7 +135,7 @@
   # differences, and the full result (monthly returns/costs, weights/settings).
   # Unlike the computational helpers, executing this runner writes files.
   # save_if_changed avoids rewriting unchanged output content.
-  save_if_changed(result$table, file.path(output_dir, "table3.csv"))
-  save_if_changed(comparison, file.path(output_dir, "table3_vs_paper.csv"))
-  save_if_changed(result, file.path(data_dir, "demiguel_table3_v3.rds"), "rds")
-  cat("\nSaved data/demiguel/table3.csv, table3_vs_paper.csv and data/demiguel_table3_v3.rds\n")
+  save_if_changed(result$table, file.path(output_dir, paste0("table3", suffix, ".csv")))
+  if (allocation == "mvo") save_if_changed(comparison, file.path(output_dir, "table3_vs_paper.csv"))
+  save_if_changed(result, file.path(data_dir, paste0("demiguel_table3", suffix, "_v3.rds")), "rds")
+  cat("\nSaved data/demiguel/table3", suffix, ".csv and data/demiguel_table3", suffix, "_v3.rds\n", sep = "")
