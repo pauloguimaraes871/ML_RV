@@ -371,8 +371,17 @@ table3_panel_stats <- function(gross, net, calendar) {
 #'   volatility: FCMV). A vector gives exactly the same results as before.
 #' stock: read_demiguel_stock_data() output (BAB zeros are set missing here).
 #' M = 120, gamma = 5, refit = 12 months. Returns list(table, returns, weights).
+#' allocation: "mvo" (the paper: columns umv_notc, cmv_notc, umv_tc, cmv_tc) or
+#'   "ew" (the manuscript's equal weighting, allocate_portfolio(..., "ew"):
+#'   columns umv_ew = 1/K per factor and cmv_ew = 1/(2K) per unmanaged factor
+#'   and per managed sleeve, each managed sleeve first rescaled to its factor's
+#'   volatility over the training window, as managed_normalization =
+#'   "training_vol" in run_multifactor_ports()). EW ignores costs, so it has no
+#'   cost-aware columns; Panels C and D still charge the costs of its weights.
 run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit = 12L,
-                       draws = 10000L, block_length = 5, seed = 20261011L) {
+                       draws = 10000L, block_length = 5, seed = 20261011L,
+                       allocation = c("mvo", "ew")) {
+  allocation <- match.arg(allocation)
 
   # Inputs: one row per consecutive holding month, one column per factor.
   # months identifies those rows; stock supplies underlying stock holdings,
@@ -467,6 +476,20 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
     xu <- returns[rows, , drop = FALSE]
     # Select the same months, now including managed strategies as well.
     xe <- ext[rows, , drop = FALSE]
+    ## Equal weighting: no moments, no costs. Managed sleeves are rescaled by
+    ## sd(f)/sd(f/sigma) on the TRAINING rows only, so a 1/(2K) weight on a
+    ## rescaled sleeve is a coefficient of normalization/(2K) on f/sigma.
+    if (allocation == "ew") {
+      normalization <- apply(xu, 2, stats::sd) / apply(xe[, K + seq_len(K), drop = FALSE], 2, stats::sd)
+      if (any(!is.finite(normalization) | normalization <= 0)) {
+        rlang::abort("Cannot match managed/unmanaged training volatility.")
+      }
+      basis <- tibble::tibble(name = rep(factors, 2), sleeve = rep(c("unmanaged", "managed"), each = K),
+                              cluster = "all", id = colnames(ext))
+      ew_u <- allocate_portfolio(xu, dplyr::mutate(basis[seq_len(K), ], id = colnames(xu)), "ew")$coef
+      ew_c <- allocate_portfolio(sweep(xe, 2, c(rep(1, K), normalization), "*"), basis, "ew")$coef
+      return(cbind(umv_ew = c(ew_u, rep(0, K)), cmv_ew = ew_c * c(rep(1, K), normalization)))
+    }
     # Use only unmanaged trade columns for the unmanaged-only optimization.
     Au <- phi[phi_rows, 1:K, drop = FALSE]
     # Discard rows inactive for unmanaged strategies, then divide by D.
@@ -531,7 +554,7 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
   # four-return vector on one row. B, C and D all start from this matrix.
   hold <- months[M + oos_index]
   gross <- matrix(unlist(purrr::map(oos_index, ~ as.vector(ext[M + .x, ] %*% weights[[.x]]))),
-                  ncol = 4, byrow = TRUE, dimnames = list(NULL, colnames(w_is)))
+                  ncol = ncol(w_is), byrow = TRUE, dimnames = list(NULL, colnames(w_is)))
 
   ## Costs of the actual weight paths (entry from cash in the first OOS month)
   # Realized performance costs must follow the ACTUAL chosen weight paths,
@@ -589,7 +612,7 @@ run_table3 <- function(returns, months, sigma, stock, M = 120L, gamma = 5, refit
                       tc_td = tc_td, tc_ntd = tc_ntd),
        weights = list(in_sample = w_is, oos = weights),
        settings = list(M = M, gamma = gamma, refit = refit, draws = draws,
-                       block_length = block_length, seed = seed))
+                       block_length = block_length, seed = seed, allocation = allocation))
 }
 
 #' Compare a Table III result with the published values

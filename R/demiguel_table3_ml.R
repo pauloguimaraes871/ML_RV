@@ -50,6 +50,12 @@
   draws <- 10000L
   block_length <- 5
   seed <- 20261011L
+  # Allocation rule: "mvo" (the paper) unless set before sourcing, e.g.
+  # allocation <- "ew"; source("R/demiguel_table3_ml.R"). EW reports Panels
+  # B-D in columns umv_ew/cmv_ew and writes its own files.
+  if (!exists("allocation")) allocation <- "mvo"
+  allocation <- match.arg(allocation, c("mvo", "ew"))
+  suffix <- if (allocation == "mvo") "" else paste0("_", allocation)
 
 # Inputs------------------------------------------------------------------------
 
@@ -149,12 +155,13 @@
       sigma_matrix(signals[[signal]], months, factors)
     }
     run_table3(returns_matrix(months), months, sig, stock, M = M, gamma = gamma, refit = refit,
-               draws = draws, block_length = block_length, seed = seed)
+               draws = draws, block_length = block_length, seed = seed, allocation = allocation)
   })
 
   table <- purrr::map2_dfr(results, seq_len(nrow(runs)), function(r, i) {
     dplyr::bind_cols(runs[i, ], r$table)
   })
+  if (allocation == "ew") table <- dplyr::filter(table, panel %in% c("B", "C", "D"))
 
 # Checks------------------------------------------------------------------------
 
@@ -172,14 +179,15 @@
   if (!all(umv$ok)) rlang::abort("UMV columns must not depend on the volatility signal.")
 
   ## The cmv lagvar run on the paper sample reproduces R/demiguel_table3.R
-  committed <- utils::read.csv(file.path(output_dir, "table3.csv"))
+  ## (run with the same allocation first)
+  committed <- utils::read.csv(file.path(output_dir, paste0("table3", suffix, ".csv")))
   ours <- table %>% dplyr::filter(variant == "cmv", signal == "lagvar", start == paper_start) %>%
     dplyr::select(dplyr::all_of(names(committed)))
   stats_cols <- setdiff(names(committed), c("panel", "column"))
   if (!identical(ours$panel, committed$panel) || !identical(ours$column, committed$column) ||
       !isTRUE(all.equal(as.matrix(ours[, stats_cols]), as.matrix(committed[, stats_cols]),
                         tolerance = 1e-10, check.attributes = FALSE))) {
-    rlang::abort("The cmv lagvar run must reproduce data/demiguel/table3.csv.")
+    rlang::abort(paste0("The cmv lagvar run must reproduce data/demiguel/table3", suffix, ".csv."))
   }
 
   cat("\nTable III by signal, Panel D (trading diversification):\n")
@@ -190,12 +198,12 @@
 
 # Save--------------------------------------------------------------------------
 
-  save_if_changed(table, file.path(output_dir, "table3_ml.csv"))
+  save_if_changed(table, file.path(output_dir, paste0("table3_ml", suffix, ".csv")))
   save_if_changed(list(table = table, runs = runs, results = results,
-                       settings = list(gamma = gamma, refit = refit, draws = draws,
+                       settings = list(allocation = allocation, gamma = gamma, refit = refit, draws = draws,
                                        block_length = block_length, seed = seed,
                                        models = ml_models, ensemble_members = ensemble_members,
                                        sources = purrr::map_dfr(model_results[setdiff(names(model_results), "ew")],
                                                                 "source"))),
-                  file.path(data_dir, "demiguel_table3_ml_v3.rds"), "rds")
-  cat("\nSaved data/demiguel/table3_ml.csv and data/demiguel_table3_ml_v3.rds\n")
+                  file.path(data_dir, paste0("demiguel_table3_ml", suffix, "_v3.rds")), "rds")
+  cat("\nSaved data/demiguel/table3_ml", suffix, ".csv and data/demiguel_table3_ml", suffix, "_v3.rds\n", sep = "")
