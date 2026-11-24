@@ -554,6 +554,19 @@ ew_spanning <- utils::read.csv(file.path(data_dir, "demiguel", "table3_ew_infere
 # One row per (scope, panel, signal), block 5: Sharpe ratios of both portfolios
 # (DeMiguel convention), Sharpe difference and p-values, CER difference and
 # p-value, and the NW(1) spanning alpha of the strategy on the lagvar portfolio.
+# Every expected key exactly once before pivoting and joining: a missing CER or
+# spanning row would otherwise survive as a row of dashes.
+ew_keys <- tidyr::expand_grid(scope = c("cmv", "fcmv"), panel = c("B", "C", "D"),
+                              signal = c("ew", "harx", "lagss"))
+same_keys <- function(data, expected) {
+  key <- function(d) sort(do.call(paste, as.list(d[names(expected)])))
+  identical(key(data), key(expected))
+}
+stopifnot(
+  same_keys(dplyr::filter(ew_inference, block_length == 5, metric %in% c("sharpe", "cer_ann")),
+            tidyr::expand_grid(ew_keys, metric = c("sharpe", "cer_ann"))),
+  same_keys(dplyr::filter(ew_spanning, hac_lag == 1), ew_keys)
+)
 email_paired_ew <- ew_inference |>
   dplyr::filter(block_length == 5, metric %in% c("sharpe", "cer_ann")) |>
   dplyr::select(scope, panel, signal, metric, estimate, p_value, p_holm, p_value_dmu,

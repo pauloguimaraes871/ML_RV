@@ -180,10 +180,15 @@
 
   ## The cmv lagvar run on the paper sample reproduces R/demiguel_table3.R
   ## (run with the same allocation first)
+  ## Fixed schema: a statistic missing from the reference file must fail, not
+  ## silently drop out of the comparison.
   committed <- utils::read.csv(file.path(output_dir, paste0("table3", suffix, ".csv")))
+  stats_cols <- c("mean", "sd", "tc", "sr", "p_value", "alpha", "t_alpha")
+  if (!setequal(names(committed), c("panel", "column", stats_cols))) {
+    rlang::abort("The reference Table III file does not have the expected columns.")
+  }
   ours <- table %>% dplyr::filter(variant == "cmv", signal == "lagvar", start == paper_start) %>%
-    dplyr::select(dplyr::all_of(names(committed)))
-  stats_cols <- setdiff(names(committed), c("panel", "column"))
+    dplyr::select(dplyr::all_of(c("panel", "column", stats_cols)))
   if (!identical(ours$panel, committed$panel) || !identical(ours$column, committed$column) ||
       !isTRUE(all.equal(as.matrix(ours[, stats_cols]), as.matrix(committed[, stats_cols]),
                         tolerance = 1e-10, check.attributes = FALSE))) {

@@ -78,7 +78,12 @@
   runs <- t3$runs %>% dplyr::mutate(run = dplyr::row_number()) %>%
     dplyr::filter(signal %in% signals,
                   (variant == "cmv" & start == as.Date("1967-02-01")) | variant == "fcmv")
-  if (nrow(runs) != 2L * length(signals) || anyDuplicated(runs[c("variant", "signal")])) {
+  ## Exact estimation window per variant: a different start with the same
+  ## evaluation months would otherwise pass every later check.
+  expected <- tibble::tibble(variant = c("cmv", "fcmv"),
+                             start = as.Date(c("1967-02-01", "1970-03-01")), M = c(120L, 83L))
+  if (nrow(runs) != 2L * length(signals) || anyDuplicated(runs[c("variant", "signal")]) ||
+      nrow(dplyr::anti_join(runs, expected, by = c("variant", "start", "M"))) > 0L) {
     rlang::abort("Unexpected equal-weighted Table III-ML runs.")
   }
 
