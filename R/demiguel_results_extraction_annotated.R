@@ -491,6 +491,105 @@ print(as.data.frame(email_paired_cmv), row.names = FALSE)
 print(as.data.frame(email_paired_mvo), row.names = FALSE)
 print(as.data.frame(email_paired_fcmv), row.names = FALSE)
 
+# Table III with equal-weighted multifactor portfolios ---------------------------
+
+# Written by, in this order: allocation <- "ew"; source("R/demiguel_table3.R");
+# source("R/demiguel_table3_ml.R"); source("R/demiguel_table3_ew_inference.R").
+# Same construction as Table III (stock-level costs, refit every 12 months,
+# expanding window, Feb 1977-Dec 2020), but weights are the manuscript's EW
+# rule instead of mean-variance optimization:
+#   umv_ew: 1/9 on each unmanaged factor (no signal used);
+#   cmv_ew: 1/18 on each unmanaged factor and on each managed sleeve f/sigma,
+#     the managed sleeve first rescaled to its factor's training volatility.
+# EW ignores costs when choosing weights, so there are no cost-aware columns.
+# Panels: B = OOS gross; C = minus sleeve-by-sleeve costs; D = minus
+# portfolio-netted costs (trading diversification). No Panel A, no published
+# reference. EW is fully invested (weights sum to one) while DeMiguel's MVO is
+# levered: compare Sharpe ratios, alphas' t-statistics and p-values, not means.
+# demiguel_table3_ew_v3.rds and demiguel_table3_ml_ew_v3.rds have the Table III
+# and Table III-ML schemas above, with columns umv_ew/cmv_ew; in FCMV rows,
+# cmv_ew holds the EW FCMV portfolio.
+table3_ew <- readRDS(file.path(data_dir, "demiguel_table3_ew_v3.rds"))
+table3_ew_table <- table3_ew$table
+table3_ml_ew <- readRDS(file.path(data_dir, "demiguel_table3_ml_ew_v3.rds"))
+table3_ml_ew_table <- table3_ml_ew$table
+
+# The cmv lagvar EW run of Table III-ML must equal the EW replication.
+stopifnot(isTRUE(all.equal(
+  dplyr::filter(table3_ml_ew_table, variant == "cmv", signal == "lagvar", start == as.Date("1967-02-01"))$sr,
+  table3_ew_table$sr)))
+
+# Replication layout: one column per (portfolio, panel), DeMiguel's statistics.
+pick_ew <- function(tab, panel, col) tab[tab$panel == panel & tab$column == col, ]
+email_table3_ew <- tidyr::expand_grid(panel = c("B", "C", "D"), col = c("umv_ew", "cmv_ew")) |>
+  purrr::pmap(function(panel, col) table3_stats(pick_ew(table3_ew_table, panel, col))) |>
+  stats::setNames(paste(rep(c("B", "C", "D"), each = 2), c("UMV EW", "CMV EW"))) |>
+  tibble::as_tibble() |>
+  tibble::add_column(Statistic = names(table3_stats(pick_ew(table3_ew_table, "D", "umv_ew"))), .before = 1)
+
+# EW CMV and EW FCMV by volatility signal, Panel D, DeMiguel's statistics.
+ml_run_ew <- function(variant, signal, start, panel = "D") {
+  pick_ew(dplyr::filter(table3_ml_ew_table, variant == !!variant, signal == !!signal,
+                        start == as.Date(!!start)), panel, "cmv_ew")
+}
+email_table3_ew_signals <- tidyr::expand_grid(
+  variant = c("cmv", "fcmv"), signal = c("lagvar", "lagss", "harx", "ew")
+) |>
+  dplyr::mutate(start = ifelse(variant == "cmv", "1967-02-01", "1970-03-01")) |>
+  purrr::pmap(function(variant, signal, start) table3_stats(ml_run_ew(variant, signal, start))) |>
+  stats::setNames(paste(rep(c("CMV EW", "FCMV EW"), each = 4), c("lagvar", "lagss", "harx", "ensemble"))) |>
+  tibble::as_tibble() |>
+  tibble::add_column(Statistic = names(table3_stats(pick_ew(table3_ew_table, "D", "umv_ew"))), .before = 1)
+
+# Paired tests against the lagvar EW portfolio (R/demiguel_table3_ew_inference.R):
+# table3_ew_inference_bootstrap.csv has one row per contrast x metric x block
+# length, the schema of ml_inference_bootstrap.csv. signal = the strategy
+# signal (ew ensemble, harx, lagss); estimate = strategy minus lagvar; Sharpe
+# on the tested series' own sd; cer_ann = annualized CER (gamma 5); p_value
+# one-sided (H0: strategy <= lagvar); p_holm within (block length, family);
+# families T3EW_cmv and EXT_fcmv_ew. All contrasts are exploratory.
+ew_inference <- utils::read.csv(file.path(data_dir, "demiguel", "table3_ew_inference_bootstrap.csv"))
+ew_spanning <- utils::read.csv(file.path(data_dir, "demiguel", "table3_ew_inference_spanning.csv"))
+
+# One row per (scope, panel, signal), block 5: Sharpe ratios of both portfolios
+# (DeMiguel convention), Sharpe difference and p-values, CER difference and
+# p-value, and the NW(1) spanning alpha of the strategy on the lagvar portfolio.
+# Every expected key exactly once before pivoting and joining: a missing CER or
+# spanning row would otherwise survive as a row of dashes.
+ew_keys <- tidyr::expand_grid(scope = c("cmv", "fcmv"), panel = c("B", "C", "D"),
+                              signal = c("ew", "harx", "lagss"))
+same_keys <- function(data, expected) {
+  key <- function(d) sort(do.call(paste, as.list(d[names(expected)])))
+  identical(key(data), key(expected))
+}
+stopifnot(
+  same_keys(dplyr::filter(ew_inference, block_length == 5, metric %in% c("sharpe", "cer_ann")),
+            tidyr::expand_grid(ew_keys, metric = c("sharpe", "cer_ann"))),
+  same_keys(dplyr::filter(ew_spanning, hac_lag == 1), ew_keys)
+)
+email_paired_ew <- ew_inference |>
+  dplyr::filter(block_length == 5, metric %in% c("sharpe", "cer_ann")) |>
+  dplyr::select(scope, panel, signal, metric, estimate, p_value, p_holm, p_value_dmu,
+                strategy_sharpe_dmu, benchmark_sharpe_dmu) |>
+  tidyr::pivot_wider(names_from = metric, values_from = c(estimate, p_value, p_holm, p_value_dmu,
+                                                          strategy_sharpe_dmu, benchmark_sharpe_dmu)) |>
+  dplyr::left_join(dplyr::filter(ew_spanning, hac_lag == 1) |>
+                     dplyr::select(scope, panel, signal, alpha_ann, t_alpha),
+                   by = c("scope", "panel", "signal"), relationship = "one-to-one") |>
+  dplyr::transmute(Portfolio = ifelse(scope == "cmv", "CMV EW", "FCMV EW"), Panel = panel,
+                   Signal = ifelse(signal == "ew", "ensemble", signal),
+                   `Lagged variance` = fmt(benchmark_sharpe_dmu_sharpe),
+                   Strategy = fmt(strategy_sharpe_dmu_sharpe),
+                   `Sharpe difference` = fmt(estimate_sharpe), `p-value` = fmt_p(p_value_sharpe),
+                   `Holm p-value` = fmt_p(p_holm_sharpe), `DeMiguel p-value` = fmt_p(p_value_dmu_sharpe),
+                   `CER difference` = fmt(estimate_cer_ann), `p (CER)` = fmt_p(p_value_cer_ann),
+                   `Alpha vs lagvar` = fmt(alpha_ann), `t (alpha)` = fmt(t_alpha))
+stopifnot(nrow(email_paired_ew) == 2L * 3L * 3L)
+
+print(as.data.frame(email_table3_ew), row.names = FALSE)
+print(as.data.frame(email_table3_ew_signals), row.names = FALSE)
+print(as.data.frame(email_paired_ew), row.names = FALSE)
+
 # Inspect, for example:
 # table1_ac_table
 # table1_bde_table
@@ -498,3 +597,4 @@ print(as.data.frame(email_paired_fcmv), row.names = FALSE)
 # table3_ml_panel_d
 # standalone_table; standalone_ensemble
 # ml_vs_lagvar; dplyr::filter(ml_inference, comparator == "lagss")
+# email_table3_ew; email_table3_ew_signals; email_paired_ew

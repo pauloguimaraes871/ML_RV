@@ -115,6 +115,46 @@ testthat::test_that("run_table3 accepts per-factor sigma; equal columns reproduc
   testthat::expect_error(run(s[-1]), "one value per month")
 })
 
+testthat::test_that("run_table3 EW uses 1/K and volatility-matched 1/(2K) weights and charges their costs", {
+  stock_file <- file.path(here::here(), "data", "demiguel_stock_costs_v3.rds")
+  testthat::skip_if_not(file.exists(stock_file), "Stock-level cost data not built")
+  stock <- readRDS(stock_file)
+  months <- seq(as.Date("1967-02-01"), by = "month", length.out = 36)
+  R <- matrix(stats::rnorm(36 * 9, .005, .03), ncol = 9, dimnames = list(NULL, stock$factors))
+  s <- stats::runif(36, .5, 1.5)
+  run <- function(sig, allocation) {
+    suppressMessages(run_table3(R, months, sig, stock, M = 24L, draws = 200L, allocation = allocation))
+  }
+  ew <- run(s, "ew")
+  w <- ew$weights$in_sample
+  testthat::expect_identical(colnames(w), c("umv_ew", "cmv_ew"))
+  testthat::expect_equal(unname(w[1:9, "umv_ew"]), rep(1 / 9, 9))
+  testthat::expect_equal(unname(w[10:18, "umv_ew"]), rep(0, 9))
+  testthat::expect_equal(unname(w[1:9, "cmv_ew"]), rep(1 / 18, 9))
+  ## Panel A fits on rows 25:36: each rescaled managed sleeve has its factor's sd
+  rows <- 25:36
+  testthat::expect_equal(unname(w[10:18, "cmv_ew"] * apply(R[rows, ] / s[rows], 2, stats::sd)),
+                         unname(apply(R[rows, ], 2, stats::sd)) / 18)
+  ## The signal's scale cancels: same factor exposures, same returns and costs
+  ew3 <- run(3 * s, "ew")
+  testthat::expect_equal(ew3$returns$gross, ew$returns$gross)
+  testthat::expect_equal(ew3$returns$tc_td, ew$returns$tc_td)
+  ## Two columns, CMV tested against UMV, costs only in Panels C and D
+  tab <- ew$table
+  testthat::expect_setequal(tab$column, c("umv_ew", "cmv_ew"))
+  testthat::expect_true(all(is.na(tab$p_value[tab$column == "umv_ew"])))
+  testthat::expect_true(all(is.finite(tab$p_value[tab$column == "cmv_ew"])))
+  testthat::expect_true(all(tab$tc[tab$panel %in% c("A", "B")] == 0))
+  testthat::expect_true(all(tab$tc[tab$panel %in% c("C", "D")] > 0))
+  ## Netting across sleeves never costs more than charging each sleeve
+  testthat::expect_true(all(ew$returns$tc_td <= ew$returns$tc_ntd + 1e-15))
+  testthat::expect_identical(ew$settings$allocation, "ew")
+  ## The default is still the paper's MVO with four columns
+  testthat::expect_identical(colnames(run(s, "mvo")$weights$in_sample),
+                             c("umv_notc", "cmv_notc", "umv_tc", "cmv_tc"))
+  testthat::expect_error(run(s, "hew"))
+})
+
 testthat::test_that("panel statistics follow JF_performancematrixTable4.m", {
   dates <- seq(as.Date("2000-01-01"), by = "month", length.out = 60)
   cal <- draw_portfolio_months(dates, draws = 500L, block_length = 5, seed = 2L)
